@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SolveIt - Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <a href="#" class="logo">
+      <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Cheerful%20SolveIt%20logo%20illustration-CDImhkFzYBe7VNCG6DvbOEfR9oHPBk.png" alt="SolveIt Logo" class="logo-img">
+    </a>
+    
+    <div class="search-container">
+      <div class="search-wrapper">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search doubts, topics, or users...">
+      </div>
+    </div>
+    
+    <div class="nav-right">
+      <button class="nav-icon-btn" id="notificationBtn">
+        <span class="notification-badge" id="notificationBadge"></span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+      </button>
+      <!-- Notification Dropdown -->
+      <div class="dropdown" id="notificationDropdown">
+        <div class="dropdown-header">
+          <span>Notifications</span>
+          <button class="mark-all-read" id="markAllRead">Mark all read</button>
+        </div>
+        <div class="dropdown-content" id="notificationList">
+          <div class="notification-item unread" data-id="1">
+            <div class="notification-dot"></div>
+            <div class="notification-text">
+              <strong>Rahul Sharma</strong> answered your question about integration
+              <span class="notification-time">2 mins ago</span>
+            </div>
+          </div>
+          <div class="notification-item unread" data-id="2">
+            <div class="notification-dot"></div>
+            <div class="notification-text">
+              <strong>Priya Patel</strong> upvoted your answer
+              <span class="notification-time">15 mins ago</span>
+            </div>
+          </div>
+          <div class="notification-item" data-id="3">
+            <div class="notification-text">
+              <strong>System</strong> Your question was marked as solved
+              <span class="notification-time">1 hour ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="profile-avatar" id="profileBtn">JS</div>
+      <!-- Profile Dropdown -->
+      <div class="dropdown profile-dropdown" id="profileDropdown">
+        <div class="profile-header">
+          <div class="profile-avatar large">JS</div>
+          <div class="profile-info">
+            <strong>Jahnvi Sanjay</strong>
+            <span>jahnvi@example.com</span>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <a href="#" class="dropdown-item">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          My Profile
+        </a>
+        <a href="#" class="dropdown-item">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          My Questions
+        </a>
+        <a href="#" class="dropdown-item">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+          Saved
+        </a>
+        <a href="#" class="dropdown-item">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          Settings
+        </a>
+        <div class="dropdown-divider"></div>
+        <a href="#" class="dropdown-item logout">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          Logout
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    <!-- Left Side - Main Content -->
+    <main class="main-content">
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="unanswered">Unanswered</button>
+        <button class="filter-btn" data-filter="trending">Trending</button>
+        <button class="filter-btn" data-filter="my-subjects">My Subjects</button>
+      </div>
+
+      <!-- Doubt Feed -->
+      <div class="doubt-feed" id="doubtFeed">
+        <!-- Doubts will be rendered by JavaScript -->
+      </div>
+    </main>
+
+    <!-- Right Sidebar -->
+    <aside class="sidebar">
+      <!-- Ask Doubt Card -->
+      <div class="sidebar-card ask-doubt-card">
+        <h4 class="sidebar-card-title">Have a doubt?</h4>
+        <textarea class="input-field" id="sidebarDoubtInput" rows="3" placeholder="Describe your doubt briefly..."></textarea>
+        <button class="btn-primary" id="askAiBtn">Ask AI First</button>
+        <button class="btn-secondary" id="postCommunityBtn">Post to Community</button>
+      </div>
+
+      <!-- User Stats Card -->
+      <div class="sidebar-card">
+        <h4 class="sidebar-card-title">Your Stats</h4>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-value blue" id="reputationStat">1,250</div>
+            <div class="stat-label">Reputation</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value green" id="answeredStat">47</div>
+            <div class="stat-label">Answered</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="questionsStat">12</div>
+            <div class="stat-label">Questions</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="streakStat">5</div>
+            <div class="stat-label">Day Streak</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trending Tags -->
+      <div class="sidebar-card">
+        <h4 class="sidebar-card-title">Trending Tags</h4>
+        <div class="trending-tags-list" id="trendingTags">
+          <span class="trending-tag" data-tag="Calculus">Calculus</span>
+          <span class="trending-tag" data-tag="Python">Python</span>
+          <span class="trending-tag" data-tag="Physics">Physics</span>
+          <span class="trending-tag" data-tag="Organic Chemistry">Organic Chemistry</span>
+          <span class="trending-tag" data-tag="DSA">DSA</span>
+          <span class="trending-tag" data-tag="Linear Algebra">Linear Algebra</span>
+          <span class="trending-tag" data-tag="Machine Learning">Machine Learning</span>
+          <span class="trending-tag" data-tag="Thermodynamics">Thermodynamics</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Floating Button -->
+  <button class="floating-btn" id="floatingAskBtn">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+    </svg>
+    Ask Doubt
+  </button>
+
+  <!-- Ask Doubt Modal -->
+  <div class="modal-overlay" id="askDoubtModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Ask a New Doubt</h3>
+        <button class="modal-close" id="closeModal">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="doubtTitle">Title</label>
+          <input type="text" id="doubtTitle" class="form-input" placeholder="What's your question about?">
+        </div>
+        <div class="form-group">
+          <label for="doubtDescription">Description</label>
+          <textarea id="doubtDescription" class="form-input" rows="4" placeholder="Provide more details about your doubt..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="doubtTags">Tags</label>
+          <input type="text" id="doubtTags" class="form-input" placeholder="Add tags separated by commas (e.g., Physics, Mechanics)">
+          <div class="selected-tags" id="selectedTags"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelDoubt">Cancel</button>
+        <button class="btn-primary" id="submitDoubt">Post Doubt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <div class="toast-content">
+      <svg class="toast-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <span id="toastMessage">Action completed successfully!</span>
+    </div>
+  </div>
+
+  <!-- View Doubt Modal -->
+  <div class="modal-overlay" id="viewDoubtModal">
+    <div class="modal view-doubt-modal">
+      <div class="modal-header">
+        <h3 id="viewDoubtTitle">Question Title</h3>
+        <button class="modal-close" id="closeViewModal">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="view-doubt-meta">
+          <span id="viewDoubtStatus" class="status-badge solved">Solved</span>
+          <span id="viewDoubtTime" class="meta-text">Posted 2 hours ago</span>
+        </div>
+        <p id="viewDoubtDescription" class="view-doubt-description">Full description will appear here...</p>
+        <div id="viewDoubtTags" class="doubt-tags"></div>
+        
+        <div class="answers-section">
+          <h4>Answers (<span id="answerCount">0</span>)</h4>
+          <div id="answersList" class="answers-list">
+            <!-- Answers will be rendered here -->
+          </div>
+        </div>
+        
+        <div class="add-answer-section">
+          <h4>Your Answer</h4>
+          <textarea id="answerInput" class="form-input" rows="3" placeholder="Write your answer here..."></textarea>
+          <button class="btn-primary" id="submitAnswer">Submit Answer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============= DATA =============
+    let doubts = [
+      {
+        id: 1,
+        title: "How do I solve this integration problem using substitution method?",
+        preview: "I've been trying to solve this integral but I'm stuck at the substitution step. The integral is: ∫(x²+1)/(x³+3x) dx. Can someone explain the approach?",
+        tags: ["Calculus", "Integration", "Mathematics"],
+        status: "solved",
+        answers: 5,
+        upvotes: 24,
+        time: "2 hours ago",
+        fullAnswers: [
+          { author: "Rahul S.", text: "You can use partial fractions here. First factor the denominator as x(x²+3), then decompose into A/x + (Bx+C)/(x²+3).", upvotes: 12, time: "1 hour ago" },
+          { author: "Priya P.", text: "Let me break it down step by step: 1) Factor denominator: x³+3x = x(x²+3) 2) Set up partial fractions 3) Solve for coefficients...", upvotes: 8, time: "45 mins ago" }
+        ]
+      },
+      {
+        id: 2,
+        title: "Can someone explain the difference between TCP and UDP protocols?",
+        preview: "I'm preparing for my networking exam and I'm confused about when to use TCP vs UDP. What are the key differences and use cases for each?",
+        tags: ["Computer Networks", "TCP/IP"],
+        status: "unanswered",
+        answers: 0,
+        upvotes: 8,
+        time: "15 minutes ago",
+        fullAnswers: []
+      },
+      {
+        id: 3,
+        title: "What is the correct way to balance this redox reaction?",
+        preview: "MnO4⁻ + Fe²⁺ → Mn²⁺ + Fe³⁺ in acidic medium. I tried the ion-electron method but my answer doesn't match the textbook. Where am I going wrong?",
+        tags: ["Chemistry", "Redox Reactions", "Electrochemistry"],
+        status: "solved",
+        answers: 3,
+        upvotes: 42,
+        time: "1 day ago",
+        fullAnswers: [
+          { author: "Amit K.", text: "The balanced equation is: MnO4⁻ + 5Fe²⁺ + 8H⁺ → Mn²⁺ + 5Fe³⁺ + 4H2O. Make sure you're balancing the oxygen with water molecules first.", upvotes: 20, time: "23 hours ago" }
+        ]
+      },
+      {
+        id: 4,
+        title: "Help needed with understanding recursion in Python",
+        preview: "I understand the basic concept of recursion but I'm struggling with writing recursive solutions for tree problems. Can someone provide a clear mental model?",
+        tags: ["Python", "DSA", "Recursion"],
+        status: "unanswered",
+        answers: 0,
+        upvotes: 15,
+        time: "30 minutes ago",
+        fullAnswers: []
+      },
+      {
+        id: 5,
+        title: "Newton's Laws application in pulley systems",
+        preview: "How do I apply Newton's second law to a system with two masses connected by a string over a frictionless pulley? I'm getting confused with the direction of tension.",
+        tags: ["Physics", "Mechanics"],
+        status: "solved",
+        answers: 7,
+        upvotes: 56,
+        time: "3 days ago",
+        fullAnswers: [
+          { author: "Dr. Sharma", text: "Remember: tension is the same throughout the string (assuming massless string). Draw FBDs for each mass separately, then apply F=ma.", upvotes: 25, time: "3 days ago" },
+          { author: "Neha R.", text: "Here's a trick: for two masses m1 and m2, acceleration a = (m1-m2)g/(m1+m2) and tension T = 2m1m2g/(m1+m2).", upvotes: 18, time: "2 days ago" }
+        ]
+      }
+    ];
+
+    let userStats = {
+      reputation: 1250,
+      answered: 47,
+      questions: 12,
+      streak: 5
+    };
+
+    let currentFilter = 'all';
+    let currentViewingDoubt = null;
+
+    // ============= DOM ELEMENTS =============
+    const doubtFeed = document.getElementById('doubtFeed');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const searchInput = document.getElementById('searchInput');
+    const notificationBtn = document.getElementById('notificationBtn');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+    const profileBtn = document.getElementById('profileBtn');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const floatingAskBtn = document.getElementById('floatingAskBtn');
+    const askDoubtModal = document.getElementById('askDoubtModal');
+    const closeModal = document.getElementById('closeModal');
+    const cancelDoubt = document.getElementById('cancelDoubt');
+    const submitDoubt = document.getElementById('submitDoubt');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const trendingTags = document.getElementById('trendingTags');
+    const askAiBtn = document.getElementById('askAiBtn');
+    const postCommunityBtn = document.getElementById('postCommunityBtn');
+    const sidebarDoubtInput = document.getElementById('sidebarDoubtInput');
+    const viewDoubtModal = document.getElementById('viewDoubtModal');
+    const closeViewModal = document.getElementById('closeViewModal');
+    const markAllRead = document.getElementById('markAllRead');
+
+    // ============= RENDER FUNCTIONS =============
+    function renderDoubts(filteredDoubts = doubts) {
+      doubtFeed.innerHTML = filteredDoubts.map(doubt => `
+        <article class="doubt-card" data-id="${doubt.id}">
+          <div class="doubt-header">
+            <h3 class="doubt-title" onclick="viewDoubt(${doubt.id})">${doubt.title}</h3>
+            <span class="status-badge ${doubt.status}">${doubt.status === 'solved' ? 'Solved' : 'Unanswered'}</span>
+          </div>
+          <p class="doubt-preview">${doubt.preview}</p>
+          <div class="doubt-tags">
+            ${doubt.tags.map(tag => `<span class="tag" onclick="filterByTag('${tag}')">${tag}</span>`).join('')}
+          </div>
+          <div class="doubt-footer">
+            <div class="doubt-meta">
+              <span class="meta-item">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                ${doubt.answers} answers
+              </span>
+              <span class="meta-item">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ${doubt.time}
+              </span>
+            </div>
+            <button class="upvote-btn ${doubt.userUpvoted ? 'active' : ''}" onclick="toggleUpvote(${doubt.id}, event)">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+              </svg>
+              ${doubt.upvotes}
+            </button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function updateStats() {
+      document.getElementById('reputationStat').textContent = userStats.reputation.toLocaleString();
+      document.getElementById('answeredStat').textContent = userStats.answered;
+      document.getElementById('questionsStat').textContent = userStats.questions;
+      document.getElementById('streakStat').textContent = userStats.streak;
+    }
+
+    // ============= FILTER FUNCTIONS =============
+    function applyFilter(filter) {
+      currentFilter = filter;
+      let filtered = doubts;
+      
+      if (filter === 'unanswered') {
+        filtered = doubts.filter(d => d.status === 'unanswered');
+      } else if (filter === 'trending') {
+        filtered = [...doubts].sort((a, b) => b.upvotes - a.upvotes);
+      } else if (filter === 'my-subjects') {
+        filtered = doubts.filter(d => d.tags.some(t => ['Calculus', 'Physics', 'Python'].includes(t)));
+      }
+      
+      renderDoubts(filtered);
+    }
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilter(btn.dataset.filter);
+      });
+    });
+
+    // ============= SEARCH =============
+    let searchTimeout;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        const query = e.target.value.toLowerCase();
+        if (query === '') {
+          applyFilter(currentFilter);
+        } else {
+          const filtered = doubts.filter(d => 
+            d.title.toLowerCase().includes(query) || 
+            d.preview.toLowerCase().includes(query) ||
+            d.tags.some(t => t.toLowerCase().includes(query))
+          );
+          renderDoubts(filtered);
+        }
+      }, 300);
+    });
+
+    // ============= DROPDOWNS =============
+    notificationBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      notificationDropdown.classList.toggle('show');
+      profileDropdown.classList.remove('show');
+    });
+
+    profileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      profileDropdown.classList.toggle('show');
+      notificationDropdown.classList.remove('show');
+    });
+
+    document.addEventListener('click', () => {
+      notificationDropdown.classList.remove('show');
+      profileDropdown.classList.remove('show');
+    });
+
+    markAllRead.addEventListener('click', () => {
+      document.querySelectorAll('.notification-item.unread').forEach(item => {
+        item.classList.remove('unread');
+      });
+      document.getElementById('notificationBadge').style.display = 'none';
+      showToast('All notifications marked as read');
+    });
+
+    // ============= MODAL =============
+    function openAskModal(prefillText = '') {
+      askDoubtModal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+      if (prefillText) {
+        document.getElementById('doubtDescription').value = prefillText;
+      }
+    }
+
+    function closeAskModal() {
+      askDoubtModal.classList.remove('show');
+      document.body.style.overflow = '';
+      document.getElementById('doubtTitle').value = '';
+      document.getElementById('doubtDescription').value = '';
+      document.getElementById('doubtTags').value = '';
+      document.getElementById('selectedTags').innerHTML = '';
+    }
+
+    floatingAskBtn.addEventListener('click', () => openAskModal());
+    closeModal.addEventListener('click', closeAskModal);
+    cancelDoubt.addEventListener('click', closeAskModal);
+
+    askDoubtModal.addEventListener('click', (e) => {
+      if (e.target === askDoubtModal) closeAskModal();
+    });
+
+    submitDoubt.addEventListener('click', () => {
+      const title = document.getElementById('doubtTitle').value.trim();
+      const description = document.getElementById('doubtDescription').value.trim();
+      const tagsInput = document.getElementById('doubtTags').value.trim();
+      
+      if (!title || !description) {
+        showToast('Please fill in all required fields', 'error');
+        return;
+      }
+      
+      const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : ['General'];
+      
+      const newDoubt = {
+        id: Date.now(),
+        title,
+        preview: description.substring(0, 200) + (description.length > 200 ? '...' : ''),
+        tags,
+        status: 'unanswered',
+        answers: 0,
+        upvotes: 0,
+        time: 'Just now',
+        fullAnswers: []
+      };
+      
+      doubts.unshift(newDoubt);
+      userStats.questions++;
+      updateStats();
+      renderDoubts();
+      closeAskModal();
+      showToast('Your doubt has been posted!', 'success');
+    });
+
+    // ============= SIDEBAR ACTIONS =============
+    askAiBtn.addEventListener('click', () => {
+      const text = sidebarDoubtInput.value.trim();
+      if (!text) {
+        showToast('Please describe your doubt first', 'error');
+        return;
+      }
+      showToast('AI is analyzing your question...', 'info');
+      setTimeout(() => {
+        showToast('AI Response: Try breaking down the problem into smaller parts.', 'success');
+      }, 1500);
+    });
+
+    postCommunityBtn.addEventListener('click', () => {
+      const text = sidebarDoubtInput.value.trim();
+      if (!text) {
+        showToast('Please describe your doubt first', 'error');
+        return;
+      }
+      openAskModal(text);
+      sidebarDoubtInput.value = '';
+    });
+
+    // ============= UPVOTE =============
+    function toggleUpvote(id, event) {
+      event.stopPropagation();
+      const doubt = doubts.find(d => d.id === id);
+      if (doubt) {
+        if (doubt.userUpvoted) {
+          doubt.upvotes--;
+          doubt.userUpvoted = false;
+        } else {
+          doubt.upvotes++;
+          doubt.userUpvoted = true;
+          userStats.reputation += 5;
+        }
+        updateStats();
+        renderDoubts();
+      }
+    }
+
+    // ============= TAG FILTERING =============
+    function filterByTag(tag) {
+      searchInput.value = tag;
+      const filtered = doubts.filter(d => d.tags.includes(tag));
+      renderDoubts(filtered);
+      showToast(`Showing results for: ${tag}`);
+    }
+
+    trendingTags.addEventListener('click', (e) => {
+      if (e.target.classList.contains('trending-tag')) {
+        document.querySelectorAll('.trending-tag').forEach(t => t.classList.remove('active'));
+        e.target.classList.add('active');
+        filterByTag(e.target.dataset.tag);
+      }
+    });
+
+    // ============= VIEW DOUBT =============
+    function viewDoubt(id) {
+      const doubt = doubts.find(d => d.id === id);
+      if (!doubt) return;
+      
+      currentViewingDoubt = doubt;
+      
+      document.getElementById('viewDoubtTitle').textContent = doubt.title;
+      document.getElementById('viewDoubtStatus').className = `status-badge ${doubt.status}`;
+      document.getElementById('viewDoubtStatus').textContent = doubt.status === 'solved' ? 'Solved' : 'Unanswered';
+      document.getElementById('viewDoubtTime').textContent = `Posted ${doubt.time}`;
+      document.getElementById('viewDoubtDescription').textContent = doubt.preview;
+      document.getElementById('viewDoubtTags').innerHTML = doubt.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+      document.getElementById('answerCount').textContent = doubt.fullAnswers.length;
+      
+      document.getElementById('answersList').innerHTML = doubt.fullAnswers.length ? 
+        doubt.fullAnswers.map(ans => `
+          <div class="answer-item">
+            <div class="answer-header">
+              <strong>${ans.author}</strong>
+              <span>${ans.time}</span>
+            </div>
+            <p>${ans.text}</p>
+            <div class="answer-footer">
+              <button class="upvote-btn small">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                </svg>
+                ${ans.upvotes}
+              </button>
+            </div>
+          </div>
+        `).join('') : '<p class="no-answers">No answers yet. Be the first to help!</p>';
+      
+      viewDoubtModal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    closeViewModal.addEventListener('click', () => {
+      viewDoubtModal.classList.remove('show');
+      document.body.style.overflow = '';
+      currentViewingDoubt = null;
+    });
+
+    viewDoubtModal.addEventListener('click', (e) => {
+      if (e.target === viewDoubtModal) {
+        viewDoubtModal.classList.remove('show');
+        document.body.style.overflow = '';
+        currentViewingDoubt = null;
+      }
+    });
+
+    document.getElementById('submitAnswer').addEventListener('click', () => {
+      const answerText = document.getElementById('answerInput').value.trim();
+      if (!answerText) {
+        showToast('Please write an answer first', 'error');
+        return;
+      }
+      
+      if (currentViewingDoubt) {
+        currentViewingDoubt.fullAnswers.push({
+          author: 'You',
+          text: answerText,
+          upvotes: 0,
+          time: 'Just now'
+        });
+        currentViewingDoubt.answers = currentViewingDoubt.fullAnswers.length;
+        if (currentViewingDoubt.status === 'unanswered') {
+          currentViewingDoubt.status = 'solved';
+        }
+        
+        userStats.answered++;
+        userStats.reputation += 10;
+        updateStats();
+        
+        viewDoubt(currentViewingDoubt.id);
+        document.getElementById('answerInput').value = '';
+        renderDoubts();
+        showToast('Your answer has been posted!', 'success');
+      }
+    });
+
+    // ============= TOAST =============
+    function showToast(message, type = 'success') {
+      toastMessage.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // ============= KEYBOARD SHORTCUTS =============
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAskModal();
+        viewDoubtModal.classList.remove('show');
+        document.body.style.overflow = '';
+      }
+      if (e.key === '/' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchInput.focus();
+      }
+      if (e.key === 'n' && e.ctrlKey) {
+        e.preventDefault();
+        openAskModal();
+      }
+    });
+
+    // ============= INIT =============
+    renderDoubts();
+    updateStats();
+  </script>
+</body>
+</html>
