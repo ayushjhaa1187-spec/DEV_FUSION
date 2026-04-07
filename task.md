@@ -1,0 +1,26 @@
+- `[/]` Phase 1: Database & RLS Refactoring
+  - `[ ]` Define Enums (`user_role`, `doubt_status`, etc.)
+  - `[ ]` Create granular tables (`reputation_events`, `practice_tests`, etc.)
+  - `[ ]` Finalize RLS policies for all roles
+  - `[ ]` Seed `subjects` and test data
+- `[ ]` Phase 2: Community Engine (CRUD & Core)
+  - `[ ]` Implement `src/lib/supabase/server.ts`
+  - `[ ]` Build Doubts CRUD (with snapshotting)
+  - `[ ]` Build Answers CRUD & Voting
+  - `[ ]` Implement Accepted Answer flow
+- `[ ]` Phase 3: AI Backend (Gemini Wrapper)
+  - `[ ]` Refine `src/lib/ai-service.ts` for MCQ generation
+  - `[ ]` Implement JSON validation for AI output
+  - `[ ]` Add AI-First flow routes
+- `[ ]` Phase 4: Reputation & Notifications
+  - `[ ]` Implement append-only Reputation Ledger
+  - `[ ]` Add Badge automation logic
+  - `[ ]` Setup Notification handlers (Realtime)
+- `[ ]` Phase 5: Mentor & Booking Flow
+  - `[ ]` Mentor application & review workflow
+  - `[ ]` Slot management & Booking logic
+  - `[ ]` Payment sandbox order creation
+- `[ ]` Phase 6: Practice Tests & Hardening
+  - `[ ]` Test attempt lifecycle & scoring
+  - `[ ]` Audit logs & Moderation endpoints
+  - `[ ]` Final build verification
