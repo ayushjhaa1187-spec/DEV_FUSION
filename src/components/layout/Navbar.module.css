@@ -1,0 +1,85 @@
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.logoText {
+  color: var(--text-primary);
+}
+
+.logoHighlight {
+  color: var(--primary-violet);
+}
+
+.links {
+  display: flex;
+  gap: 2rem;
+}
+
+.link {
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.link:hover {
+  color: var(--primary-violet);
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.loginBtn {
+  color: var(--text-primary);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+}
+
+.signupBtn {
+  background: var(--primary-violet);
+  color: white;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-xl);
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+}
+
+.signupBtn:hover {
+  background: var(--primary-violet-glow);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .links {
+    display: none;
+  }
+}
