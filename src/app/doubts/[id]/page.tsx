@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
+import { doubtApi, answerApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import styles from './doubt-detail.module.css';
 
@@ -11,6 +12,7 @@ export default function DoubtDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { user } = useAuth();
+  const { id } = use(params);
   const [doubt, setDoubt] = useState<any>(null);
   const [answers, setAnswers] = useState<any[]>([]);
   const [newAnswer, setNewAnswer] = useState('');
@@ -19,13 +21,12 @@ export default function DoubtDetailPage({
 
   useEffect(() => {
     async function fetchData() {
-      const { id } = await params;
       try {
-        const doubtRes = await fetch(`/api/doubts/${id}`);
-        const answersRes = await fetch(`/api/doubts/${id}/answers`);
+        const doubtData = await doubtApi.getDoubt(id);
+        const answersData = await answerApi.getAnswers(id);
         
-        if (doubtRes.ok) setDoubt(await doubtRes.json());
-        if (answersRes.ok) setAnswers(await answersRes.json());
+        setDoubt(doubtData);
+        setAnswers(answersData);
       } catch (err) {
         console.error('Failed to load doubt details');
       } finally {
@@ -33,25 +34,20 @@ export default function DoubtDetailPage({
       }
     }
     fetchData();
-  }, [params]);
+  }, [id]);
 
   const handlePostAnswer = async () => {
     if (!newAnswer.trim()) return;
     setPosting(true);
-    const { id } = await params;
 
     try {
-      const res = await fetch(`/api/doubts/${id}/answers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newAnswer }),
+      const answer = await answerApi.postAnswer({ 
+        doubtId: id, 
+        contentJson: newAnswer // In MERN we use contentJson
       });
 
-      if (res.ok) {
-        const answer = await res.json();
-        setAnswers([...answers, answer]);
-        setNewAnswer('');
-      }
+      setAnswers([...answers, answer]);
+      setNewAnswer('');
     } catch (err) {
       alert('Failed to post answer');
     } finally {
@@ -61,15 +57,11 @@ export default function DoubtDetailPage({
 
   const handleAcceptAnswer = async (answerId: string) => {
     try {
-      const res = await fetch(`/api/answers/${answerId}/accept`, {
-        method: 'POST',
-      });
-
-      if (res.ok) {
-        setAnswers(answers.map(a => 
-          a.id === answerId ? { ...a, is_accepted: true } : { ...a, is_accepted: false }
-        ));
-      }
+      await answerApi.acceptAnswer(answerId);
+      
+      setAnswers(answers.map(a => 
+        a._id === answerId ? { ...a, isAccepted: true } : { ...a, isAccepted: false }
+      ));
     } catch (err) {
       alert('Failed to accept solution');
     }
@@ -83,31 +75,27 @@ export default function DoubtDetailPage({
       <article className={`${styles.mainDoubt} glass`}>
         <header className={styles.header}>
           <div className={styles.tags}>
-            {doubt.subjects?.name && <span className={styles.tag}>{doubt.subjects.name}</span>}
+            {doubt.subject && <span className={styles.tag}>{doubt.subject}</span>}
           </div>
           <h1 className={styles.title}>{doubt.title}</h1>
           <div className={styles.meta}>
             <div className={styles.userInfo}>
-              {doubt.profiles?.avatar_url ? (
-                <img src={doubt.profiles.avatar_url} alt={doubt.profiles.username} className={styles.avatar} />
-              ) : (
-                <div className={styles.avatarPlaceholder} />
-              )}
+              <div className={styles.avatarPlaceholder} />
               <div className={styles.userDetails}>
-                <span className={styles.userName}>{doubt.profiles?.username || 'Learner'}</span>
-                <ReputationBadge points={doubt.profiles?.reputation_points || 0} />
+                <span className={styles.userName}>{doubt.authorId?.name || 'Learner'}</span>
+                <ReputationBadge points={doubt.authorId?.reputation || 0} />
               </div>
             </div>
-            <span className={styles.date}>Asked {new Date(doubt.created_at).toLocaleDateString()}</span>
+            <span className={styles.date}>Asked {new Date(doubt.createdAt).toLocaleDateString()}</span>
           </div>
         </header>
         <div className={styles.content}>
-          <p>{doubt.content}</p>
+          <p>{typeof doubt.contentJson === 'string' ? doubt.contentJson : 'View details...'}</p>
         </div>
         <footer className={styles.footer}>
           <div className={styles.actions}>
             <button className={styles.voteBtn}>▲</button>
-            <span className={styles.voteCount}>{doubt.votes}</span>
+            <span className={styles.voteCount}>{doubt.voteScore || 0}</span>
             <button className={styles.voteBtn}>▼</button>
           </div>
           <button className={styles.shareBtn}>Share</button>
@@ -118,31 +106,31 @@ export default function DoubtDetailPage({
         <h2 className={styles.sectionTitle}>{answers.length} Answers</h2>
         <div className={styles.answerList}>
           {answers.map(answer => (
-            <div key={answer.id} className={`${styles.answerCard} glass ${answer.is_accepted ? styles.accepted : ''}`}>
-              {answer.is_accepted && <div className={styles.acceptedBadge}>✓ Accepted Solution</div>}
+            <div key={answer._id} className={`${styles.answerCard} glass ${answer.isAccepted ? styles.accepted : ''}`}>
+              {answer.isAccepted && <div className={styles.acceptedBadge}>✓ Accepted Solution</div>}
               <div className={styles.answerHeader}>
                 <div className={styles.userInfo}>
                   <div className={styles.avatarPlaceholder} />
                   <div className={styles.userDetails}>
-                    <span className={styles.userName}>{answer.profiles?.username || 'Solver'}</span>
-                    <ReputationBadge points={answer.profiles?.reputation_points || 0} />
+                    <span className={styles.userName}>{answer.authorId?.name || 'Solver'}</span>
+                    <ReputationBadge points={answer.authorId?.reputation || 0} />
                   </div>
                 </div>
-                <span className={styles.date}>{new Date(answer.created_at).toLocaleDateString()}</span>
+                <span className={styles.date}>{new Date(answer.createdAt).toLocaleDateString()}</span>
               </div>
               <div className={styles.answerContent}>
-                <p>{answer.content}</p>
+                <p>{typeof answer.contentJson === 'string' ? answer.contentJson : 'View full solution...'}</p>
               </div>
               <div className={styles.answerFooter}>
                 <div className={styles.actions}>
                   <button className={styles.voteBtn}>▲</button>
-                  <span className={styles.voteCount}>{answer.votes}</span>
+                  <span className={styles.voteCount}>{answer.voteScore || 0}</span>
                   <button className={styles.voteBtn}>▼</button>
                 </div>
                 
-                {user?.id === doubt.author_id && !answer.is_accepted && (
+                {user?.id === (doubt.authorId?._id || doubt.authorId) && !answer.isAccepted && (
                   <button 
-                    onClick={() => handleAcceptAnswer(answer.id)}
+                    onClick={() => handleAcceptAnswer(answer._id)}
                     className={styles.acceptBtn}
                   >
                     Accept as Solution

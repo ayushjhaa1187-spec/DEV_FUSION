@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
+import { testApi } from '@/lib/api';
 import styles from './tests.module.css';
 
 export default function PracticeTestsPage() {
@@ -12,6 +13,7 @@ export default function PracticeTestsPage() {
   const [test, setTest] = useState<any>(null);
   const [answers, setAnswers] = useState<number[]>([]);
   const [result, setResult] = useState<any>(null);
+  const [startedAt, setStartedAt] = useState<Date | null>(null);
 
   const handleGenerateTest = async () => {
     if (!subject || !topic) return;
@@ -20,17 +22,10 @@ export default function PracticeTestsPage() {
     setResult(null);
 
     try {
-      const res = await fetch('/api/tests/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, topic, questionCount: 5 }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setTest(data);
-        setAnswers(new Array(data.questions.length).fill(-1));
-      }
+      const data = await testApi.generate({ subject, topic, difficulty: 'Medium', count: 5 });
+      setTest(data);
+      setAnswers(new Array(data.questions.length).fill(-1));
+      setStartedAt(new Date());
     } catch (err) {
       alert('Failed to generate test');
     } finally {
@@ -45,16 +40,13 @@ export default function PracticeTestsPage() {
     }
 
     try {
-      const res = await fetch(`/api/tests/${test.testId}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers }),
+      const data = await testApi.submit({ 
+        testId: test._id, 
+        answers,
+        startedAt: startedAt?.toISOString(),
+        submittedAt: new Date().toISOString()
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setResult(data);
-      }
+      setResult(data);
     } catch (err) {
       alert('Failed to submit test');
     }
@@ -113,12 +105,12 @@ export default function PracticeTestsPage() {
         <section className={styles.testArea}>
           <div className={styles.testHeader}>
             <h2>{test.topic} - {test.subject}</h2>
-            <span className={styles.badge}>5 Questions</span>
+            <span className={styles.badge}>{test.questions.length} Questions</span>
           </div>
           <div className={styles.questionList}>
             {test.questions.map((q: any, qIdx: number) => (
-              <div key={q.id} className={`${styles.questionCard} glass`}>
-                <p className={styles.questionText}>{qIdx + 1}. {q.question_text}</p>
+              <div key={q._id || qIdx} className={`${styles.questionCard} glass`}>
+                <p className={styles.questionText}>{qIdx + 1}. {q.text}</p>
                 <div className={styles.options}>
                   {q.options.map((opt: string, optIdx: number) => (
                     <label key={optIdx} className={`${styles.option} ${answers[qIdx] === optIdx ? styles.selected : ''}`}>
@@ -147,12 +139,12 @@ export default function PracticeTestsPage() {
         <section className={`${styles.resultCard} glass`}>
           <div className={styles.resultHeader}>
             <div className={styles.scoreCircle}>
-              <span className={styles.scoreNumber}>{result.score}%</span>
+              <span className={styles.scoreNumber}>{Math.round((result.score / result.totalQuestions) * 100)}%</span>
               <span className={styles.scoreLabel}>Score</span>
             </div>
             <div className={styles.resultText}>
               <h2>Great Job!</h2>
-              <p>You earned <strong>+{result.pointsEarned} reputation</strong> for completing this test.</p>
+              <p>You scored {result.score}/{result.totalQuestions} and earned reputation points for completing this test.</p>
             </div>
           </div>
           <button className={styles.resetBtn} onClick={() => { setTest(null); setResult(null); }}>

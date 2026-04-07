@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { doubtApi, aiApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import styles from './doubts.module.css';
 
@@ -12,10 +13,8 @@ export default function DoubtsPage() {
   useEffect(() => {
     async function fetchDoubts() {
       try {
-        const response = await fetch('/api/doubts');
-        if (!response.ok) throw new Error('Failed to load doubts');
-        const data = await response.json();
-        setDoubts(data);
+        const { doubts } = await doubtApi.getDoubts();
+        setDoubts(doubts);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -30,18 +29,12 @@ export default function DoubtsPage() {
   const [aiQuestion, setAiQuestion] = useState('');
 
   const handleAiSolve = async () => {
-
     if (!aiQuestion.trim()) return;
     setIsAiSolving(true);
     setAiResponse(null);
     try {
-      const res = await fetch('/api/ai/doubt-solver', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: aiQuestion, content: 'Conceptual help' }),
-      });
-      const data = await res.json();
-      setAiResponse(data.solution);
+      const { answer } = await aiApi.solveDoubt(aiQuestion);
+      setAiResponse(answer);
     } catch (err) {
       setAiResponse('AI service temporary unavailable. Try again later.');
     } finally {
@@ -104,36 +97,36 @@ export default function DoubtsPage() {
       ) : (
         <div className={styles.doubtList}>
           {doubts.map((doubt) => (
-            <div key={doubt.id} className={`${styles.doubtCard} glass`}>
+            <div key={doubt._id} className={`${styles.doubtCard} glass`}>
               <div className={styles.voteSidebar}>
                 <button className={styles.voteBtn}>▲</button>
-                <span className={styles.voteCount}>{doubt.votes}</span>
+                <span className={styles.voteCount}>{doubt.voteScore || 0}</span>
                 <button className={styles.voteBtn}>▼</button>
               </div>
               <div className={styles.cardMain}>
                 <div className={styles.cardHeader}>
                   <div className={styles.tags}>
-                    {doubt.subjects?.name && <span className={styles.tag}>{doubt.subjects.name}</span>}
+                    {doubt.subject && <span className={styles.tag}>{doubt.subject}</span>}
                   </div>
                   {doubt.status === 'resolved' && <span className={styles.resolvedBadge}>✓ Resolved</span>}
                 </div>
                 <h3 className={styles.doubtTitle}>{doubt.title}</h3>
-                <p className={styles.doubtSnippet}>{doubt.content}</p>
+                <p className={styles.doubtSnippet}>
+                  {typeof doubt.contentJson === 'string' 
+                    ? doubt.contentJson.substring(0, 200) 
+                    : 'View full doubt for details...'}
+                </p>
                 <div className={styles.cardFooter}>
                   <div className={styles.userInfo}>
-                    {doubt.profiles?.avatar_url ? (
-                      <img src={doubt.profiles.avatar_url} alt={doubt.profiles.username} className={styles.avatar} />
-                    ) : (
-                      <div className={styles.avatarPlaceholder} />
-                    )}
+                    <div className={styles.avatarPlaceholder} />
                     <div className={styles.userDetails}>
-                      <span className={styles.userName}>{doubt.profiles?.username || 'Learner'}</span>
-                      <ReputationBadge points={doubt.profiles?.reputation_points || 0} />
+                      <span className={styles.userName}>{doubt.authorId?.name || 'Learner'}</span>
+                      <ReputationBadge points={doubt.authorId?.reputation || 0} />
                     </div>
                   </div>
 
                   <div className={styles.meta}>
-                    <span>Community Activity</span>
+                    <span>{doubt.answerCount} answers</span>
                   </div>
                 </div>
               </div>

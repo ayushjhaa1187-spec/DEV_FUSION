@@ -1,55 +1,51 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { createSupabaseClient } from '@/lib/supabase/client';
-import type { User, Session } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  reputation: number;
+}
 
 const AuthContext = createContext<{
   user: User | null;
-  session: Session | null;
   loading: boolean;
-  signOut: () => Promise<void>;
+  signOut: () => void;
 }>({
   user: null,
-  session: null,
   loading: true,
-  signOut: async () => {},
+  signOut: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createSupabaseClient();
+  const router = useRouter();
 
   useEffect(() => {
-    const setData = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
-      setSession(session);
-      setUser(session?.user || null);
-      setLoading(false);
-    };
+    const storedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
+    if (storedUser && token) {
+      setUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
+  }, []);
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user || null);
-      setLoading(false);
-    });
-
-    setData();
-
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
-  }, [supabase]);
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
+  const signOut = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    setUser(null);
+    router.push('/auth');
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

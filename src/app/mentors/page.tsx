@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { mentorApi } from '@/lib/api';
 import styles from './mentors.module.css';
 
 export default function MentorsPage() {
@@ -11,9 +12,7 @@ export default function MentorsPage() {
   useEffect(() => {
     async function fetchMentors() {
       try {
-        const response = await fetch('/api/mentors');
-        if (!response.ok) throw new Error('Failed to load mentors');
-        const data = await response.json();
+        const data = await mentorApi.getMentors();
         setMentors(data);
       } catch (err: any) {
         setError(err.message);
@@ -59,31 +58,27 @@ export default function MentorsPage() {
       ) : (
         <div className={styles.mentorGrid}>
           {mentors.map((mentor) => (
-            <div key={mentor.id} className={`${styles.mentorCard} glass`}>
+            <div key={mentor._id} className={`${styles.mentorCard} glass`}>
               <div className={styles.cardHeader}>
                 <div className={styles.avatarContainer}>
-                  {mentor.profiles?.avatar_url ? (
-                    <img src={mentor.profiles.avatar_url} alt={mentor.profiles.username} className={styles.avatar} />
-                  ) : (
-                    <div className={styles.avatarPlaceholder} />
-                  )}
-                  <div className={styles.ratingBadge}>★ {mentor.rating || '5.0'}</div>
+                  <div className={styles.avatarPlaceholder} />
+                  <div className={styles.ratingBadge}>★ {mentor.avgRating || '5.0'}</div>
                 </div>
                 <div className={styles.headerInfo}>
-                  <h3 className={styles.name}>{mentor.profiles?.full_name || mentor.profiles?.username || 'Mentor'}</h3>
-                  <p className={styles.specialty}>{mentor.specialty}</p>
+                  <h3 className={styles.name}>{mentor.userId?.name || 'Mentor'}</h3>
+                  <p className={styles.specialty}>{mentor.subjects?.join(', ') || 'General Academic'}</p>
                 </div>
               </div>
               <div className={styles.cardBody}>
                 <div className={styles.stats}>
                   <div className={styles.statLine}>
                     <span className={styles.statLabel}>Completed Sessions:</span>
-                    <span className={styles.statValue}>{mentor.sessions_completed}+</span>
+                    <span className={styles.statValue}>{mentor.totalSessions}+</span>
                   </div>
                   <div className={styles.statLine}>
                     <span className={styles.statLabel}>Rate:</span>
-                    <span className={mentor.price_per_session === 0 ? styles.freeValue : styles.priceValue}>
-                      {mentor.price_per_session === 0 ? 'Free' : `₹${mentor.price_per_session}/30min`}
+                    <span className={mentor.fee === 0 ? styles.freeValue : styles.priceValue}>
+                      {mentor.fee === 0 ? 'Free' : `₹${mentor.fee}/30min`}
                     </span>
                   </div>
                 </div>
