@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SolveIt - My Profile</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+  <!-- Top Navbar -->
+  <nav class="navbar">
+    <a href="dashboard.html" class="logo">
+      <img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Cheerful%20SolveIt%20logo%20illustration-CDImhkFzYBe7VNCG6DvbOEfR9oHPBk.png" alt="SolveIt Logo" class="logo-img">
+    </a>
+    
+    <div class="search-container">
+      <div class="search-wrapper">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search doubts, topics, or users...">
+      </div>
+    </div>
+    
+    <div class="nav-right">
+      <button class="nav-icon-btn" id="notificationBtn">
+        <span class="notification-badge" id="notificationBadge"></span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+      </button>
+      <!-- Notification Dropdown -->
+      <div class="dropdown" id="notificationDropdown">
+        <div class="dropdown-header">
+          <span>Notifications</span>
+          <button class="mark-all-read" id="markAllRead">Mark all read</button>
+        </div>
+        <div class="dropdown-content" id="notificationList">
+          <div class="notification-item unread" data-id="1">
+            <div class="notification-dot"></div>
+            <div class="notification-text">
+              <strong>Rahul Sharma</strong> answered your question about integration
+              <span class="notification-time">2 mins ago</span>
+            </div>
+          </div>
+          <div class="notification-item unread" data-id="2">
+            <div class="notification-dot"></div>
+            <div class="notification-text">
+              <strong>Priya Patel</strong> upvoted your answer
+              <span class="notification-time">15 mins ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="profile-avatar" id="profileBtn">JS</div>
+      <!-- Profile Dropdown -->
+      <div class="dropdown profile-dropdown" id="profileDropdown">
+        <div class="profile-header">
+          <div class="profile-avatar large">JS</div>
+          <div class="profile-info">
+            <strong>Jaya Sharma</strong>
+            <span>jaya@example.com</span>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <a href="profile.html" class="dropdown-item active">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          My Profile
+        </a>
+        <a href="#" class="dropdown-item">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          My Questions
+        </a>
+        <a href="#" class="dropdown-item">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+          Saved
+        </a>
+        <a href="#" class="dropdown-item">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          Settings
+        </a>
+        <div class="dropdown-divider"></div>
+        <a href="#" class="dropdown-item logout">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          Logout
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="profile-container">
+    <!-- Profile Header Section -->
+    <section class="profile-header-section">
+      <div class="profile-header-card">
+        <div class="profile-header-content">
+          <div class="profile-avatar-large" id="userAvatar">JS</div>
+          <div class="profile-header-info">
+            <h1 class="profile-name" id="userName">Jaya Sharma</h1>
+            <p class="profile-bio" id="userBio">Computer Science student passionate about algorithms and helping others learn. Currently exploring ML and web development.</p>
+            <div class="profile-reputation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+              <span id="reputationPoints">1,250</span> Reputation
+            </div>
+          </div>
+          <button class="btn-edit-profile" id="editProfileBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Edit Profile
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats Row -->
+    <section class="profile-stats-section">
+      <div class="stats-row">
+        <div class="stat-card" data-stat="questions">
+          <div class="stat-card-value" id="statQuestions">12</div>
+          <div class="stat-card-label">Doubts Asked</div>
+        </div>
+        <div class="stat-card" data-stat="answers">
+          <div class="stat-card-value" id="statAnswers">47</div>
+          <div class="stat-card-label">Answers Given</div>
+        </div>
+        <div class="stat-card" data-stat="accepted">
+          <div class="stat-card-value green" id="statAccepted">23</div>
+          <div class="stat-card-label">Accepted Answers</div>
+        </div>
+        <div class="stat-card" data-stat="streak">
+          <div class="stat-card-value blue" id="statStreak">5</div>
+          <div class="stat-card-label">Day Streak</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Badges Section -->
+    <section class="profile-badges-section">
+      <div class="section-card">
+        <h2 class="section-title">Badges</h2>
+        <div class="badges-grid" id="badgesGrid">
+          <!-- Badges will be rendered by JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Activity Section -->
+    <section class="profile-activity-section">
+      <div class="section-card">
+        <div class="activity-tabs">
+          <button class="activity-tab active" data-tab="questions">Questions</button>
+          <button class="activity-tab" data-tab="answers">Answers</button>
+        </div>
+        <div class="activity-content" id="activityContent">
+          <!-- Activity items will be rendered by JavaScript -->
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div class="modal-overlay" id="editProfileModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Edit Profile</h3>
+        <button class="modal-close" id="closeEditModal">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="editName">Name</label>
+          <input type="text" id="editName" class="form-input" value="Jaya Sharma">
+        </div>
+        <div class="form-group">
+          <label for="editBio">Bio</label>
+          <textarea id="editBio" class="form-input" rows="3">Computer Science student passionate about algorithms and helping others learn. Currently exploring ML and web development.</textarea>
+        </div>
+        <div class="form-group">
+          <label for="editEmail">Email</label>
+          <input type="email" id="editEmail" class="form-input" value="jaya@example.com">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelEdit">Cancel</button>
+        <button class="btn-primary" id="saveProfile">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Activity Modal -->
+  <div class="modal-overlay" id="viewActivityModal">
+    <div class="modal view-doubt-modal">
+      <div class="modal-header">
+        <h3 id="viewActivityTitle">Question Title</h3>
+        <button class="modal-close" id="closeActivityModal">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="view-doubt-meta">
+          <span id="viewActivityStatus" class="status-badge solved">Solved</span>
+          <span id="viewActivityTime" class="meta-text">Posted 2 hours ago</span>
+        </div>
+        <p id="viewActivityDescription" class="view-doubt-description">Full description will appear here...</p>
+        <div id="viewActivityTags" class="doubt-tags"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <div class="toast-content">
+      <svg class="toast-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <span id="toastMessage">Action completed successfully!</span>
+    </div>
+  </div>
+
+  <script>
+    // ============= DATA =============
+    let userData = {
+      name: "Jaya Sharma",
+      initials: "JS",
+      bio: "Computer Science student passionate about algorithms and helping others learn. Currently exploring ML and web development.",
+      email: "jaya@example.com",
+      reputation: 1250,
+      questions: 12,
+      answers: 47,
+      acceptedAnswers: 23,
+      streak: 5
+    };
+
+    let badges = [
+      { id: 1, name: "First Answer", icon: "answer", description: "Posted your first answer", earned: true, date: "Jan 15, 2024" },
+      { id: 2, name: "Helpful Mentor", icon: "mentor", description: "10 answers accepted", earned: true, date: "Feb 20, 2024" },
+      { id: 3, name: "Top Contributor", icon: "star", description: "Reached 1000 reputation", earned: true, date: "Mar 5, 2024" },
+      { id: 4, name: "Quick Responder", icon: "clock", description: "Answer within 5 minutes", earned: true, date: "Mar 10, 2024" },
+      { id: 5, name: "Problem Solver", icon: "check", description: "50 answers accepted", earned: false, progress: "23/50" },
+      { id: 6, name: "Expert", icon: "trophy", description: "Reached 5000 reputation", earned: false, progress: "1250/5000" }
+    ];
+
+    let userQuestions = [
+      { id: 1, title: "How do I solve this integration problem using substitution?", tags: ["Calculus", "Mathematics"], status: "solved", time: "2 hours ago", answers: 5, upvotes: 24 },
+      { id: 2, title: "Difference between TCP and UDP protocols?", tags: ["Computer Networks", "TCP/IP"], status: "solved", time: "1 day ago", answers: 3, upvotes: 15 },
+      { id: 3, title: "Best approach for dynamic programming problems?", tags: ["DSA", "Algorithms"], status: "unanswered", time: "3 days ago", answers: 0, upvotes: 8 }
+    ];
+
+    let userAnswers = [
+      { id: 1, questionTitle: "How to balance redox reactions in acidic medium?", answer: "The key is to use the ion-electron method. First, separate into half-reactions...", tags: ["Chemistry", "Redox"], status: "accepted", time: "1 day ago", upvotes: 20 },
+      { id: 2, questionTitle: "Newton's Laws application in pulley systems", answer: "Remember: tension is the same throughout the string. Draw FBDs for each mass...", tags: ["Physics", "Mechanics"], status: "accepted", time: "2 days ago", upvotes: 25 },
+      { id: 3, questionTitle: "Understanding recursion in Python", answer: "Think of recursion as breaking a problem into smaller identical problems...", tags: ["Python", "DSA"], status: "pending", time: "3 days ago", upvotes: 12 },
+      { id: 4, questionTitle: "What is the difference between let and var in JavaScript?", answer: "let has block scope while var has function scope. Also, let doesn't allow...", tags: ["JavaScript", "Web Dev"], status: "accepted", time: "5 days ago", upvotes: 18 }
+    ];
+
+    let currentTab = 'questions';
+
+    // ============= DOM ELEMENTS =============
+    const notificationBtn = document.getElementById('notificationBtn');
+    const notificationDropdown = document.getElementById('notificationDropdown');
+    const profileBtn = document.getElementById('profileBtn');
+    const profileDropdown = document.getElementById('profileDropdown');
+    const editProfileBtn = document.getElementById('editProfileBtn');
+    const editProfileModal = document.getElementById('editProfileModal');
+    const closeEditModal = document.getElementById('closeEditModal');
+    const cancelEdit = document.getElementById('cancelEdit');
+    const saveProfile = document.getElementById('saveProfile');
+    const viewActivityModal = document.getElementById('viewActivityModal');
+    const closeActivityModal = document.getElementById('closeActivityModal');
+    const activityTabs = document.querySelectorAll('.activity-tab');
+    const activityContent = document.getElementById('activityContent');
+    const badgesGrid = document.getElementById('badgesGrid');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const markAllRead = document.getElementById('markAllRead');
+
+    // ============= RENDER FUNCTIONS =============
+    function renderBadges() {
+      badgesGrid.innerHTML = badges.map(badge => `
+        <div class="badge-card ${badge.earned ? 'earned' : 'locked'}" onclick="showBadgeDetails(${badge.id})">
+          <div class="badge-icon ${badge.icon}">
+            ${getBadgeIcon(badge.icon)}
+          </div>
+          <div class="badge-info">
+            <h4 class="badge-name">${badge.name}</h4>
+            <p class="badge-description">${badge.description}</p>
+            ${badge.earned 
+              ? `<span class="badge-date">Earned ${badge.date}</span>` 
+              : `<span class="badge-progress">${badge.progress}</span>`
+            }
+          </div>
+          ${!badge.earned ? '<div class="badge-lock"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>' : ''}
+        </div>
+      `).join('');
+    }
+
+    function getBadgeIcon(type) {
+      const icons = {
+        answer: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>',
+        mentor: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>',
+        star: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>',
+        clock: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+        check: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+        trophy: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>'
+      };
+      return icons[type] || icons.star;
+    }
+
+    function renderActivity(tab) {
+      currentTab = tab;
+      const items = tab === 'questions' ? userQuestions : userAnswers;
+      
+      if (items.length === 0) {
+        activityContent.innerHTML = `
+          <div class="empty-state">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p>No ${tab} yet</p>
+          </div>
+        `;
+        return;
+      }
+
+      if (tab === 'questions') {
+        activityContent.innerHTML = items.map(item => `
+          <div class="activity-item" onclick="viewActivityItem('question', ${item.id})">
+            <div class="activity-item-header">
+              <h4 class="activity-item-title">${item.title}</h4>
+              <span class="status-badge ${item.status}">${item.status === 'solved' ? 'Solved' : 'Unanswered'}</span>
+            </div>
+            <div class="doubt-tags">
+              ${item.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+            </div>
+            <div class="activity-item-meta">
+              <span class="meta-item">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                ${item.answers} answers
+              </span>
+              <span class="meta-item">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                </svg>
+                ${item.upvotes} upvotes
+              </span>
+              <span class="meta-item">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ${item.time}
+              </span>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        activityContent.innerHTML = items.map(item => `
+          <div class="activity-item answer-item" onclick="viewActivityItem('answer', ${item.id})">
+            <div class="activity-item-header">
+              <span class="answer-label">Answered:</span>
+              <h4 class="activity-item-title">${item.questionTitle}</h4>
+              <span class="status-badge ${item.status === 'accepted' ? 'solved' : 'unanswered'}">${item.status === 'accepted' ? 'Accepted' : 'Pending'}</span>
+            </div>
+            <p class="answer-preview">${item.answer}</p>
+            <div class="doubt-tags">
+              ${item.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+            </div>
+            <div class="activity-item-meta">
+              <span class="meta-item">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                </svg>
+                ${item.upvotes} upvotes
+              </span>
+              <span class="meta-item">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ${item.time}
+              </span>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function updateProfileDisplay() {
+      document.getElementById('userName').textContent = userData.name;
+      document.getElementById('userBio').textContent = userData.bio;
+      document.getElementById('userAvatar').textContent = userData.initials;
+      document.getElementById('reputationPoints').textContent = userData.reputation.toLocaleString();
+      document.getElementById('statQuestions').textContent = userData.questions;
+      document.getElementById('statAnswers').textContent = userData.answers;
+      document.getElementById('statAccepted').textContent = userData.acceptedAnswers;
+      document.getElementById('statStreak').textContent = userData.streak;
+      
+      // Update navbar avatar
+      document.querySelectorAll('.profile-avatar').forEach(el => {
+        if (!el.classList.contains('profile-avatar-large')) {
+          el.textContent = userData.initials;
+        }
+      });
+    }
+
+    // ============= EVENT HANDLERS =============
+    // Notification dropdown
+    notificationBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      notificationDropdown.classList.toggle('show');
+      profileDropdown.classList.remove('show');
+    });
+
+    // Profile dropdown
+    profileBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      profileDropdown.classList.toggle('show');
+      notificationDropdown.classList.remove('show');
+    });
+
+    // Mark all read
+    markAllRead.addEventListener('click', () => {
+      document.querySelectorAll('.notification-item.unread').forEach(item => {
+        item.classList.remove('unread');
+        const dot = item.querySelector('.notification-dot');
+        if (dot) dot.remove();
+      });
+      document.getElementById('notificationBadge').style.display = 'none';
+      showToast('All notifications marked as read', 'success');
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', () => {
+      notificationDropdown.classList.remove('show');
+      profileDropdown.classList.remove('show');
+    });
+
+    // Edit profile modal
+    editProfileBtn.addEventListener('click', () => {
+      document.getElementById('editName').value = userData.name;
+      document.getElementById('editBio').value = userData.bio;
+      document.getElementById('editEmail').value = userData.email;
+      editProfileModal.classList.add('show');
+    });
+
+    closeEditModal.addEventListener('click', () => {
+      editProfileModal.classList.remove('show');
+    });
+
+    cancelEdit.addEventListener('click', () => {
+      editProfileModal.classList.remove('show');
+    });
+
+    saveProfile.addEventListener('click', () => {
+      const newName = document.getElementById('editName').value.trim();
+      const newBio = document.getElementById('editBio').value.trim();
+      const newEmail = document.getElementById('editEmail').value.trim();
+      
+      if (!newName) {
+        showToast('Name cannot be empty', 'error');
+        return;
+      }
+      
+      userData.name = newName;
+      userData.bio = newBio;
+      userData.email = newEmail;
+      userData.initials = newName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+      
+      updateProfileDisplay();
+      editProfileModal.classList.remove('show');
+      showToast('Profile updated successfully', 'success');
+    });
+
+    // Activity tabs
+    activityTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        activityTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderActivity(tab.dataset.tab);
+      });
+    });
+
+    // View activity modal
+    closeActivityModal.addEventListener('click', () => {
+      viewActivityModal.classList.remove('show');
+    });
+
+    // Close modals on overlay click
+    [editProfileModal, viewActivityModal].forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('show');
+        }
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        editProfileModal.classList.remove('show');
+        viewActivityModal.classList.remove('show');
+        notificationDropdown.classList.remove('show');
+        profileDropdown.classList.remove('show');
+      }
+    });
+
+    // Stat cards hover animation
+    document.querySelectorAll('.stat-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const stat = card.dataset.stat;
+        if (stat === 'questions') {
+          activityTabs.forEach(t => t.classList.remove('active'));
+          document.querySelector('[data-tab="questions"]').classList.add('active');
+          renderActivity('questions');
+          document.querySelector('.profile-activity-section').scrollIntoView({ behavior: 'smooth' });
+        } else if (stat === 'answers' || stat === 'accepted') {
+          activityTabs.forEach(t => t.classList.remove('active'));
+          document.querySelector('[data-tab="answers"]').classList.add('active');
+          renderActivity('answers');
+          document.querySelector('.profile-activity-section').scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+
+    // ============= UTILITY FUNCTIONS =============
+    function showToast(message, type = 'success') {
+      toastMessage.textContent = message;
+      toast.className = 'toast show ' + type;
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    function showBadgeDetails(id) {
+      const badge = badges.find(b => b.id === id);
+      if (badge) {
+        if (badge.earned) {
+          showToast(`${badge.name}: ${badge.description}`, 'info');
+        } else {
+          showToast(`Progress: ${badge.progress}`, 'info');
+        }
+      }
+    }
+
+    function viewActivityItem(type, id) {
+      let item;
+      if (type === 'question') {
+        item = userQuestions.find(q => q.id === id);
+        document.getElementById('viewActivityTitle').textContent = item.title;
+        document.getElementById('viewActivityStatus').className = `status-badge ${item.status}`;
+        document.getElementById('viewActivityStatus').textContent = item.status === 'solved' ? 'Solved' : 'Unanswered';
+        document.getElementById('viewActivityDescription').textContent = `This question has ${item.answers} answers and ${item.upvotes} upvotes.`;
+      } else {
+        item = userAnswers.find(a => a.id === id);
+        document.getElementById('viewActivityTitle').textContent = item.questionTitle;
+        document.getElementById('viewActivityStatus').className = `status-badge ${item.status === 'accepted' ? 'solved' : 'unanswered'}`;
+        document.getElementById('viewActivityStatus').textContent = item.status === 'accepted' ? 'Accepted' : 'Pending';
+        document.getElementById('viewActivityDescription').textContent = item.answer;
+      }
+      
+      document.getElementById('viewActivityTime').textContent = `Posted ${item.time}`;
+      document.getElementById('viewActivityTags').innerHTML = item.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+      
+      viewActivityModal.classList.add('show');
+    }
+
+    // ============= INITIALIZE =============
+    document.addEventListener('DOMContentLoaded', () => {
+      updateProfileDisplay();
+      renderBadges();
+      renderActivity('questions');
+    });
+  </script>
+</body>
+</html>
