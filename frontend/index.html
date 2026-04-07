@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillBridge - Where Students Solve Doubts Faster Together</title>
+  <link rel="stylesheet" href="landingpage.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="container navbar-content">
+      <a href="#" class="logo">
+        <div class="logo-icon">S</div>
+        <span>SkillBridge</span>
+      </a>
+      <div class="nav-links" id="navLinks">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#mentors">Mentors</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <div class="nav-actions">
+        <a href="#" class="btn btn-ghost">Log In</a>
+        <a href="#" class="btn btn-primary">Get Started Free</a>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+      </div>
+    </div>
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#mentors">Mentors</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#" class="btn btn-primary btn-full">Get Started Free</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge animate-on-scroll">Trusted by 50,000+ students worldwide</div>
+      <h1 class="hero-title animate-on-scroll">Where Students Solve<br>Doubts <span class="text-gradient">Faster Together</span></h1>
+      <p class="hero-subtitle animate-on-scroll">AI-powered explanations, peer-driven answers, and live mentor sessions — all in one intelligent learning platform.</p>
+      <div class="hero-actions animate-on-scroll">
+        <a href="#" class="btn btn-primary btn-lg">Start Learning Free</a>
+        <a href="#" class="btn btn-secondary btn-lg" id="watchDemoBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Watch Demo
+        </a>
+      </div>
+      <div class="hero-stats animate-on-scroll">
+        <div class="stat">
+          <span class="stat-value" data-count="2000000">0</span>
+          <span class="stat-label">Doubts Solved</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value">&lt;5min</span>
+          <span class="stat-label">Avg Response</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-value" data-count="4.9" data-suffix="/5">0</span>
+          <span class="stat-label">Student Rating</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust Bar -->
+  <section class="trust-bar">
+    <div class="container">
+      <p class="trust-label">Trusted by students from</p>
+      <div class="trust-logos">
+        <span class="trust-logo animate-on-scroll">Stanford</span>
+        <span class="trust-logo animate-on-scroll">MIT</span>
+        <span class="trust-logo animate-on-scroll">Harvard</span>
+        <span class="trust-logo animate-on-scroll">IIT Delhi</span>
+        <span class="trust-logo animate-on-scroll">Oxford</span>
+        <span class="trust-logo animate-on-scroll">Cambridge</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features">
+    <div class="container">
+      <p class="section-label animate-on-scroll">See what SkillBridge can do</p>
+      
+      <!-- Small Feature Cards Row -->
+      <div class="feature-cards-row">
+        <div class="feature-card-small animate-on-scroll" data-delay="0">
+          <div class="feature-icon feature-icon-blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <p class="feature-card-text">Post doubts instantly</p>
+          <span class="feature-arrow">→</span>
+        </div>
+        
+        <div class="feature-card-small animate-on-scroll" data-delay="100">
+          <div class="feature-icon feature-icon-amber">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <p class="feature-card-text">Get AI explanations</p>
+          <span class="feature-arrow">→</span>
+        </div>
+        
+        <div class="feature-card-small animate-on-scroll" data-delay="200">
+          <div class="feature-icon feature-icon-green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <p class="feature-card-text">Connect with peers</p>
+          <span class="feature-arrow">→</span>
+        </div>
+        
+        <div class="feature-card-small animate-on-scroll" data-delay="300">
+          <div class="feature-icon feature-icon-red">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <p class="feature-card-text">Book live sessions</p>
+          <span class="feature-arrow">→</span>
+        </div>
+        
+        <div class="feature-card-accent animate-on-scroll" data-delay="400">
+          <div class="accent-icons">
+            <div class="accent-icon accent-icon-1">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+            </div>
+            <div class="accent-icon accent-icon-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              </svg>
+            </div>
+            <div class="accent-icon accent-icon-3">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+          </div>
+          <p class="accent-card-text">Explore all features</p>
+          <span class="feature-arrow">→</span>
+        </div>
+      </div>
+
+      <!-- Large Bento Cards -->
+      <h2 class="section-title animate-on-scroll">Ask your on-demand assistants.</h2>
+      
+      <div class="bento-grid">
+        <div class="bento-card animate-on-scroll">
+          <div class="bento-content">
+            <span class="bento-label">AI Tutor</span>
+            <h3 class="bento-title">You ask questions. AI Tutor explains step-by-step.</h3>
+            <a href="#" class="bento-link">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8l4 4-4 4" stroke="white" stroke-width="2" fill="none"/>
+              </svg>
+            </a>
+          </div>
+          <div class="bento-preview bento-preview-blue">
+            <div class="preview-card">
+              <div class="preview-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                </svg>
+              </div>
+              <p class="preview-text typing-effect">How can I help you today?</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bento-card animate-on-scroll">
+          <div class="bento-content">
+            <span class="bento-label">Peer Network</span>
+            <h3 class="bento-title">Get answers from students who just learned it.</h3>
+            <a href="#" class="bento-link">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8l4 4-4 4" stroke="white" stroke-width="2" fill="none"/>
+              </svg>
+            </a>
+          </div>
+          <div class="bento-preview bento-preview-green">
+            <div class="preview-card">
+              <div class="avatar-stack">
+                <div class="avatar pulse-avatar">A</div>
+                <div class="avatar pulse-avatar">B</div>
+                <div class="avatar pulse-avatar">C</div>
+              </div>
+              <p class="preview-text">3 peers ready to help</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works" class="how-it-works">
+    <div class="container">
+      <p class="section-label animate-on-scroll">How It Works</p>
+      <h2 class="section-title animate-on-scroll">Three steps to clarity</h2>
+      
+      <div class="steps-grid">
+        <div class="step-card animate-on-scroll" data-delay="0">
+          <div class="step-number">1</div>
+          <h3 class="step-title">Post Your Doubt</h3>
+          <p class="step-description">Type, snap, or voice record your question. Our AI categorizes it instantly.</p>
+        </div>
+        <div class="step-card animate-on-scroll" data-delay="150">
+          <div class="step-number">2</div>
+          <h3 class="step-title">Get Matched</h3>
+          <p class="step-description">AI provides instant explanations while peers and mentors are notified.</p>
+        </div>
+        <div class="step-card animate-on-scroll" data-delay="300">
+          <div class="step-number">3</div>
+          <h3 class="step-title">Learn & Master</h3>
+          <p class="step-description">Rate answers, save to your library, and track your learning progress.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Preview -->
+  <section class="product-preview">
+    <div class="container">
+      <div class="preview-grid">
+        <div class="doubt-card animate-on-scroll">
+          <div class="doubt-header">
+            <div class="doubt-avatar">S</div>
+            <div class="doubt-meta">
+              <span class="doubt-author">Sarah K.</span>
+              <span class="doubt-time">2 min ago</span>
+            </div>
+            <span class="doubt-tag">Calculus</span>
+          </div>
+          <p class="doubt-text">Can someone explain the chain rule with a real example? I keep getting confused...</p>
+          <div class="doubt-footer">
+            <span class="doubt-answers">3 answers</span>
+            <span class="doubt-status">AI answered</span>
+          </div>
+        </div>
+        
+        <div class="ai-response-card animate-on-scroll">
+          <div class="ai-header">
+            <div class="ai-icon">AI</div>
+            <span>SkillBridge AI</span>
+            <span class="ai-typing-indicator">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </span>
+          </div>
+          <div class="ai-content">
+            <p><strong>The Chain Rule</strong> is used when differentiating composite functions.</p>
+            <p class="ai-formula">If y = f(g(x)), then dy/dx = f&apos;(g(x)) · g&apos;(x)</p>
+            <p><strong>Example:</strong> Let y = (2x + 1)³</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mentors Section -->
+  <section id="mentors" class="mentors">
+    <div class="container">
+      <p class="section-label animate-on-scroll">Expert Mentors</p>
+      <h2 class="section-title animate-on-scroll">Learn from the best</h2>
+      <p class="section-subtitle animate-on-scroll">Connect with verified mentors from top universities and companies for personalized guidance.</p>
+      
+      <div class="mentors-grid">
+        <div class="mentor-card animate-on-scroll" data-delay="0">
+          <div class="mentor-avatar">DR</div>
+          <h4 class="mentor-name">Dr. Raj Patel</h4>
+          <p class="mentor-role">Physics · IIT Bombay</p>
+          <div class="mentor-rating">
+            <span class="stars">★★★★★</span>
+            <span>4.9 (234 sessions)</span>
+          </div>
+          <a href="#" class="btn btn-outline btn-sm">Book Session</a>
+        </div>
+        <div class="mentor-card animate-on-scroll" data-delay="100">
+          <div class="mentor-avatar">EL</div>
+          <h4 class="mentor-name">Emily Liu</h4>
+          <p class="mentor-role">Math · Stanford</p>
+          <div class="mentor-rating">
+            <span class="stars">★★★★★</span>
+            <span>4.8 (189 sessions)</span>
+          </div>
+          <a href="#" class="btn btn-outline btn-sm">Book Session</a>
+        </div>
+        <div class="mentor-card animate-on-scroll" data-delay="200">
+          <div class="mentor-avatar">JC</div>
+          <h4 class="mentor-name">James Chen</h4>
+          <p class="mentor-role">CS · Google</p>
+          <div class="mentor-rating">
+            <span class="stars">★★★★★</span>
+            <span>5.0 (312 sessions)</span>
+          </div>
+          <a href="#" class="btn btn-outline btn-sm">Book Session</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="container">
+      <h2 class="cta-title animate-on-scroll">Ready to solve doubts faster?</h2>
+      <p class="cta-subtitle animate-on-scroll">Join 50,000+ students who are learning smarter, not harder.</p>
+      <div class="cta-actions animate-on-scroll">
+        <a href="#" class="btn btn-primary btn-lg cta-btn">Get Started Free</a>
+        <p class="cta-note">No credit card required</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="logo">
+            <div class="logo-icon">S</div>
+            <span>SkillBridge</span>
+          </div>
+          <p class="footer-tagline">Making learning accessible, one doubt at a time.</p>
+          <div class="social-links">
+            <a href="#" class="social-link" aria-label="Twitter">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>
+              </svg>
+            </a>
+            <a href="#" class="social-link" aria-label="LinkedIn">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                <rect x="2" y="9" width="4" height="12"/>
+                <circle cx="4" cy="4" r="2"/>
+              </svg>
+            </a>
+            <a href="#" class="social-link" aria-label="GitHub">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+        <div class="footer-links">
+          <h5>Product</h5>
+          <a href="#">Features</a>
+          <a href="#">Pricing</a>
+          <a href="#">Mentors</a>
+        </div>
+        <div class="footer-links">
+          <h5>Company</h5>
+          <a href="#">About</a>
+          <a href="#">Blog</a>
+          <a href="#">Careers</a>
+        </div>
+        <div class="footer-links">
+          <h5>Legal</h5>
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Contact</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>2026 SkillBridge. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Video Modal -->
+  <div class="modal-overlay" id="videoModal">
+    <div class="modal-content">
+      <button class="modal-close" id="modalClose">&times;</button>
+      <div class="video-placeholder">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="white">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        <p>Demo Video</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Back to Top Button -->
+  <button class="back-to-top" id="backToTop" aria-label="Back to top">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+  </button>
+
+  <script>
+    // Mobile Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const navbar = document.getElementById('navbar');
+
+    mobileMenuBtn.addEventListener('click', () => {
+      mobileMenuBtn.classList.toggle('active');
+      mobileMenu.classList.toggle('open');
+      document.body.classList.toggle('menu-open');
+    });
+
+    // Close mobile menu when clicking a link
+    mobileMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenuBtn.classList.remove('active');
+        mobileMenu.classList.remove('open');
+        document.body.classList.remove('menu-open');
+      });
+    });
+
+    // Navbar scroll effect
+    let lastScroll = 0;
+    window.addEventListener('scroll', () => {
+      const currentScroll = window.pageYOffset;
+      
+      if (currentScroll > 100) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+      
+      if (currentScroll > lastScroll && currentScroll > 500) {
+        navbar.classList.add('hidden');
+      } else {
+        navbar.classList.remove('hidden');
+      }
+      
+      lastScroll = currentScroll;
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          const offsetTop = target.offsetTop - 80;
+          window.scrollTo({
+            top: offsetTop,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+
+    // Scroll animations using Intersection Observer
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    };
+
+    const animateOnScroll = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const delay = entry.target.dataset.delay || 0;
+          setTimeout(() => {
+            entry.target.classList.add('visible');
+          }, delay);
+          animateOnScroll.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.animate-on-scroll').forEach(el => {
+      animateOnScroll.observe(el);
+    });
+
+    // Counter animation for stats
+    function animateCounter(element, target, suffix = '') {
+      const duration = 2000;
+      const start = 0;
+      const increment = target / (duration / 16);
+      let current = start;
+
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+          current = target;
+          clearInterval(timer);
+        }
+        
+        if (target >= 1000000) {
+          element.textContent = (current / 1000000).toFixed(1) + 'M+' + suffix;
+        } else if (target >= 1000) {
+          element.textContent = Math.floor(current / 1000) + 'K+' + suffix;
+        } else if (target < 10) {
+          element.textContent = current.toFixed(1) + suffix;
+        } else {
+          element.textContent = Math.floor(current) + suffix;
+        }
+      }, 16);
+    }
+
+    // Trigger counter animation when stats are visible
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const statValues = entry.target.querySelectorAll('[data-count]');
+          statValues.forEach(stat => {
+            const target = parseFloat(stat.dataset.count);
+            const suffix = stat.dataset.suffix || '';
+            animateCounter(stat, target, suffix);
+          });
+          statsObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    const heroStats = document.querySelector('.hero-stats');
+    if (heroStats) {
+      statsObserver.observe(heroStats);
+    }
+
+    // Video Modal
+    const watchDemoBtn = document.getElementById('watchDemoBtn');
+    const videoModal = document.getElementById('videoModal');
+    const modalClose = document.getElementById('modalClose');
+
+    watchDemoBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      videoModal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    });
+
+    modalClose.addEventListener('click', () => {
+      videoModal.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+
+    videoModal.addEventListener('click', (e) => {
+      if (e.target === videoModal) {
+        videoModal.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && videoModal.classList.contains('open')) {
+        videoModal.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    });
+
+    // Back to Top button
+    const backToTop = document.getElementById('backToTop');
+
+    window.addEventListener('scroll', () => {
+      if (window.pageYOffset > 500) {
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
+    });
+
+    backToTop.addEventListener('click', () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+
+    // Feature cards hover effect
+    document.querySelectorAll('.feature-card-small, .feature-card-accent').forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-4px)';
+      });
+      card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+      });
+    });
+
+    // Bento cards tilt effect
+    document.querySelectorAll('.bento-card').forEach(card => {
+      card.addEventListener('mousemove', function(e) {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = (y - centerY) / 20;
+        const rotateY = (centerX - x) / 20;
+        
+        this.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+      });
+      
+      card.addEventListener('mouseleave', function() {
+        this.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+      });
+    });
+
+    // Mentor card booking animation
+    document.querySelectorAll('.mentor-card .btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        this.textContent = 'Booking...';
+        this.classList.add('loading');
+        
+        setTimeout(() => {
+          this.textContent = 'Booked!';
+          this.classList.remove('loading');
+          this.classList.add('success');
+          
+          setTimeout(() => {
+            this.textContent = 'Book Session';
+            this.classList.remove('success');
+          }, 2000);
+        }, 1500);
+      });
+    });
+
+    // Typing effect for AI card
+    function typeEffect(element, text, speed = 50) {
+      element.textContent = '';
+      let i = 0;
+      
+      function type() {
+        if (i < text.length) {
+          element.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, speed);
+        }
+      }
+      
+      type();
+    }
+
+    // Trigger typing effect when bento card is visible
+    const typingObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const typingElement = entry.target.querySelector('.typing-effect');
+          if (typingElement) {
+            const text = typingElement.textContent;
+            typeEffect(typingElement, text, 50);
+          }
+          typingObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.bento-card').forEach(card => {
+      typingObserver.observe(card);
+    });
+
+    // Parallax effect on hero section
+    window.addEventListener('scroll', () => {
+      const scrolled = window.pageYOffset;
+      const hero = document.querySelector('.hero');
+      if (hero && scrolled < 800) {
+        hero.style.transform = `translateY(${scrolled * 0.3}px)`;
+        hero.style.opacity = 1 - (scrolled / 800);
+      }
+    });
+
+    // Active nav link highlighting
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-links a');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 100;
+        if (window.pageYOffset >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+      
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    });
+
+    // CTA button ripple effect
+    document.querySelectorAll('.cta-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        const ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+        
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        
+        this.appendChild(ripple);
+        
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
+      });
+    });
+  </script>
+</body>
+</html>
