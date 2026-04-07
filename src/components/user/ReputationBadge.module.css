@@ -1,0 +1,47 @@
+.badgeContainer {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: var(--bg-card);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  width: fit-content;
+}
+
+.rankInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.points {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary-violet);
+}
+
+.rankBadge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.badges {
+  display: flex;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--border-color);
+}
+
+.badgeIcon {
+  font-size: 1.25rem;
+  cursor: help;
+}
+
+.moreBadges {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-violet);
+  align-self: center;
+}
