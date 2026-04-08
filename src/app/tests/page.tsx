@@ -1,33 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
-import { testApi } from '@/lib/api';
+import { testApi, subjectApi } from '@/lib/api';
 import styles from './tests.module.css';
 
 export default function PracticeTestsPage() {
   const { user } = useAuth();
-  const [subject, setSubject] = useState('');
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [test, setTest] = useState<any>(null);
   const [answers, setAnswers] = useState<number[]>([]);
   const [result, setResult] = useState<any>(null);
-  const [startedAt, setStartedAt] = useState<Date | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      subjectApi.getSubjects().then(setSubjects).catch(console.error);
+    }
+  }, [user]);
 
   const handleGenerateTest = async () => {
-    if (!subject || !topic) return;
+    if (!selectedSubject || !topic) return;
     setIsGenerating(true);
     setTest(null);
     setResult(null);
 
     try {
-      const data = await testApi.generate({ subject, topic, difficulty: 'Medium', count: 5 });
+      const data = await testApi.generate({ subject_id: selectedSubject, topic });
       setTest(data);
       setAnswers(new Array(data.questions.length).fill(-1));
-      setStartedAt(new Date());
     } catch (err) {
-      alert('Failed to generate test');
+      alert('Failed to generate test. Make sure you have subject data in your database.');
     } finally {
       setIsGenerating(false);
     }
@@ -39,16 +45,14 @@ export default function PracticeTestsPage() {
        return;
     }
 
+    setIsSubmitting(true);
     try {
-      const data = await testApi.submit({ 
-        testId: test._id, 
-        answers,
-        startedAt: startedAt?.toISOString(),
-        submittedAt: new Date().toISOString()
-      });
+      const data = await testApi.submit(test.id, answers);
       setResult(data);
     } catch (err) {
       alert('Failed to submit test');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -68,25 +72,30 @@ export default function PracticeTestsPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.title}>AI Practice Engine</h1>
-        <p className={styles.subtitle}>Test your knowledge with personalized quizzes generated just for you.</p>
+        <p className={styles.subtitle}>Test your knowledge with personalized quizzes generated just for you by Gemini 1.5 Pro.</p>
       </header>
 
       {!test && !result && (
         <section className={`${styles.generatorCard} glass`}>
           <div className={styles.inputGroup}>
-            <label>Subject</label>
-            <input 
-              type="text" 
-              placeholder="e.g. Operating Systems" 
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-            />
+            <label>Academic Subject</label>
+            <select 
+              className={styles.select}
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+            >
+              <option value="">Select a subject...</option>
+              {subjects.map(s => (
+                <option key={s.id} value={s.id}>{s.name} ({s.code || 'Gen'})</option>
+              ))}
+            </select>
           </div>
           <div className={styles.inputGroup}>
             <label>Specific Topic</label>
             <input 
+              className={styles.input}
               type="text" 
-              placeholder="e.g. CPU Scheduling" 
+              placeholder="e.g. CPU Scheduling or photosynthesis" 
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
             />
@@ -94,9 +103,11 @@ export default function PracticeTestsPage() {
           <button 
             className={styles.generateBtn} 
             onClick={handleGenerateTest}
-            disabled={isGenerating}
+            disabled={isGenerating || !selectedSubject || !topic}
           >
-            {isGenerating ? 'Gemini is generating...' : 'Generate 5-Question Quiz'}
+            {isGenerating ? (
+              <span className={styles.loaderLine}>Generating Quiz...</span>
+            ) : 'Spin Up AI Quiz'}
           </button>
         </section>
       )}
@@ -104,13 +115,16 @@ export default function PracticeTestsPage() {
       {test && !result && (
         <section className={styles.testArea}>
           <div className={styles.testHeader}>
-            <h2>{test.topic} - {test.subject}</h2>
+            <div>
+               <h2 className={styles.testTitle}>{test.topic}</h2>
+               <p className={styles.testSubtitle}>{subjects.find(s => s.id === test.subject_id)?.name}</p>
+            </div>
             <span className={styles.badge}>{test.questions.length} Questions</span>
           </div>
           <div className={styles.questionList}>
             {test.questions.map((q: any, qIdx: number) => (
-              <div key={q._id || qIdx} className={`${styles.questionCard} glass`}>
-                <p className={styles.questionText}>{qIdx + 1}. {q.text}</p>
+              <div key={q.id || qIdx} className={`${styles.questionCard} glass`}>
+                <p className={styles.questionText}>{qIdx + 1}. {q.question_text}</p>
                 <div className={styles.options}>
                   {q.options.map((opt: string, optIdx: number) => (
                     <label key={optIdx} className={`${styles.option} ${answers[qIdx] === optIdx ? styles.selected : ''}`}>
@@ -124,6 +138,7 @@ export default function PracticeTestsPage() {
                           setAnswers(newAns);
                         }}
                       />
+                      <span className={styles.optLetter}>{String.fromCharCode(65 + optIdx)}</span>
                       {opt}
                     </label>
                   ))}
@@ -131,7 +146,13 @@ export default function PracticeTestsPage() {
               </div>
             ))}
           </div>
-          <button className={styles.submitBtn} onClick={handleSubmitTest}>Submit Test</button>
+          <button 
+            className={styles.submitBtn} 
+            onClick={handleSubmitTest}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Evaluating...' : 'Submit Answers'}
+          </button>
         </section>
       )}
 
@@ -139,17 +160,19 @@ export default function PracticeTestsPage() {
         <section className={`${styles.resultCard} glass`}>
           <div className={styles.resultHeader}>
             <div className={styles.scoreCircle}>
-              <span className={styles.scoreNumber}>{Math.round((result.score / result.totalQuestions) * 100)}%</span>
+              <span className={styles.scoreNumber}>{result.score}%</span>
               <span className={styles.scoreLabel}>Score</span>
             </div>
             <div className={styles.resultText}>
-              <h2>Great Job!</h2>
-              <p>You scored {result.score}/{result.totalQuestions} and earned reputation points for completing this test.</p>
+              <h2>{result.score >= 80 ? 'Mastery Achieved!' : result.score >= 50 ? 'Good Effort!' : 'Keep Studying!'}</h2>
+              <p>You earned <strong>+{result.pointsEarned} Reputation Points</strong> for completing this assessment.</p>
             </div>
           </div>
-          <button className={styles.resetBtn} onClick={() => { setTest(null); setResult(null); }}>
-            Take Another Test
-          </button>
+          <div className={styles.resultActions}>
+            <button className={styles.resetBtn} onClick={() => { setTest(null); setResult(null); }}>
+              Generate New Quiz
+            </button>
+          </div>
         </section>
       )}
     </div>

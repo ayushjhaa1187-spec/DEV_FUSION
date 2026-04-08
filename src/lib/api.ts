@@ -24,6 +24,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
 export const authApi = {
   // Supabase Auth is handled via the separate Auth Provider, but we can wrap any custom logic here if needed
   getSession: () => apiFetch('/api/auth/session'),
+  getMyProfile: () => apiFetch('/api/profile'),
 };
 
 export const doubtApi = {
@@ -47,13 +48,21 @@ export const mentorApi = {
     const query = new URLSearchParams(filters).toString();
     return apiFetch(`/api/mentors${query ? `?${query}` : ''}`);
   },
-  apply: (data: any) => apiFetch('/api/mentors/apply', { method: 'POST', body: JSON.stringify(data) }),
+  getSlots: (mentorId: string) => apiFetch(`/api/mentor-slots?mentor_id=${mentorId}`),
   getProfile: (id: string) => apiFetch(`/api/mentors/${id}`),
+};
+
+export const bookingApi = {
+  create: (data: { slot_id: string }) => apiFetch('/api/mentor-bookings', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const subjectApi = {
+  getSubjects: () => apiFetch('/api/subjects'),
 };
 
 export const testApi = {
   generate: (data: any) => apiFetch('/api/tests/generate', { method: 'POST', body: JSON.stringify(data) }),
-  submit: (testId: string, data: any) => apiFetch(`/api/tests/${testId}/submit`, { method: 'POST', body: JSON.stringify(data) }),
+  submit: (testId: string, answers: number[]) => apiFetch(`/api/tests/${testId}/submit`, { method: 'POST', body: JSON.stringify({ answers }) }),
 };
 
 export const aiApi = {

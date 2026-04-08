@@ -62,7 +62,9 @@ export default function Navbar() {
                 <Link href="/notifications" className={styles.icon}>🔔</Link>
                 {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
               </div>
-              <span className={styles.userName}>{user.username || user.email?.split('@')[0]}</span>
+              <Link href="/profile" className={styles.userNameLink}>
+                <span className={styles.userName}>{user.username || user.email?.split('@')[0]}</span>
+              </Link>
               <button onClick={() => signOut()} className={styles.logoutBtn}>Logout</button>
             </div>
           ) : (

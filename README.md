@@ -17,6 +17,18 @@
 
 ---
 
+## 🌐 Live Demo & Deployment
+- **Live URL**: [skillbridge-topaz.vercel.app](https://skillbridge-topaz.vercel.app)
+- **Repo Status**: [Phase 3 Complete ✅]
+- **Commit History**: Cleaned up for judge review.
+
+## 🔑 Demo Credentials
+Judges can use the following account to test the mentor/student flow without signing up:
+- **Email**: `judge@skillbridge.edu`
+- **Password**: `skillbridge2026`
+
+---
+
 ## 🚀 Hero Banner
 > **SkillBridge is a full-stack collaborative learning platform built for college students to resolve doubts faster, connect with verified mentors, attend live sessions, practice topic-wise tests, and grow through reputation-driven community learning.** It combines the speed of AI assistance with the trust of peer-to-peer learning — like a student-first Stack Overflow with live mentoring built in.
 
