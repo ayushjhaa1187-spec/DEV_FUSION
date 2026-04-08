@@ -62,4 +62,5 @@ export const aiApi = {
 };
 export const notificationApi = {
   getNotifications: () => apiFetch('/api/notifications'),
+  getUnreadCount: () => apiFetch('/api/notifications/unread'),
 };
