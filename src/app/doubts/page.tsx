@@ -4,9 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { doubtApi, aiApi, subjectApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
+import { DoubtCardSkeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { useRouter } from 'next/navigation';
 import styles from './doubts.module.css';
 
 export default function DoubtsPage() {
+  const router = useRouter();
   const [doubts, setDoubts] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,13 +135,12 @@ export default function DoubtsPage() {
         </div>
 
         {loading ? (
-          <div className={styles.loadingState}>
-            <div className={styles.skeletonPulse} />
-            <p>Gathering academic insights...</p>
+          <div className={styles.feedGrid}>
+            {[1, 2, 3, 4, 5, 6].map(i => <DoubtCardSkeleton key={i} />)}
           </div>
         ) : error ? (
           <div className={styles.errorCard}>{error}</div>
-        ) : (
+        ) : doubts.length > 0 ? (
           <div className={styles.feedGrid}>
             {doubts.map((doubt) => (
               <Link href={`/doubts/${doubt.id}`} key={doubt.id} className={`${styles.premiumCard} glass`}>
@@ -173,13 +176,15 @@ export default function DoubtsPage() {
                 </div>
               </Link>
             ))}
-            {doubts.length === 0 && (
-              <div className={styles.emptyState}>
-                <h2>Workspace is silent.</h2>
-                <p>Be the first to ignite a discussion in this subject.</p>
-              </div>
-            )}
           </div>
+        ) : (
+          <EmptyState 
+            icon="🤔" 
+            title="No doubts yet" 
+            description="Be the first to ask a question!" 
+            actionLabel="Ask a Doubt" 
+            onAction={() => router.push('/doubts/ask')} 
+          />
         )}
       </main>
     </div>

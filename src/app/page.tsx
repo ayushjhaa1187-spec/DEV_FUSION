@@ -361,7 +361,7 @@ export default function HomePage() {
       <section className="sb-section sb-cta sb-stagger-3">
         <div className="sb-sectionHead">
           <h2>Ready to bridge your skill gap?</h2>
-          <p style={{ marginTop: '16px', fontSize: '1.2rem', color: 'var(--muted)', textTransform: 'none', letterSpacing: 'normal' }}>
+          <p style={{ marginTop: '16px', fontSize: '1.2rem', color: 'var(--color-text-muted)', textTransform: 'none', letterSpacing: 'normal' }}>
             Join 4,800+ students already growing on SkillBridge. Free forever for learners.
           </p>
           <div className="sb-actions" style={{ marginTop: '40px' }}>

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { mentorApi } from '@/lib/api';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import styles from './mentors.module.css';
 
 export default function MentorsPage() {
@@ -53,10 +55,27 @@ export default function MentorsPage() {
       </div>
 
       {loading ? (
-        <div className={styles.loading}>Finding best mentors for you...</div>
+        <div className={styles.mentorGrid}>
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className={`${styles.mentorCard} glass`} style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+                <Skeleton width="64px" height="64px" rounded />
+                <div style={{ flex: 1 }}>
+                  <Skeleton width="60%" height="1.2rem" className="mb-2" />
+                  <Skeleton width="40%" height="1rem" />
+                </div>
+              </div>
+              <Skeleton width="100%" height="3rem" className="mb-4" />
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <Skeleton width="50%" height="36px" rounded />
+                <Skeleton width="50%" height="36px" rounded />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : error ? (
         <div className={styles.errorBanner}>{error}</div>
-      ) : (
+      ) : mentors.length > 0 ? (
         <div className={styles.mentorGrid}>
           {mentors.map((mentor) => (
             <div key={mentor.id} className={`${styles.mentorCard} glass`}>
@@ -94,8 +113,13 @@ export default function MentorsPage() {
               </div>
             </div>
           ))}
-          {mentors.length === 0 && <p className={styles.emptyState}>No mentors available at the moment.</p>}
         </div>
+      ) : (
+        <EmptyState 
+          icon="🎓" 
+          title="No mentors found" 
+          description="We couldn't find any mentors matching your search. Try adjusting the filters." 
+        />
       )}
     </div>
   );

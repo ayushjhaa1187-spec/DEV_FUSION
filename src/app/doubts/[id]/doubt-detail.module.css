@@ -20,7 +20,7 @@
   display: inline-block;
   padding: 4px 12px;
   background: rgba(124, 58, 237, 0.15);
-  color: var(--purple);
+  color: var(--color-primary);
   border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -39,7 +39,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-border);
   padding-top: 24px;
 }
 
@@ -52,7 +52,7 @@
 .avatarPlaceholder {
   width: 40px;
   height: 40px;
-  background: var(--surface-2);
+  background: var(--color-surface-2);
   border-radius: 50%;
 }
 
@@ -64,13 +64,13 @@
 
 .date {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--color-text-muted);
 }
 
 .content {
   font-size: 1.25rem;
   line-height: 1.7;
-  color: var(--text);
+  color: var(--color-text);
   margin-bottom: 40px;
 }
 
@@ -87,13 +87,13 @@
   background: rgba(255, 255, 255, 0.03);
   padding: 8px 16px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
 }
 
 .voteBtn {
   background: none;
   border: none;
-  color: var(--muted);
+  color: var(--color-text-muted);
   font-size: 1.4rem;
   cursor: pointer;
   transition: color 0.2s;
@@ -101,7 +101,7 @@
 }
 
 .voteBtn:hover {
-  color: var(--purple);
+  color: var(--color-primary);
 }
 
 .voteCount {
@@ -153,13 +153,13 @@
 }
 
 .answerCard.accepted {
-  border-color: var(--green);
+  border-color: var(--color-accent);
   background: rgba(6, 214, 160, 0.03);
 }
 
 .acceptedBadge {
   display: inline-block;
-  background: var(--green);
+  background: var(--color-accent);
   color: black;
   padding: 4px 12px;
   border-radius: 999px;
@@ -176,9 +176,9 @@
 }
 
 .acceptBtn {
-  color: var(--green);
+  color: var(--color-accent);
   background: none;
-  border: 1px solid var(--green);
+  border: 1px solid var(--color-accent);
   padding: 8px 16px;
   border-radius: 999px;
   font-weight: 700;
@@ -194,7 +194,7 @@
 .textarea {
   width: 100%;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
   padding: 20px;
   color: white;
@@ -206,11 +206,11 @@
 }
 
 .textarea:focus {
-  border-color: var(--purple);
+  border-color: var(--color-primary);
 }
 
 .postBtn {
-  background: var(--purple);
+  background: var(--color-primary);
   color: white;
   border: none;
   padding: 14px 28px;

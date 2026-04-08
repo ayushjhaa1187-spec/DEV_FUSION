@@ -8,53 +8,28 @@ export async function GET(req: NextRequest) {
   
   const subjectId   = searchParams.get('subject_id');
   const status      = searchParams.get('status');
-  const sort        = searchParams.get('sort');         // 'trending', 'recent'
+  const sort        = searchParams.get('sort');         // 'newest', 'votes', 'trending'
   const filter      = searchParams.get('filter');       // 'unanswered'
-  const personalized = searchParams.get('personalized'); // 'true'
 
-  let query = supabase.from('doubts_with_stats').select('*');
+  let query = supabase.from('doubts').select('*, profiles(username, avatar_url, reputation_points), subjects(name)');
 
-  // 1. Basic Filters
   if (subjectId) query = query.eq('subject_id', subjectId);
   if (status)    query = query.eq('status', status);
 
-  // 2. Specialized Filters
   if (filter === 'unanswered') {
-    query = query.eq('answers_count', 0);
+    // Note: depending on schema, we might use a count column or a join
+    // For now filter where status is open
+    query = query.eq('status', 'open');
   }
 
-  if (personalized === 'true' && user) {
-    // Branch matching (direct JSONB query for accuracy)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('branch')
-      .eq('id', user.id)
-      .single();
+  const sortMap: Record<string, { column: string, ascending: boolean }> = {
+    'newest': { column: 'created_at', ascending: false },
+    'votes': { column: 'votes', ascending: false },
+    'trending': { column: 'trending_score', ascending: false },
+  };
 
-    if (profile?.branch) {
-      // Use SQL to check JSONB field: academic_context_snapshot ->> 'branch' = profile.branch
-      query = query.filter('academic_context_snapshot->>branch', 'eq', profile.branch);
-    }
-    
-    // Subject matching via user_subjects enrollment
-    const { data: subIds } = await supabase
-      .from('user_subjects')
-      .select('subject_id')
-      .eq('user_id', user.id);
-    
-    if (subIds && subIds.length > 0) {
-      query = query.in('subject_id', subIds.map(s => s.subject_id));
-    }
-  }
-
-  // 3. Sorting / Ranking
-  if (sort === 'trending') {
-    // PS#2 Specific weighting: (votes * 0.7 + answers_count * 0.3)
-    // Handled by the database view logic updated in Step 1
-    query = query.order('trending_score', { ascending: false });
-  } else {
-    query = query.order('created_at', { ascending: false });
-  }
+  const selectedSort = sort && sortMap[sort] ? sortMap[sort] : sortMap['newest'];
+  query = query.order(selectedSort.column, { ascending: selectedSort.ascending });
 
   const { data, error } = await query;
 

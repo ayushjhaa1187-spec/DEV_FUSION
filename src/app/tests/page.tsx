@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { testApi, subjectApi } from '@/lib/api';
+import { Skeleton } from '@/components/ui/Skeleton';
 import styles from './tests.module.css';
 
 export default function PracticeTestsPage() {
@@ -117,9 +118,15 @@ export default function PracticeTestsPage() {
             disabled={isGenerating || !selectedSubject || !topic}
           >
             {isGenerating ? (
-              <span className={styles.loaderLine}>Generating Quiz...</span>
+              <span className={styles.loaderLine}>Evaluating Subject Depth...</span>
             ) : 'Spin Up AI Quiz'}
           </button>
+          {isGenerating && (
+            <div style={{ marginTop: '24px' }}>
+              <Skeleton width="100%" height="2rem" className="mb-2" />
+              <Skeleton width="80%" height="1rem" />
+            </div>
+          )}
         </section>
       )}
 

@@ -130,7 +130,7 @@ export default function AskDoubtPage() {
           <div className="form-group">
             <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <label style={{ margin: 0 }}>Detailed Content</label>
-              <div className="editor-toolbar" style={{ display: 'flex', gap: '8px' }}>
+              <div className="editor-toolbar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => {
                   const ta = document.querySelector('textarea');
                   if (!ta) return;
@@ -141,7 +141,7 @@ export default function AskDoubtPage() {
                   const selected = text.substring(start, end);
                   const after = text.substring(end);
                   setFormData({...formData, content: before + '**' + selected + '**' + after});
-                }} className="sb-btnGhost" style={{ padding: '2px 8px', minWidth: '32px' }}><b>B</b></button>
+                }} className="sb-btnGhost" style={{ padding: '6px 12px', minWidth: '32px' }}><b>B</b></button>
                 <button type="button" onClick={() => {
                   const ta = document.querySelector('textarea');
                   if (!ta) return;
@@ -152,19 +152,19 @@ export default function AskDoubtPage() {
                   const selected = text.substring(start, end);
                   const after = text.substring(end);
                   setFormData({...formData, content: before + '`' + selected + '`' + after});
-                }} className="sb-btnGhost" style={{ padding: '2px 8px', minWidth: '32px' }}><code>{'<>'}</code></button>
+                }} className="sb-btnGhost" style={{ padding: '6px 12px', minWidth: '32px' }}><code>{'<>'}</code></button>
                 <button 
                   type="button" 
                   onClick={() => setPreviewMode(!previewMode)}
                   className="sb-btnGhost" 
-                  style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                  style={{ padding: '6px 12px', fontSize: '0.75rem', flex: 1 }}
                 >
                   {previewMode ? 'Edit Content' : 'Preview Rich Text'}
                 </button>
               </div>
             </div>
             {previewMode ? (
-              <div className="rich-preview glass" style={{ minHeight: '200px', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
+              <div className="rich-preview glass" style={{ minHeight: '200px', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.02)' }}>
                 <div className="preview-content" style={{ opacity: 0.9 }}>
                   {formData.content.split('\n').map((line, i) => (
                     <p key={i} style={{ marginBottom: line ? '0.5rem' : '1rem' }}>
@@ -182,26 +182,27 @@ export default function AskDoubtPage() {
                 required
               />
             )}
-            <p className="help-text" style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '8px' }}>
+            <p className="help-text" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '8px' }}>
               Pro tip: Use ``` to start/end code blocks. AI will help with auto-tagging.
             </p>
           </div>
 
           {error && <p className="error-text">{error}</p>}
 
-          <button type="submit" className="sb-btnPrimary" disabled={isLoading} style={{ width: '100%', marginTop: '20px', border: 'none' }}>
+          <button type="submit" className="sb-btnPrimary" disabled={isLoading} style={{ width: '100%', marginTop: '20px', border: 'none', padding: '14px' }}>
             {isLoading ? 'Processing...' : 'Ready to Ask AI First —>'}
           </button>
         </form>
       ) : (
         <div className="ai-review-view glass">
           <div className="ai-review-header">
-            <span className="sb-heroBadge" style={{ margin: 0 }}>✨ Pedagogical Analysis</span>
+            <span className="sb-heroBadge" style={{ margin: 0, padding: '8px 16px' }}>✨ Pedagogical Analysis</span>
             <div className="ai-review-actions">
               <button 
                 onClick={handlePostToCommunity} 
                 className="sb-btnGhost" 
                 disabled={isLoading}
+                style={{ padding: '8px 16px' }}
               >
                 Still Unsatisfied? Post to Community
               </button>

@@ -63,7 +63,7 @@ export default function AdminApplicationsPage() {
           <div className="glass" style={{ padding: '60px', textAlign: 'center', borderRadius: '24px' }}>
             <span style={{ fontSize: '3rem' }}>✅</span>
             <h2 style={{ marginTop: '20px' }}>No pending applications</h2>
-            <p style={{ color: 'var(--muted)' }}>You've cleared the queue! All mentors are vetted.</p>
+            <p style={{ color: 'var(--color-text-muted)' }}>You've cleared the queue! All mentors are vetted.</p>
           </div>
         ) : (
           <div className="apps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '30px' }}>
@@ -73,12 +73,12 @@ export default function AdminApplicationsPage() {
                   <img src={app.profiles.avatar_url || `https://ui-avatars.com/api/?name=${app.profiles.username}`} alt="" style={{ width: '60px', height: '60px', borderRadius: '50%' }} />
                   <div>
                     <h3 style={{ margin: 0 }}>{app.profiles.full_name || app.profiles.username}</h3>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>@{app.profiles.username} • {app.profiles.reputation_points} Reputation</p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>@{app.profiles.username} • {app.profiles.reputation_points} Reputation</p>
                   </div>
                 </div>
                 
                 <div className="app-details" style={{ marginBottom: '25px' }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Expertise Areas</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Expertise Areas</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
                     {app.expertise_areas?.map((ex: string) => (
                       <span key={ex} className="sb-badge" style={{ fontSize: '0.7rem', padding: '2px 8px', background: 'rgba(255,255,255,0.05)' }}>{ex}</span>

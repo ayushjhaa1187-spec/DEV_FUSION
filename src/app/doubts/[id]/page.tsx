@@ -20,7 +20,7 @@ export default function DoubtDetailPage({
   const [posting, setPosting] = useState(false);
 
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiSolution, setAiSolution] = useState<string | null>(null);
+  const [aiResponse, setAiResponse] = useState<any>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -60,17 +60,23 @@ export default function DoubtDetailPage({
     }
   };
 
-  const handleAiHelp = async () => {
+  const handleAskAI = async () => {
     if (!doubt) return;
     setAiLoading(true);
+    setAiResponse(null);
     try {
-      const data = await aiApi.solveDoubt({ 
-        title: doubt.title, 
-        content: doubt.content 
+      const res = await fetch('/api/ai/solve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          question: doubt.title + '\n' + doubt.content,
+          context: doubt.subjects?.name 
+        })
       });
-      setAiSolution(data.answer || data.solution);
+      const data = await res.json();
+      setAiResponse(data);
     } catch (err) {
-      alert('AI service error');
+      alert('AI service temporary unavailable. Try again later.');
     } finally {
       setAiLoading(false);
     }
@@ -127,24 +133,38 @@ export default function DoubtDetailPage({
           <div className={styles.actions}>
             <button className={styles.voteBtn}>▲</button>
             <span className={styles.voteCount}>{doubt.votes || 0}</span>
-            <button className={styles.voteBtn}>▼</button>
-          </div>
-          <div className={styles.footerBtns}>
-            <button onClick={handleAiHelp} className={styles.aiHelpBtn} disabled={aiLoading}>
-              {aiLoading ? 'AI Thinking...' : '✨ Get AI Hint'}
-            </button>
             <button className={styles.shareBtn}>Share</button>
           </div>
         </footer>
 
-        {aiSolution && (
-          <div className={styles.aiCard}>
-            <h4>AI Assistant Suggestion</h4>
-            <div className="preview-content">
-               {aiSolution.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+        <div className={styles.aiAssistSection}>
+          <button 
+            className={styles.btnAiAssist} 
+            onClick={handleAskAI}
+            disabled={aiLoading}
+          >
+            {aiLoading ? '🤖 Thinking...' : '✨ Ask AI to Explain This'}
+          </button>
+          
+          {aiResponse && (
+            <div className={styles.aiResponseCard}>
+              <h3>🧠 AI Explanation</h3>
+              <p className={styles.aiOverview}>{aiResponse.explanation}</p>
+              {aiResponse.steps && aiResponse.steps.length > 0 && (
+                <ol className={styles.aiSteps}>
+                  {aiResponse.steps.map((step: string, i: number) => <li key={i}>{step}</li>)}
+                </ol>
+              )}
+              {aiResponse.suggested_tags && aiResponse.suggested_tags.length > 0 && (
+                <div className={styles.aiTags}>
+                  {aiResponse.suggested_tags.map((tag: string) => (
+                    <span key={tag} className={styles.aiTag}>#{tag}</span>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </article>
 
       <section className={`${styles.answersSection} sb-stagger-2`}>

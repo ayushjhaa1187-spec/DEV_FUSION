@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ConditionalNavbar from '@/components/layout/ConditionalNavbar';
 import { AuthProvider } from '@/components/auth/auth-provider';
+import AIFloatingAssistant from '@/components/AIFloatingAssistant';
 
 export const metadata: Metadata = {
   title: "SkillBridge | Peer Learning & Doubt Resolution Ecosystem",
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <ConditionalNavbar />
+          <AIFloatingAssistant />
           <main>
             {children}
           </main>

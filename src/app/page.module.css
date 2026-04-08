@@ -1,7 +1,7 @@
 /* ===== BASE & LAYOUT ===== */
 .page {
   min-height: 100vh;
-  background: var(--bg);
+  background: var(--color-bg);
   position: relative;
   overflow-x: hidden;
 }
@@ -72,7 +72,7 @@
 
 .tagline {
   font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-  color: var(--muted);
+  color: var(--color-text-muted);
   max-width: 600px;
   margin: 0 auto 2.5rem;
   font-weight: 300;
@@ -80,7 +80,7 @@
 }
 
 .tagline strong {
-  color: var(--text);
+  color: var(--color-text);
   font-weight: 600;
 }
 
@@ -110,13 +110,13 @@
 
 .ctaSecondary {
   background: transparent;
-  color: var(--text);
+  color: var(--color-text);
   padding: 0.9rem 2.5rem;
   border-radius: 9999px;
   font-weight: 600;
   font-size: 1rem;
   transition: all 0.25s;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
 }
 
 .ctaSecondary:hover {
@@ -147,7 +147,7 @@
 
 .statLabel {
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--color-text-muted);
   margin-top: 0.25rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -239,7 +239,7 @@
 }
 .flashcard p {
   font-size: 0.9rem;
-  color: var(--muted);
+  color: var(--color-text-muted);
   line-height: 1.6;
 }
 /* ===== TESTIMONIALS ===== */
@@ -251,7 +251,7 @@
 }
 .testimonialCard {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
   padding: 1.5rem;
   transition: all 0.3s ease;
@@ -264,7 +264,7 @@
 .testimonialQuote {
   font-size: 1rem;
   line-height: 1.7;
-  color: var(--text);
+  color: var(--color-text);
   margin-bottom: 1rem;
   font-style: italic;
 }
@@ -285,7 +285,7 @@
 }
 .testimonialRole {
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--color-text-muted);
 }
 /* ===== BLOG ===== */
 .blogGrid {
@@ -296,7 +296,7 @@
 }
 .blogCard {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -331,7 +331,7 @@
 }
 .blogExcerpt {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--color-text-muted);
   line-height: 1.6;
 }
 /* ===== CTA SECTION ===== */
@@ -347,7 +347,7 @@
 }
 .ctaSection p {
   font-size: 1.1rem;
-  color: var(--muted);
+  color: var(--color-text-muted);
   margin-bottom: 2rem;
 }
 .ctaSection .ctaPrimary {
@@ -367,7 +367,7 @@
 /* ===== FOOTER ===== */
 .footer {
   background: rgba(0, 0, 0, 0.3);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-border);
   padding: 3rem 2rem 1.5rem;
   margin-top: 4rem;
 }
@@ -377,7 +377,7 @@
   text-align: center;
 }
 .footerTagline {
-  color: var(--muted);
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   margin: 1rem 0;
 }
@@ -389,7 +389,7 @@
   flex-wrap: wrap;
 }
 .footerLinks a {
-  color: var(--muted);
+  color: var(--color-text-muted);
   text-decoration: none;
   font-size: 0.9rem;
   transition: color 0.25s;

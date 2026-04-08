@@ -12,5 +12,5 @@ export async function GET(req: NextRequest) {
     .eq('user_id', user.id)
     .eq('is_read', false);
 
-  return NextResponse.json(count ?? 0);
+  return NextResponse.json({ count: count ?? 0 });
 }

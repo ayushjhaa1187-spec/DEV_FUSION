@@ -17,7 +17,7 @@
 }
 
 .subtitle {
-  color: var(--muted);
+  color: var(--color-text-muted);
   font-size: 1.15rem;
   max-width: 600px;
   margin: 0 auto;
@@ -35,7 +35,7 @@
   display: block;
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 10px;
@@ -44,7 +44,7 @@
 .select, .input {
   width: 100%;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 14px 20px;
   color: white;
@@ -55,7 +55,7 @@
 }
 
 .generateBtn {
-  background: linear-gradient(135deg, var(--purple), #6d28d9);
+  background: linear-gradient(135deg, var(--color-primary), #6d28d9);
   color: white;
   padding: 18px;
   border-radius: 16px;
@@ -83,7 +83,7 @@
   display: inline-block;
   padding: 4px 12px;
   background: rgba(124, 58, 237, 0.15);
-  color: var(--purple);
+  color: var(--color-primary);
   border-radius: 8px;
   font-size: 0.75rem;
   font-weight: 700;
@@ -102,14 +102,14 @@
   padding: 12px 24px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
 }
 
 .timerLabel {
   display: block;
   font-size: 0.7rem;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--color-text-muted);
   font-weight: 700;
   letter-spacing: 0.1em;
 }
@@ -142,7 +142,7 @@
   display: inline-block;
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   margin-bottom: 20px;
   letter-spacing: 0.1em;
@@ -167,9 +167,9 @@
   gap: 16px;
   padding: 16px 20px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
-  color: var(--muted);
+  color: var(--color-text-muted);
   text-align: left;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -182,7 +182,7 @@
 
 .optBtn.selected {
   background: rgba(124, 58, 237, 0.1);
-  border-color: var(--purple);
+  border-color: var(--color-primary);
   color: white;
 }
 
@@ -192,14 +192,14 @@
   justify-content: center;
   min-width: 32px;
   height: 32px;
-  background: var(--surface-2);
+  background: var(--color-surface-2);
   border-radius: 8px;
   font-weight: 800;
   font-size: 0.85rem;
 }
 
 .selected .optLetter {
-  background: var(--purple);
+  background: var(--color-primary);
   color: white;
 }
 
@@ -209,7 +209,7 @@
   align-items: center;
   padding: 32px;
   background: rgba(15, 15, 26, 0.8);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-border);
   border-radius: 32px;
   position: sticky;
   bottom: 24px;
@@ -219,7 +219,7 @@
 
 .completionStatus {
   font-weight: 600;
-  color: var(--muted);
+  color: var(--color-text-muted);
 }
 
 .resultCard {
@@ -232,9 +232,9 @@
   width: 180px;
   height: 180px;
   margin: 0 auto 32px;
-  border: 8px solid var(--surface-2);
+  border: 8px solid var(--color-surface-2);
   border-radius: 50%;
-  border-top-color: var(--green);
+  border-top-color: var(--color-accent);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -251,7 +251,7 @@
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: var(--muted);
+  color: var(--color-text-muted);
 }
 
 .resultText h2 {

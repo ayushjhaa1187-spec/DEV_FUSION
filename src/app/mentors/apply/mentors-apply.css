@@ -23,9 +23,9 @@
   font-family: 'Instrument Serif', serif;
   font-size: 1.8rem;
   margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 12px;
-  color: var(--purple);
+  color: var(--color-primary);
 }
 
 .form-group {
@@ -36,7 +36,7 @@
   display: block;
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 10px;
@@ -46,7 +46,7 @@
 .form-group textarea {
   width: 100%;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 14px 20px;
   color: white;
@@ -58,7 +58,7 @@
 
 .form-group input:focus, 
 .form-group textarea:focus {
-  border-color: var(--purple);
+  border-color: var(--color-primary);
   background: rgba(124, 58, 237, 0.05);
   box-shadow: 0 0 20px rgba(124, 58, 237, 0.1);
 }
@@ -79,7 +79,7 @@
 }
 
 .success-msg {
-  color: var(--green);
+  color: var(--color-accent);
   background: rgba(6, 214, 160, 0.1);
   padding: 12px;
   border-radius: 8px;

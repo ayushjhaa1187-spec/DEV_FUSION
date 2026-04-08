@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     .from('profiles')
     .select('id, username, full_name, avatar_url, reputation_points')
     .order('reputation_points', { ascending: false })
-    .limit(limit);
+    .limit(50);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);

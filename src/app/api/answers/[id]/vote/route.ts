@@ -15,19 +15,28 @@ export async function POST(
   }
 
   try {
-    const { vote_type } = await req.json(); // 1 or -1
+    const { vote_type: voteType } = await req.json(); // 1 or -1
 
-    const { error } = await supabase
+    const { data: existing } = await supabase
       .from('answer_votes')
-      .upsert({
-        answer_id: id,
-        user_id: user.id,
-        vote_type
-      });
+      .select('id, vote_type')
+      .eq('user_id', user.id)
+      .eq('answer_id', id)
+      .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (existing) {
+      if (existing.vote_type === voteType) {
+        // Remove vote (toggle off)
+        await supabase.from('answer_votes').delete().eq('id', existing.id);
+      } else {
+        // Change vote type
+        await supabase.from('answer_votes').update({ vote_type: voteType }).eq('id', existing.id);
+      }
+    } else {
+      await supabase.from('answer_votes').insert({ user_id: user.id, answer_id: id, vote_type: voteType });
+    }
     
-    // Recalculate total votes (could also be done via trigger, but doing it here for simplicity in v1)
+    // Recalculate total votes
     const { data: votes } = await supabase
       .from('answer_votes')
       .select('vote_type')
@@ -39,7 +48,6 @@ export async function POST(
       .from('answers')
       .update({ votes: totalVotes })
       .eq('id', id);
-
 
     return NextResponse.json({ success: true, totalVotes });
   } catch (error) {

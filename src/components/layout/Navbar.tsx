@@ -1,80 +1,195 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/auth-provider';
-import { notificationApi } from '@/lib/api';
+import { Bell, Menu, X, MessageSquare, Trophy, AtSign, FileText } from 'lucide-react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
   const { user, signOut } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Fetch unread count & setup realtime
   useEffect(() => {
     if (!user) return;
 
-    const fetchInitialUnread = async () => {
-      try {
-        const count = await notificationApi.getUnreadCount();
-        setUnreadCount(count || 0);
-      } catch (err) {
-        console.error('Failed to fetch unread notifications');
-      }
+    const fetchUnread = async () => {
+      const res = await fetch('/api/notifications/unread');
+      const data = await res.json();
+      setUnreadCount(data.count || 0);
     };
-    fetchInitialUnread();
+    fetchUnread();
 
-    // 🚀 RESTORED REALTIME: Supabase Notification Subscription
+    const interval = setInterval(fetchUnread, 30000); // Poll every 30s
+
     const supabase = createSupabaseBrowser();
     const channel = supabase
-      .channel(`user-notifications:${user.id}`)
-      .on(
-        'postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
-        () => {
-          setUnreadCount(prev => prev + 1);
-        }
-      )
+      .channel('notifications')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        setUnreadCount(prev => prev + 1);
+        // Toast could be triggered here in Phase 3
+      })
       .subscribe();
 
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [user]);
 
+  // Handle outside click for dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchNotifications = async () => {
+    const res = await fetch('/api/notifications');
+    const data = await res.json();
+    setNotifications(data || []);
+  };
+
+  const handleNotifClick = () => {
+    setIsNotifOpen(!isNotifOpen);
+    if (!isNotifOpen) fetchNotifications();
+  };
+
+  const markAllRead = async () => {
+    await fetch('/api/notifications', { 
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markAllRead: true })
+    });
+    setUnreadCount(0);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+  };
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('#') && pathname === '/') {
+      e.preventDefault();
+      const element = document.querySelector(href);
+      element?.scrollIntoView({ behavior: 'smooth' });
+    } else if (href.startsWith('#')) {
+      e.preventDefault();
+      router.push(`/${href}`);
+    }
+    setIsMobileMenuOpen(false);
+  };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'answer': return <MessageSquare size={16} />;
+      case 'badge': return <Trophy size={16} />;
+      case 'mention': return <AtSign size={16} />;
+      case 'test': return <FileText size={16} />;
+      default: return <Bell size={16} />;
+    }
+  };
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
   return (
-    <nav className={`${styles.navbar} glass`}>
-      <div className={styles.container}>
+    <nav className={styles.navbar}>
+      <div className={styles.navContent}>
         <Link href="/" className={styles.logo}>
           <span className={styles.logoText}>SKILL</span>
           <span className={styles.logoHighlight}>BRIDGE</span>
         </Link>
-        <div className={styles.links}>
-          <Link href="/doubts" className={styles.link}>Doubts</Link>
-          <Link href="/mentors" className={styles.link}>Mentors</Link>
-          <Link href="/tests" className={styles.link}>Practice</Link>
+
+        {/* Desktop Links */}
+        <div className={styles.navLinks}>
+          <Link href="/doubts" className={`${styles.navLink} ${pathname === '/doubts' ? styles.active : ''}`}>Doubts</Link>
+          <Link href="/mentors" className={`${styles.navLink} ${pathname === '/mentors' ? styles.active : ''}`}>Mentors</Link>
+          <Link href="/tests" className={`${styles.navLink} ${pathname === '/tests' ? styles.active : ''}`}>Practice</Link>
+          <a href="#features" onClick={(e) => handleNavClick(e, '#features')} className={styles.navLink}>Features</a>
         </div>
-        <div className={styles.actions}>
+
+        <div className={styles.navRight}>
           {user ? (
-            <div className={styles.userSection}>
-              <div className={styles.notificationWrapper}>
-                <Link href="/notifications" className={styles.icon}>🔔</Link>
-                {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
+            <>
+              <div className={styles.notifWrapper} ref={dropdownRef}>
+                <button className={styles.notifyBtn} onClick={handleNotifClick}>
+                  <Bell size={20} />
+                  {unreadCount > 0 && <span className={styles.notifyBadge}>{unreadCount}</span>}
+                </button>
+
+                {isNotifOpen && (
+                  <div className={styles.notifDropdown}>
+                    <div className={styles.notifHeader}>
+                      <span>Notifications</span>
+                      <button onClick={markAllRead}>Mark all read</button>
+                    </div>
+                    <div className={styles.notifList}>
+                      {notifications.length > 0 ? notifications.map(n => (
+                        <div key={n.id} className={`${styles.notifItem} ${!n.is_read ? styles.unread : ''}`}>
+                          <span className={styles.notifIcon}>{getIcon(n.type)}</span>
+                          <div className={styles.notifContent}>
+                            <p>{n.message}</p>
+                            <time>{timeAgo(n.created_at)}</time>
+                          </div>
+                        </div>
+                      )) : (
+                        <div className={styles.emptyNotif}>You're all caught up!</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-               <Link href="/profile" className={styles.userNameLink}>
-                 <span className={styles.userName}>{user.user_metadata?.full_name || user.email?.split('@')[0]}</span>
-               </Link>
-               <Link href="/dashboard" className={styles.dashboardBtn}>Dashboard</Link>
-               <button onClick={() => signOut()} className={styles.logoutBtn}>Logout</button>
-            </div>
+
+              <Link href="/dashboard" className={styles.dashboardBtn}>Dashboard</Link>
+              <button onClick={() => signOut()} className={styles.logoutBtn}>Logout</button>
+            </>
           ) : (
-             <>
-               <Link href="/auth" className={styles.btnSecondary}>Sign In</Link>
-               <Link href="/auth" className={styles.btn}>Get Started</Link>
-             </>
+            <div className={styles.authActions}>
+              <Link href="/auth" className={styles.btnSecondary}>Sign In</Link>
+              <Link href="/auth" className={styles.btnPrimary}>Get Started</Link>
+            </div>
           )}
+
+          {/* Mobile Menu Toggle */}
+          <button className={styles.mobileToggle} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile Drawer */}
+      {isMobileMenuOpen && (
+        <div className={styles.mobileDrawer}>
+          <Link href="/doubts" onClick={() => setIsMobileMenuOpen(false)}>Doubts</Link>
+          <Link href="/mentors" onClick={() => setIsMobileMenuOpen(false)}>Mentors</Link>
+          <Link href="/tests" onClick={() => setIsMobileMenuOpen(false)}>Practice</Link>
+          <a href="#features" onClick={(e) => handleNavClick(e, '#features')}>Features</a>
+          {!user && <Link href="/auth" onClick={() => setIsMobileMenuOpen(false)}>Sign In</Link>}
+        </div>
+      )}
     </nav>
   );
 }

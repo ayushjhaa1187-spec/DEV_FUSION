@@ -65,7 +65,7 @@ export default function PublicProfilePage() {
             <p className="sb-subtitle" style={{ marginBottom: '15px' }}>{profile.full_name} • {profile.college}</p>
             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
               <ReputationBadge points={profile.reputation_points} />
-              <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>Member since {new Date(profile.created_at).toLocaleDateString()}</span>
+              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Member since {new Date(profile.created_at).toLocaleDateString()}</span>
             </div>
           </div>
         </div>
@@ -76,15 +76,15 @@ export default function PublicProfilePage() {
               <h3 style={{ marginBottom: '20px' }}>Contribution Stats</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--muted)' }}>Doubts Asked</span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Doubts Asked</span>
                   <span style={{ fontWeight: 700 }}>{contributionStats?.doubts}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--muted)' }}>Solutions Provided</span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Solutions Provided</span>
                   <span style={{ fontWeight: 700 }}>{contributionStats?.answers}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--muted)' }}>Active Streak</span>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Active Streak</span>
                   <span style={{ fontWeight: 700, color: '#f59e0b' }}>{profile.login_streak} days 🔥</span>
                 </div>
               </div>
@@ -113,12 +113,12 @@ export default function PublicProfilePage() {
                     <div key={badge.id} className="badge-item" style={{ textAlign: 'center', padding: '15px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{badge.icon}</div>
                       <h4 style={{ fontSize: '0.9rem', marginBottom: '4px' }}>{badge.name}</h4>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--muted)', lineHeight: 1.2 }}>{badge.description}</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', lineHeight: 1.2 }}>{badge.description}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
+                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}>
                   This user hasn't earned any badges yet. Participate in the community to unlock!
                 </div>
               )}

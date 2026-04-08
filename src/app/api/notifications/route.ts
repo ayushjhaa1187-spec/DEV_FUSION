@@ -11,13 +11,14 @@ export async function GET(req: NextRequest) {
     .from('notifications')
     .select('*')
     .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(20);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }
 
-export async function POST(req: NextRequest) {
+export async function PATCH(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -26,18 +27,17 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Support marking ALL as read for the user
-    if (body.mark_all) {
+    if (body.markAllRead) {
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
         .eq('user_id', user.id)
         .eq('is_read', false);
+        
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       return NextResponse.json({ success: true, marked: 'all' });
     }
 
-    // Support marking ONE as read with security ownership check
     if (!body.notification_id) {
       return NextResponse.json({ error: 'notification_id required' }, { status: 400 });
     }
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       .from('notifications')
       .update({ is_read: true })
       .eq('id', body.notification_id)
-      .eq('user_id', user.id); // SECURITY: ensures user cannot mark others' notifications
+      .eq('user_id', user.id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });

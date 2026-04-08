@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useAuth } from '@/components/auth/auth-provider';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 
+import { Skeleton } from '@/components/ui/Skeleton';
+
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
@@ -32,21 +34,27 @@ export default function DashboardPage() {
   }, [user, loading, router, supabase]);
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>
-      Loading your dashboard...
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '3rem 2rem' }}>
+      <div style={{ marginBottom: '2.5rem' }}>
+        <Skeleton width="60%" height="2.5rem" className="mb-4" />
+        <Skeleton width="40%" height="1.2rem" />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
+        {[1, 2, 3, 4].map(i => <Skeleton key={i} height="150px" className="rounded-xl" />)}
+      </div>
     </div>
   );
 
   if (!user) return null;
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '3rem 2rem', color: 'var(--text)' }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '3rem 2rem', color: 'var(--color-text)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem' }}>
         <div>
           <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.5rem' }}>
             Welcome back, {profile?.full_name || user.email?.split('@')[0]} 👋
           </h1>
-          <p style={{ color: 'var(--muted)' }}>{user.email}</p>
+          <p style={{ color: 'var(--color-text-muted)' }}>{user.email}</p>
         </div>
         
         {profile && (
@@ -63,12 +71,12 @@ export default function DashboardPage() {
           <Link key={card.href} href={card.href} style={{
             display: 'flex', flexDirection: 'column', gap: '0.75rem',
             background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '16px', padding: '1.75rem', textDecoration: 'none', color: 'var(--text)',
+            borderRadius: '16px', padding: '1.75rem', textDecoration: 'none', color: 'var(--color-text)',
             transition: 'border-color 0.2s, transform 0.2s',
           }}>
             <span style={{ fontSize: '1.75rem' }}>{card.icon}</span>
             <span style={{ fontWeight: 700 }}>{card.label}</span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>{card.desc}</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{card.desc}</span>
           </Link>
         ))}
       </div>
@@ -76,7 +84,7 @@ export default function DashboardPage() {
       <button onClick={signOut} style={{
         padding: '0.65rem 1.5rem', background: 'transparent',
         border: '1px solid rgba(255,255,255,0.15)', borderRadius: '9999px',
-        color: 'var(--muted)', cursor: 'pointer', fontSize: '0.9rem'
+        color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.9rem'
       }}>
         Sign out
       </button>

@@ -1,24 +1,37 @@
-export const REPUTATION_POINTS = {
-  ANSWER_POSTED: 10,
-  ANSWER_ACCEPTED: 25,
-  DAILY_LOGIN: 2,
-  TEST_COMPLETED: 5,
+export const REPUTATION_WEIGHTS: Record<string, number> = {
+  question_posted: 5,
+  answer_posted: 10,
+  answer_accepted: 50,
+  upvote_received: 7,
+  downvote_received: -3,
+  badge_earned: 25,
+  test_completed: 15,
+  test_perfect_score: 30,
 };
 
-export const BADGES = [
-  { id: 'first_answer', name: 'First Answer', icon: '✍️', threshold: 10 },
-  { id: 'helpful_mentor', name: 'Helpful Mentor', icon: '🤝', threshold: 100 },
-  { id: 'streak_master', name: 'Streak Master', icon: '🔥', threshold: 50 },
-  { id: 'subject_expert', name: 'Subject Expert', icon: '🎓', threshold: 250 },
+export interface ReputationEvent {
+  type: string;
+  count?: number;
+}
+
+export function calculateReputation(events: ReputationEvent[]): number {
+  return events.reduce((total, event) => {
+    const weight = REPUTATION_WEIGHTS[event.type] ?? 0;
+    return total + weight * (event.count ?? 1);
+  }, 0);
+}
+
+export const BADGE_THRESHOLDS = [
+  { min: 100, badge: 'Rising Star' },
+  { min: 500, badge: 'Problem Solver' },
+  { min: 1000, badge: 'Knowledge Guru' },
+  { min: 5000, badge: 'Legend' },
 ];
 
 export function getRank(points: number) {
-  if (points >= 1000) return 'Scholar';
-  if (points >= 500) return 'Expert';
-  if (points >= 100) return 'Contributor';
+  if (points >= 5000) return 'Legend';
+  if (points >= 1000) return 'Knowledge Guru';
+  if (points >= 500) return 'Problem Solver';
+  if (points >= 100) return 'Rising Star';
   return 'Beginner';
-}
-
-export function getUnlockedBadges(points: number) {
-  return BADGES.filter(badge => points >= badge.threshold);
 }
