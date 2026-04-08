@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/auth-provider';
 import { notificationApi } from '@/lib/api';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
@@ -11,17 +12,35 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (user) {
-      const fetchUnread = async () => {
-        try {
-          const { count } = await notificationApi.getUnreadCount();
-          setUnreadCount(count);
-        } catch (err) {
-          // Ignore
+    if (!user) return;
+
+    const fetchInitialUnread = async () => {
+      try {
+        const data = await notificationApi.getNotifications();
+        const unread = data?.filter((n: any) => !n.is_read).length || 0;
+        setUnreadCount(unread);
+      } catch (err) {
+        console.error('Failed to fetch unread notifications');
+      }
+    };
+    fetchInitialUnread();
+
+    // 🚀 RESTORED REALTIME: Supabase Notification Subscription
+    const supabase = createSupabaseBrowser();
+    const channel = supabase
+      .channel(`user-notifications:${user.id}`)
+      .on(
+        'postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        () => {
+          setUnreadCount(prev => prev + 1);
         }
-      };
-      fetchUnread();
-    }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return (
@@ -40,10 +59,10 @@ export default function Navbar() {
           {user ? (
             <div className={styles.userSection}>
               <div className={styles.notificationWrapper}>
-                <span className={styles.icon}>🔔</span>
+                <Link href="/notifications" className={styles.icon}>🔔</Link>
                 {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
               </div>
-              <span className={styles.userName}>{user.name || user.email?.split('@')[0]}</span>
+              <span className={styles.userName}>{user.username || user.email?.split('@')[0]}</span>
               <button onClick={() => signOut()} className={styles.logoutBtn}>Logout</button>
             </div>
           ) : (

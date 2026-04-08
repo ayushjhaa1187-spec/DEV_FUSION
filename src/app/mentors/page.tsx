@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { mentorApi } from '@/lib/api';
 import styles from './mentors.module.css';
 
@@ -13,7 +14,7 @@ export default function MentorsPage() {
     async function fetchMentors() {
       try {
         const data = await mentorApi.getMentors();
-        setMentors(data);
+        setMentors(data || []);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -27,10 +28,10 @@ export default function MentorsPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div className={styles.headerContent}>
-          <h1 className={styles.title}>Verified Mentors</h1>
-          <p className={styles.subtitle}>Connect with experts for 1-on-1 guidance and academic success.</p>
+          <h1 className={styles.title}>Expert Mentors</h1>
+          <p className={styles.subtitle}>Book 1-on-1 sessions with senior students and experts in your field.</p>
         </div>
-        <button className={styles.applyBtn}>Become a Mentor</button>
+        <Link href="/mentors/apply" className={styles.applyBtn}>Become a Mentor</Link>
       </header>
 
       <div className={styles.searchSection}>
@@ -58,34 +59,38 @@ export default function MentorsPage() {
       ) : (
         <div className={styles.mentorGrid}>
           {mentors.map((mentor) => (
-            <div key={mentor._id} className={`${styles.mentorCard} glass`}>
+            <div key={mentor.id} className={`${styles.mentorCard} glass`}>
               <div className={styles.cardHeader}>
                 <div className={styles.avatarContainer}>
-                  <div className={styles.avatarPlaceholder} />
-                  <div className={styles.ratingBadge}>★ {mentor.avgRating || '5.0'}</div>
+                  {mentor.profiles?.avatar_url ? (
+                    <img src={mentor.profiles.avatar_url} alt="" className={styles.avatar} />
+                  ) : (
+                    <div className={styles.avatarPlaceholder} />
+                  )}
+                  <div className={styles.ratingBadge}>★ {mentor.rating || '5.0'}</div>
                 </div>
                 <div className={styles.headerInfo}>
-                  <h3 className={styles.name}>{mentor.userId?.name || 'Mentor'}</h3>
-                  <p className={styles.specialty}>{mentor.subjects?.join(', ') || 'General Academic'}</p>
+                  <h3 className={styles.name}>{mentor.profiles?.username || 'Expert Mentor'}</h3>
+                  <p className={styles.specialty}>{mentor.specialty || 'General Academic'}</p>
                 </div>
               </div>
               <div className={styles.cardBody}>
                 <div className={styles.stats}>
                   <div className={styles.statLine}>
                     <span className={styles.statLabel}>Completed Sessions:</span>
-                    <span className={styles.statValue}>{mentor.totalSessions}+</span>
+                    <span className={styles.statValue}>{mentor.sessions_completed || 0}+</span>
                   </div>
                   <div className={styles.statLine}>
                     <span className={styles.statLabel}>Rate:</span>
-                    <span className={mentor.fee === 0 ? styles.freeValue : styles.priceValue}>
-                      {mentor.fee === 0 ? 'Free' : `₹${mentor.fee}/30min`}
+                    <span className={mentor.hourly_rate === 0 ? styles.freeValue : styles.priceValue}>
+                      {mentor.hourly_rate === 0 ? 'Free' : `₹${mentor.hourly_rate}/30min`}
                     </span>
                   </div>
                 </div>
               </div>
               <div className={styles.cardFooter}>
-                <button className={styles.viewProfileBtn}>View Profile</button>
-                <button className={styles.bookBtn}>Book Session</button>
+                <Link href={`/mentors/${mentor.user_id}`} className={styles.viewProfileBtn}>View Profile</Link>
+                <Link href={`/mentors/${mentor.user_id}`} className={styles.bookBtn}>Book Session</Link>
               </div>
             </div>
           ))}
@@ -95,4 +100,3 @@ export default function MentorsPage() {
     </div>
   );
 }
-

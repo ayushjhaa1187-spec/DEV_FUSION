@@ -50,9 +50,14 @@ export async function POST(req: NextRequest) {
       explanation: q.explanation
     }));
 
-    await supabase.from('practice_questions').insert(formattedQuestions);
+    const { data: storedQuestions, error: questionError } = await supabase
+      .from('practice_questions')
+      .insert(formattedQuestions)
+      .select();
 
-    return NextResponse.json(test);
+    if (questionError) return NextResponse.json({ error: questionError.message }, { status: 500 });
+
+    return NextResponse.json({ ...test, questions: storedQuestions });
   } catch (error) {
     console.error('Test Generation Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

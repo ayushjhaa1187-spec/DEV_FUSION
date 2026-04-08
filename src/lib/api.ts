@@ -1,16 +1,16 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+/*
+  Phase 2 Fix: Connecting frontend to the COMPLETE Next.js/Supabase backend routes.
+  This removes the 'localhost:5000' blocker and uses relative API calls.
+*/
 
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...options.headers,
-  };
-
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  // Relative URLs for seamless Vercel deployment
+  const response = await fetch(endpoint, {
     ...options,
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
   if (!response.ok) {
@@ -22,53 +22,44 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
 }
 
 export const authApi = {
-  login: (data: any) => apiFetch('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
-  register: (data: any) => apiFetch('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  // Supabase Auth is handled via the separate Auth Provider, but we can wrap any custom logic here if needed
+  getSession: () => apiFetch('/api/auth/session'),
 };
 
 export const doubtApi = {
-  getDoubts: (params?: any) => {
-    const query = new URLSearchParams(params).toString();
-    return apiFetch(`/doubts${query ? `?${query}` : ''}`);
+  getDoubts: (filters?: any) => {
+    const query = new URLSearchParams(filters).toString();
+    return apiFetch(`/api/doubts${query ? `?${query}` : ''}`);
   },
-  createDoubt: (data: any) => apiFetch('/doubts', { method: 'POST', body: JSON.stringify(data) }),
-  getDoubt: (id: string) => apiFetch(`/doubts/${id}`),
+  createDoubt: (data: any) => apiFetch('/api/doubts', { method: 'POST', body: JSON.stringify(data) }),
+  getDoubt: (id: string) => apiFetch(`/api/doubts/${id}`),
 };
 
 export const answerApi = {
-  getAnswers: (doubtId: string) => apiFetch(`/answers/doubt/${doubtId}`),
-  postAnswer: (data: any) => apiFetch('/answers', { method: 'POST', body: JSON.stringify(data) }),
-  acceptAnswer: (id: string) => apiFetch(`/answers/${id}/accept`, { method: 'POST' }),
+  getAnswers: (doubtId: string) => apiFetch(`/api/doubts/${doubtId}/answers`),
+  postAnswer: (doubtId: string, data: any) => apiFetch(`/api/doubts/${doubtId}/answers`, { method: 'POST', body: JSON.stringify(data) }),
+  acceptAnswer: (answerId: string) => apiFetch(`/api/answers/${answerId}/accept`, { method: 'POST' }),
+  vote: (answerId: string, value: number) => apiFetch(`/api/answers/${answerId}/vote`, { method: 'POST', body: JSON.stringify({ value }) }),
 };
 
 export const mentorApi = {
-  getMentors: (params?: any) => {
-    const query = new URLSearchParams(params).toString();
-    return apiFetch(`/mentors/directory${query ? `?${query}` : ''}`);
+  getMentors: (filters?: any) => {
+    const query = new URLSearchParams(filters).toString();
+    return apiFetch(`/api/mentors${query ? `?${query}` : ''}`);
   },
-  getProfile: (userId?: string) => apiFetch(`/mentors/profile${userId ? `/${userId}` : ''}`),
-  apply: (data: any) => apiFetch('/mentors/apply', { method: 'POST', body: JSON.stringify(data) }),
-  getSlots: (mentorId: string) => apiFetch(`/mentors/slots/${mentorId}`),
-  createSlots: (data: any) => apiFetch('/mentors/slots', { method: 'POST', body: JSON.stringify(data) }),
-};
-
-export const bookingApi = {
-  create: (data: any) => apiFetch('/bookings', { method: 'POST', body: JSON.stringify(data) }),
-  verify: (data: any) => apiFetch('/bookings/verify', { method: 'POST', body: JSON.stringify(data) }),
-};
-
-export const aiApi = {
-  solveDoubt: (text: string) => apiFetch('/ai/solve', { method: 'POST', body: JSON.stringify({ text }) }),
+  apply: (data: any) => apiFetch('/api/mentors/apply', { method: 'POST', body: JSON.stringify(data) }),
+  getProfile: (id: string) => apiFetch(`/api/mentors/${id}`),
 };
 
 export const testApi = {
-  generate: (data: any) => apiFetch('/tests/generate', { method: 'POST', body: JSON.stringify(data) }),
-  submit: (data: any) => apiFetch('/tests/submit', { method: 'POST', body: JSON.stringify(data) }),
-  getAttempts: () => apiFetch('/tests/attempts'),
+  generate: (data: any) => apiFetch('/api/tests/generate', { method: 'POST', body: JSON.stringify(data) }),
+  submit: (testId: string, data: any) => apiFetch(`/api/tests/${testId}/submit`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+export const aiApi = {
+  solveDoubt: (data: any) => apiFetch('/api/ai/solve', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 export const notificationApi = {
-  getNotifications: () => apiFetch('/notifications'),
-  markAsRead: (id: string) => apiFetch(`/notifications/${id}/read`, { method: 'POST' }),
-  getUnreadCount: () => apiFetch('/notifications/unread-count'),
+  getNotifications: () => apiFetch('/api/notifications'),
 };

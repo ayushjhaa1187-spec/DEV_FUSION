@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { doubtApi, aiApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import styles from './doubts.module.css';
@@ -13,8 +14,8 @@ export default function DoubtsPage() {
   useEffect(() => {
     async function fetchDoubts() {
       try {
-        const { doubts } = await doubtApi.getDoubts();
-        setDoubts(doubts);
+        const data = await doubtApi.getDoubts();
+        setDoubts(data || []);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -33,8 +34,8 @@ export default function DoubtsPage() {
     setIsAiSolving(true);
     setAiResponse(null);
     try {
-      const { answer } = await aiApi.solveDoubt(aiQuestion);
-      setAiResponse(answer);
+      const data = await aiApi.solveDoubt({ question: aiQuestion });
+      setAiResponse(data.answer || data.solution || 'No solution found.');
     } catch (err) {
       setAiResponse('AI service temporary unavailable. Try again later.');
     } finally {
@@ -97,40 +98,41 @@ export default function DoubtsPage() {
       ) : (
         <div className={styles.doubtList}>
           {doubts.map((doubt) => (
-            <div key={doubt._id} className={`${styles.doubtCard} glass`}>
+            <Link href={`/doubts/${doubt.id}`} key={doubt.id} className={`${styles.doubtCard} glass`}>
               <div className={styles.voteSidebar}>
                 <button className={styles.voteBtn}>▲</button>
-                <span className={styles.voteCount}>{doubt.voteScore || 0}</span>
+                <span className={styles.voteCount}>{doubt.votes || 0}</span>
                 <button className={styles.voteBtn}>▼</button>
               </div>
               <div className={styles.cardMain}>
                 <div className={styles.cardHeader}>
                   <div className={styles.tags}>
-                    {doubt.subject && <span className={styles.tag}>{doubt.subject}</span>}
+                    {doubt.subjects?.name && <span className={styles.tag}>{doubt.subjects.name}</span>}
                   </div>
                   {doubt.status === 'resolved' && <span className={styles.resolvedBadge}>✓ Resolved</span>}
                 </div>
                 <h3 className={styles.doubtTitle}>{doubt.title}</h3>
                 <p className={styles.doubtSnippet}>
-                  {typeof doubt.contentJson === 'string' 
-                    ? doubt.contentJson.substring(0, 200) 
-                    : 'View full doubt for details...'}
+                  {doubt.content?.substring(0, 200)}
+                  {doubt.content?.length > 200 ? '...' : ''}
                 </p>
                 <div className={styles.cardFooter}>
                   <div className={styles.userInfo}>
-                    <div className={styles.avatarPlaceholder} />
+                    {doubt.profiles?.avatar_url && (
+                      <img src={doubt.profiles.avatar_url} alt="" className={styles.avatar} />
+                    )}
                     <div className={styles.userDetails}>
-                      <span className={styles.userName}>{doubt.authorId?.name || 'Learner'}</span>
-                      <ReputationBadge points={doubt.authorId?.reputation || 0} />
+                      <span className={styles.userName}>{doubt.profiles?.username || 'Learner'}</span>
+                      <ReputationBadge points={doubt.profiles?.reputation_points || 0} />
                     </div>
                   </div>
 
                   <div className={styles.meta}>
-                    <span>{doubt.answerCount} answers</span>
+                    <span>{new Date(doubt.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
           {doubts.length === 0 && <p className={styles.emptyState}>No doubts found. Be the first to ask!</p>}
         </div>

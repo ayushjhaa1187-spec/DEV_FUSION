@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 
 interface User {
   id: string;
-  name: string;
+  username: string;
   email: string;
   role: string;
-  reputation: number;
+  reputation_points: number;
+  avatar_url?: string;
+  full_name?: string;
 }
 
 const AuthContext = createContext<{

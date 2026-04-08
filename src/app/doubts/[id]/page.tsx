@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
-import { doubtApi, answerApi } from '@/lib/api';
+import { doubtApi, answerApi, aiApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import styles from './doubt-detail.module.css';
 
@@ -19,6 +19,9 @@ export default function DoubtDetailPage({
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
 
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSolution, setAiSolution] = useState<string | null>(null);
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -26,7 +29,7 @@ export default function DoubtDetailPage({
         const answersData = await answerApi.getAnswers(id);
         
         setDoubt(doubtData);
-        setAnswers(answersData);
+        setAnswers(answersData || []);
       } catch (err) {
         console.error('Failed to load doubt details');
       } finally {
@@ -34,6 +37,9 @@ export default function DoubtDetailPage({
       }
     }
     fetchData();
+
+    // Note: In a full implementation, we would set up a Supabase Realtime subscription here
+    // for the 'answers' table filtered by doubt_id.
   }, [id]);
 
   const handlePostAnswer = async () => {
@@ -41,9 +47,8 @@ export default function DoubtDetailPage({
     setPosting(true);
 
     try {
-      const answer = await answerApi.postAnswer({ 
-        doubtId: id, 
-        contentJson: newAnswer // In MERN we use contentJson
+      const answer = await answerApi.postAnswer(id, { 
+        content: newAnswer
       });
 
       setAnswers([...answers, answer]);
@@ -55,12 +60,27 @@ export default function DoubtDetailPage({
     }
   };
 
+  const handleAiHelp = async () => {
+    if (!doubt) return;
+    setAiLoading(true);
+    try {
+      const data = await aiApi.solveDoubt({ 
+        title: doubt.title, 
+        content: doubt.content 
+      });
+      setAiSolution(data.answer || data.solution);
+    } catch (err) {
+      alert('AI service error');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleAcceptAnswer = async (answerId: string) => {
     try {
       await answerApi.acceptAnswer(answerId);
-      
       setAnswers(answers.map(a => 
-        a._id === answerId ? { ...a, isAccepted: true } : { ...a, isAccepted: false }
+        a.id === answerId ? { ...a, is_accepted: true } : { ...a, is_accepted: false }
       ));
     } catch (err) {
       alert('Failed to accept solution');
@@ -75,65 +95,77 @@ export default function DoubtDetailPage({
       <article className={`${styles.mainDoubt} glass`}>
         <header className={styles.header}>
           <div className={styles.tags}>
-            {doubt.subject && <span className={styles.tag}>{doubt.subject}</span>}
+            {doubt.subjects?.name && <span className={styles.tag}>{doubt.subjects.name}</span>}
           </div>
           <h1 className={styles.title}>{doubt.title}</h1>
           <div className={styles.meta}>
             <div className={styles.userInfo}>
               <div className={styles.avatarPlaceholder} />
               <div className={styles.userDetails}>
-                <span className={styles.userName}>{doubt.authorId?.name || 'Learner'}</span>
-                <ReputationBadge points={doubt.authorId?.reputation || 0} />
+                <span className={styles.userName}>{doubt.profiles?.username || 'Learner'}</span>
+                <ReputationBadge points={doubt.profiles?.reputation_points || 0} />
               </div>
             </div>
-            <span className={styles.date}>Asked {new Date(doubt.createdAt).toLocaleDateString()}</span>
+            <span className={styles.date}>Asked {new Date(doubt.created_at).toLocaleDateString()}</span>
           </div>
         </header>
         <div className={styles.content}>
-          <p>{typeof doubt.contentJson === 'string' ? doubt.contentJson : 'View details...'}</p>
+          <p>{doubt.content}</p>
         </div>
         <footer className={styles.footer}>
           <div className={styles.actions}>
             <button className={styles.voteBtn}>▲</button>
-            <span className={styles.voteCount}>{doubt.voteScore || 0}</span>
+            <span className={styles.voteCount}>{doubt.votes || 0}</span>
             <button className={styles.voteBtn}>▼</button>
           </div>
-          <button className={styles.shareBtn}>Share</button>
+          <div className={styles.footerBtns}>
+            <button onClick={handleAiHelp} className={styles.aiHelpBtn} disabled={aiLoading}>
+              {aiLoading ? 'AI Thinking...' : '✨ Get AI Hint'}
+            </button>
+            <button className={styles.shareBtn}>Share</button>
+          </div>
         </footer>
+
+        {aiSolution && (
+          <div className={styles.aiCard}>
+            <h4>AI Assistant Suggestion</h4>
+            <p>{aiSolution}</p>
+          </div>
+        )}
       </article>
 
       <section className={styles.answersSection}>
         <h2 className={styles.sectionTitle}>{answers.length} Answers</h2>
         <div className={styles.answerList}>
           {answers.map(answer => (
-            <div key={answer._id} className={`${styles.answerCard} glass ${answer.isAccepted ? styles.accepted : ''}`}>
-              {answer.isAccepted && <div className={styles.acceptedBadge}>✓ Accepted Solution</div>}
+            <div key={answer.id} className={`${styles.answerCard} glass ${answer.is_accepted ? styles.accepted : ''}`}>
+              {answer.is_accepted && <div className={styles.acceptedBadge}>✓ Accepted Solution</div>}
               <div className={styles.answerHeader}>
                 <div className={styles.userInfo}>
                   <div className={styles.avatarPlaceholder} />
                   <div className={styles.userDetails}>
-                    <span className={styles.userName}>{answer.authorId?.name || 'Solver'}</span>
-                    <ReputationBadge points={answer.authorId?.reputation || 0} />
+                    <span className={styles.userName}>{answer.profiles?.username || 'Solver'}</span>
+                    <ReputationBadge points={answer.profiles?.reputation_points || 0} />
                   </div>
                 </div>
-                <span className={styles.date}>{new Date(answer.createdAt).toLocaleDateString()}</span>
+                <span className={styles.date}>{new Date(answer.created_at).toLocaleDateString()}</span>
               </div>
               <div className={styles.answerContent}>
-                <p>{typeof answer.contentJson === 'string' ? answer.contentJson : 'View full solution...'}</p>
+                <p>{answer.content}</p>
               </div>
               <div className={styles.answerFooter}>
                 <div className={styles.actions}>
                   <button className={styles.voteBtn}>▲</button>
-                  <span className={styles.voteCount}>{answer.voteScore || 0}</span>
+                  <span className={styles.voteCount}>{answer.votes || 0}</span>
                   <button className={styles.voteBtn}>▼</button>
                 </div>
                 
-                {user?.id === (doubt.authorId?._id || doubt.authorId) && !answer.isAccepted && (
+                {user?.id === doubt.author_id && !answer.is_accepted && (
                   <button 
-                    onClick={() => handleAcceptAnswer(answer._id)}
+                    onClick={() => handleAcceptAnswer(answer.id)}
                     className={styles.acceptBtn}
                   >
-                    Accept as Solution
+                    Accept Solution
                   </button>
                 )}
               </div>
