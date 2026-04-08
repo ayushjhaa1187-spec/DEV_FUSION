@@ -2,17 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { createSupabaseServer } from '@/lib/supabase/server';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || '',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-});
-
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Initialize Razorpay inside handler to avoid build-time crashes
+  const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID || '',
+    key_secret: process.env.RAZORPAY_KEY_SECRET || '',
+  });
+
+  if (!process.env.RAZORPAY_KEY_ID) {
+    console.error('RAZORPAY_KEY_ID is missing');
+    return NextResponse.json({ error: 'Payment gateway configuration error' }, { status: 500 });
   }
 
   try {

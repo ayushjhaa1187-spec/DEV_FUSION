@@ -1,0 +1,145 @@
+.progress-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.progress-header {
+  margin-bottom: 50px;
+  text-align: left;
+}
+
+.stats-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  margin-bottom: 60px;
+}
+
+.board-card {
+  padding: 30px;
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.board-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.board-value {
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.board-value.gold {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.board-trend {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.board-trend.up {
+  color: #06d6a0;
+}
+
+.history-section h2 {
+  font-size: 1.8rem;
+  margin-bottom: 30px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.table-responsive {
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table th {
+  text-align: left;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.6;
+}
+
+.history-table td {
+  padding: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.score-wrap {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.score-num {
+  font-weight: 700;
+  min-width: 45px;
+}
+
+.score-bar-bg {
+  flex: 1;
+  height: 6px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #a78bfa);
+  border-radius: 10px;
+}
+
+.status-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+.status-pill.pass {
+  background: rgba(6, 214, 160, 0.1);
+  color: #06d6a0;
+}
+
+.status-pill.fail {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.empty-history {
+  padding: 80px;
+  text-align: center;
+  border-radius: 24px;
+}
