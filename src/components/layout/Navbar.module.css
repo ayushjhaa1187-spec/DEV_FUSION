@@ -1,3 +1,4 @@
+/* ===== NAVBAR ===== */
 .navbar {
   position: fixed;
   top: 0;
@@ -7,9 +8,173 @@
   z-index: 1000;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--glass-border);
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.3);
 }
 
+.navContent {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+/* ===== LOGO ===== */
+.logo {
+  flex-shrink: 0;
+}
+
+.logoLink {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.logoSvg {
+  width: 220px;
+  height: 44px;
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
+  transition: filter 0.3s ease;
+}
+
+.logoSvg:hover {
+  filter: drop-shadow(0 0 14px rgba(139, 92, 246, 0.8));
+}
+
+/* ===== NAV LINKS ===== */
+.navLinks {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.navLink {
+  color: #94a3b8;
+  font-weight: 500;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #8B5CF6, #3B82F6);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.navLink:hover {
+  color: #e2e8f0;
+}
+
+.navLink:hover::after {
+  width: 100%;
+}
+
+/* ===== NAV RIGHT ===== */
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+/* ===== NOTIFICATION BUTTON ===== */
+.notifyBtn {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.notifyBtn:hover {
+  color: #8B5CF6;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.notifyBadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.25rem;
+  background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.55);
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.1rem;
+  background: rgba(139, 92, 246, 0.1);
+  color: #8B5CF6;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  text-decoration: none;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.btnSecondary:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.6);
+  transform: translateY(-1px);
+}
+
+/* ===== LEGACY CLASSES (kept for compatibility) ===== */
 .container {
   max-width: 1200px;
   width: 100%;
@@ -20,22 +185,12 @@
   align-items: center;
 }
 
-.logo {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  display: flex;
-  align-items: center;
-  gap: 0.1rem;
-}
-
 .logoText {
-  color: var(--text-primary);
+  color: #e2e8f0;
 }
 
 .logoHighlight {
-  color: var(--primary-violet);
+  color: #8B5CF6;
 }
 
 .links {
@@ -44,13 +199,14 @@
 }
 
 .link {
-  color: var(--text-secondary);
+  color: #94a3b8;
   font-weight: 500;
   font-size: 0.95rem;
+  text-decoration: none;
 }
 
 .link:hover {
-  color: var(--primary-violet);
+  color: #8B5CF6;
 }
 
 .actions {
@@ -59,29 +215,30 @@
 }
 
 .loginBtn {
-  color: var(--text-primary);
+  color: #e2e8f0;
   font-weight: 500;
   padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 .signupBtn {
-  background: var(--primary-violet);
+  background: linear-gradient(135deg, #8B5CF6, #3B82F6);
   color: white;
   padding: 0.6rem 1.25rem;
-  border-radius: var(--radius-xl);
+  border-radius: 10px;
   font-weight: 600;
   box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
 }
 
 .signupBtn:hover {
-  background: var(--primary-violet-glow);
   transform: translateY(-1px);
-}
-
-@media (max-width: 768px) {
-  .links {
-    display: none;
-  }
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.55);
 }
 
 .userNameLink {
@@ -90,9 +247,29 @@
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
+  color: #e2e8f0;
 }
 
 .userNameLink:hover {
   transform: translateY(-1px);
   opacity: 0.8;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .navLinks {
+    display: none;
+  }
+  .navContent {
+    padding: 0 1rem;
+  }
+  .logoSvg {
+    width: 160px;
+    height: 36px;
+  }
+  .btn,
+  .btnSecondary {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.82rem;
+  }
 }
