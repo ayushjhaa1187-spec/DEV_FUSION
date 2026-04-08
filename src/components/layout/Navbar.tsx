@@ -16,9 +16,8 @@ export default function Navbar() {
 
     const fetchInitialUnread = async () => {
       try {
-        const data = await notificationApi.getNotifications();
-        const unread = data?.filter((n: any) => !n.is_read).length || 0;
-        setUnreadCount(unread);
+        const count = await notificationApi.getUnreadCount();
+        setUnreadCount(count || 0);
       } catch (err) {
         console.error('Failed to fetch unread notifications');
       }
@@ -62,16 +61,17 @@ export default function Navbar() {
                 <Link href="/notifications" className={styles.icon}>🔔</Link>
                 {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
               </div>
-              <Link href="/profile" className={styles.userNameLink}>
-                <span className={styles.userName}>{user.username || user.email?.split('@')[0]}</span>
-              </Link>
-              <button onClick={() => signOut()} className={styles.logoutBtn}>Logout</button>
+               <Link href="/profile" className={styles.userNameLink}>
+                 <span className={styles.userName}>{user.user_metadata?.full_name || user.email?.split('@')[0]}</span>
+               </Link>
+               <Link href="/dashboard" className={styles.dashboardBtn}>Dashboard</Link>
+               <button onClick={() => signOut()} className={styles.logoutBtn}>Logout</button>
             </div>
           ) : (
-            <>
-              <Link href="/auth" className={styles.loginBtn}>Login</Link>
-              <Link href="/auth" className={styles.signupBtn}>Get Started</Link>
-            </>
+             <>
+               <Link href="/auth" className={styles.btnSecondary}>Sign In</Link>
+               <Link href="/auth" className={styles.btn}>Get Started</Link>
+             </>
           )}
         </div>
       </div>

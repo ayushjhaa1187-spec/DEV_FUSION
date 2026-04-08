@@ -2,48 +2,45 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  reputation_points: number;
-  avatar_url?: string;
-  full_name?: string;
-}
-
-const AuthContext = createContext<{
+interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signOut: () => void;
-}>({
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  signOut: () => {},
+  signOut: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const supabase = createSupabaseBrowser();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+  const signOut = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    router.push('/auth');
+    router.push('/');
   };
 
   return (
