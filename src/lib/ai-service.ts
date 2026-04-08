@@ -11,19 +11,20 @@ export interface AIDoubtResponse {
 
 export async function askAIDoubt(question: string, context?: string): Promise<AIDoubtResponse> {
   const prompt = `
-    You are SkillBridge AI, an expert academic tutor for college students.
-    Student Question: "${question}"
-    ${context ? `Context: ${context}` : ''}
+    You are SkillBridge AI, a world-class academic tutor known for Socratic teaching and intuitive conceptual breakdowns. 
+    A student has a doubt: "${question}"
+    ${context ? `Extra context: ${context}` : ''}
 
+    Your goal is NOT just to give the answer, but to build conceptual clarity.
     Please provide:
-    1. A clear, encouraging explanation.
-    2. A step-by-step breakdown of the concept.
-    3. 3-5 academic tags (e.g., "Data Science", "Calculus").
+    1. A clear, encouraging "Intuition" section that explains the core 'Why' behind the concept.
+    2. A logical, step-by-step breakdown using analogies where possible.
+    3. 3-5 specific academic tags for categorization.
 
     Format the response as JSON:
     {
-      "explanation": "...",
-      "steps": ["Step 1...", "Step 2..."],
+      "explanation": "Brief intuitive overview...",
+      "steps": ["Step 1: The Foundation...", "Step 2: The Logic...", "Step 3: Edge Cases/Nuance..."],
       "suggested_tags": ["tag1", "tag2"]
     }
   `;

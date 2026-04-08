@@ -1,47 +1,54 @@
 .badgeContainer {
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  background: var(--bg-card);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border-color);
-  width: fit-content;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .rankInfo {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .points {
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: var(--primary-violet);
+  font-weight: 800;
+  color: var(--gold);
+  font-size: 0.9rem;
 }
 
 .rankBadge {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
+  padding: 2px 8px;
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--purple);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .badges {
   display: flex;
-  gap: 0.5rem;
-  padding-left: 1rem;
-  border-left: 1px solid var(--border-color);
+  gap: 6px;
+  align-items: center;
 }
 
 .badgeIcon {
-  font-size: 1.25rem;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
   cursor: help;
 }
 
 .moreBadges {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  color: var(--muted);
   font-weight: 600;
-  color: var(--primary-violet);
-  align-self: center;
 }

@@ -1,262 +1,252 @@
-.container {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 2rem;
-  min-height: 100vh;
+.premiumHeader {
+  background: 
+    linear-gradient(to bottom, rgba(124, 58, 237, 0.05), transparent),
+    var(--bg);
+  padding-top: 60px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2.5rem;
-}
-
-.title {
-  font-size: 2.5rem;
-  background: linear-gradient(135deg, var(--text-primary), var(--primary-violet));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 0.5rem;
-}
-
-.aiCard {
-  margin-top: 2rem;
-  padding: 2rem;
-  border-radius: var(--radius-2xl);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  background: rgba(139, 92, 246, 0.05);
+.aiSection {
+  margin-top: 40px;
+  animation: fadeUp 0.8s ease both;
 }
 
 .aiHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  text-align: left;
+  margin-bottom: 24px;
 }
 
 .aiBadge {
-  background: var(--primary-violet);
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  width: fit-content;
+  display: inline-block;
+  padding: 6px 12px;
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--purple);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 12px;
 }
 
-.aiInputGroup {
+.aiTitle {
+  font-size: 2.2rem;
+  margin: 0;
+  letter-spacing: -0.04em;
+}
+
+.aiInputWrapper {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
 }
 
 .aiInput {
   flex: 1;
-  padding: 0.875rem 1.25rem;
-  background: white;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  font-size: 1rem;
-}
-
-.aiBtn {
-  background: var(--primary-violet);
+  background: transparent;
+  border: none;
+  padding: 12px 20px;
   color: white;
-  padding: 0.875rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 600;
-  transition: opacity 0.2s;
-}
-
-.aiBtn:hover {
-  opacity: 0.9;
-}
-
-.aiSolution {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  border-left: 4px solid var(--primary-violet);
-  text-align: left;
-  line-height: 1.6;
-  color: var(--text-primary);
-}
-
-.filters {
-
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  align-items: center;
-}
-
-.filterTab {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-xl);
-  color: var(--text-secondary);
-  font-weight: 500;
-  border: 1px solid var(--border-color);
-}
-
-.filterTab.active {
-  background: var(--primary-violet);
-  color: white;
-  border-color: var(--primary-violet);
-}
-
-.searchBar {
-  margin-left: auto;
-  max-width: 300px;
-  width: 100%;
-}
-
-.searchInput {
-  width: 100%;
-  padding: 0.6rem 1rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-xl);
-  color: var(--text-primary);
-  font-family: inherit;
-}
-
-.doubtList {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.doubtCard {
-  display: flex;
-  padding: 1.5rem;
-  border-radius: var(--radius-2xl);
-  gap: 1.5rem;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.doubtCard:hover {
-  transform: translateY(-4px);
-  border-color: var(--primary-violet);
-}
-
-.voteSidebar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  min-width: 40px;
-}
-
-.voteBtn {
-  color: var(--text-secondary);
-  font-size: 1.25rem;
-}
-
-.voteBtn:hover {
-  color: var(--primary-violet);
-}
-
-.voteCount {
-  font-weight: 700;
   font-size: 1.1rem;
+  outline: none;
 }
 
-.cardMain {
-  flex: 1;
+.aiOutput {
+  margin-top: 32px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 24px;
+  border: 1px solid var(--border);
+}
+
+.aiExplanation h3 {
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+  color: var(--green);
+}
+
+.aiSteps {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aiStep {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.aiStep span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  background: var(--purple);
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 40px 0;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.subjectScroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.subjectScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.subjectBtn {
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+.subjectBtn:hover, .subjectBtn.active {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: var(--purple);
+  color: white;
+}
+
+.feedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 24px;
+}
+
+.premiumCard {
+  text-decoration: none;
+  color: inherit;
+  padding: 24px;
+  border-radius: 28px;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.premiumCard:hover {
+  transform: translateY(-8px);
+  border-color: var(--purple);
 }
 
 .cardHeader {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  margin-bottom: 16px;
 }
 
-.tags {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.tag {
-  background: rgba(139, 92, 246, 0.1);
-  color: var(--primary-violet);
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
+.subjectTag {
+  padding: 4px 12px;
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--purple);
+  border-radius: 8px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
-.resolvedBadge {
-  color: var(--mentor-green);
+.statusBadge {
+  color: var(--green);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.doubtTitle {
-  font-size: 1.4rem;
-  margin-bottom: 0.75rem;
-  line-height: 1.3;
+.cardTitle {
+  font-size: 1.5rem;
+  margin: 0 0 12px;
+  line-height: 1.2;
 }
 
-.doubtSnippet {
-  color: var(--text-secondary);
-  margin-bottom: 1.25rem;
+.cardSnippet {
+  color: var(--muted);
   line-height: 1.6;
+  margin-bottom: 24px;
 }
 
-.cardFooter {
+.cardInfo {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
 }
 
-.userInfo {
+.author {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.authAvatar {
+  width: 36px;
+  height: 36px;
+  background: var(--surface-2);
+  border-radius: 50%;
+  overflow: hidden;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  border: 1px solid var(--border);
 }
 
-.avatarPlaceholder {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--border-color);
+.authAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.userDetails {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.userName {
+.authName {
+  display: block;
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-primary);
 }
 
-.meta {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+.cardMeta {
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 
-@media (max-width: 768px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1.5rem;
-  }
-  .filters {
-    overflow-x: auto;
-    padding-bottom: 0.5rem;
-  }
-  .searchBar {
-    max-width: 100%;
-    margin-left: 0;
-  }
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100px 0;
+  gap: 20px;
+}
+
+.skeletonPulse {
+  width: 60px;
+  height: 60px;
+  background: var(--purple);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@media (max-width: 640px) {
+  .aiTitle { font-size: 1.8rem; }
+  .aiInputWrapper { flex-direction: column; }
+  .filterBar { flex-direction: column; align-items: stretch; }
 }

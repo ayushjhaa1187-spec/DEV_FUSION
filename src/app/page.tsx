@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Footer from '@/components/layout/Footer';
 import './landing.css';
 
 // ── PARTICLE CANVAS LOGIC (Internal Component) ──
@@ -310,6 +311,20 @@ export default function HomePage() {
           </article>
         </div>
       </section>
+
+      <section className="sb-section sb-cta">
+        <div className="sb-sectionHead">
+          <h2>Ready to bridge your skill gap?</h2>
+          <p style={{ marginTop: '16px', fontSize: '1.2rem', color: 'var(--muted)', textTransform: 'none', letterSpacing: 'normal' }}>
+            Join 4,800+ students already growing on SkillBridge. Free forever for learners.
+          </p>
+          <div className="sb-actions" style={{ marginTop: '40px' }}>
+            <Link href="/auth" className="sb-btnPrimary">Start Learning Free &rarr;</Link>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
     </main>
   );
 }

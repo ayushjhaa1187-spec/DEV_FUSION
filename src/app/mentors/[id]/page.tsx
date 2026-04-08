@@ -37,22 +37,69 @@ export default function MentorProfilePage({
     fetchData();
   }, [id]);
 
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleBooking = async () => {
     if (!selectedSlot) return alert('Please select a time slot.');
     if (!user) return alert('Please log in to book a session.');
 
+    const slot = slots.find(s => s.id === selectedSlot);
+    const fee = profile.mentor_profiles?.hourly_rate || 0;
+
     setBookingLoading(true);
     try {
-      await bookingApi.create({ slot_id: selectedSlot });
-      setSuccess(true);
-      // Wait a bit and refresh/redirect
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      if (fee > 0) {
+        const res = await loadRazorpay();
+        if (!res) throw new Error('Razorpay SDK failed to load');
+
+        // 1. Create Order
+        const orderData = await fetch('/api/razorpay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: fee, mentor_id: id, slot_id: selectedSlot }),
+        }).then(t => t.json());
+
+        // 2. Open Checkout
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: orderData.amount,
+          currency: 'INR',
+          name: 'SkillBridge Mentor',
+          description: `Booking with ${profile.full_name}`,
+          order_id: orderData.id,
+          handler: async function (response: any) {
+            // 3. Confirm Booking
+            await bookingApi.create({ slot_id: selectedSlot });
+            setSuccess(true);
+            setTimeout(() => window.location.href = '/dashboard', 2000);
+          },
+          prefill: {
+            name: user.email?.split('@')[0],
+            email: user.email,
+          },
+          theme: { color: '#7c3aed' }
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
+        // Free booking
+        await bookingApi.create({ slot_id: selectedSlot });
+        setSuccess(true);
+        setTimeout(() => window.location.href = '/dashboard', 2000);
+      }
     } catch (err: any) {
       alert(err.message || 'Booking failed');
     } finally {
-      setBookingLoading(false);
+      if (fee === 0) setBookingLoading(false);
     }
   };
 

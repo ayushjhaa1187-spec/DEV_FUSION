@@ -15,6 +15,17 @@ export default function PracticeTestsPage() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [result, setResult] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    let timer: any;
+    if (test && !result && timeLeft !== null && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft(prev => (prev !== null ? prev - 1 : null)), 1000);
+    } else if (timeLeft === 0 && !result) {
+      handleSubmitTest(); // Auto-submit
+    }
+    return () => clearInterval(timer);
+  }, [test, result, timeLeft]);
 
   useEffect(() => {
     if (user) {
@@ -32,6 +43,7 @@ export default function PracticeTestsPage() {
       const data = await testApi.generate({ subject_id: selectedSubject, topic });
       setTest(data);
       setAnswers(new Array(data.questions.length).fill(-1));
+      setTimeLeft(300); // 5 Minutes
     } catch (err) {
       alert('Failed to generate test. Make sure you have subject data in your database.');
     } finally {
@@ -40,13 +52,12 @@ export default function PracticeTestsPage() {
   };
 
   const handleSubmitTest = async () => {
-    if (!test || answers.includes(-1)) {
-       alert('Please answer all questions before submitting.');
-       return;
-    }
-
+    if (!test || result) return;
+    
     setIsSubmitting(true);
+    setTimeLeft(null); // Stop timer
     try {
+      // Ensure we send current answers state
       const data = await testApi.submit(test.id, answers);
       setResult(data);
     } catch (err) {
@@ -114,45 +125,61 @@ export default function PracticeTestsPage() {
 
       {test && !result && (
         <section className={styles.testArea}>
-          <div className={styles.testHeader}>
-            <div>
-               <h2 className={styles.testTitle}>{test.topic}</h2>
-               <p className={styles.testSubtitle}>{subjects.find(s => s.id === test.subject_id)?.name}</p>
+          <div className={`${styles.testHeader} glass`}>
+            <div className={styles.testMetaInfo}>
+               <div className={styles.subjectTag}>
+                 {subjects.find(s => s.id === test.subject_id)?.name}
+               </div>
+               <h2 className={styles.testTopic}>{test.topic}</h2>
             </div>
-            <span className={styles.badge}>{test.questions.length} Questions</span>
+            <div className={styles.timerBox}>
+              <span className={styles.timerLabel}>Time Remaining</span>
+              <span className={`${styles.timerValue} ${timeLeft && timeLeft < 60 ? styles.timerUrgent : ''}`}>
+                {Math.floor((timeLeft || 0) / 60)}:{((timeLeft || 0) % 60).toString().padStart(2, '0')}
+              </span>
+            </div>
           </div>
-          <div className={styles.questionList}>
+
+          <div className={styles.questionGrid}>
             {test.questions.map((q: any, qIdx: number) => (
               <div key={q.id || qIdx} className={`${styles.questionCard} glass`}>
-                <p className={styles.questionText}>{qIdx + 1}. {q.question_text}</p>
-                <div className={styles.options}>
+                <div className={styles.qHeader}>
+                  <span className={styles.qNum}>Question {qIdx + 1}</span>
+                </div>
+                <p className={styles.questionText}>{q.question_text}</p>
+                <div className={styles.optionGrid}>
                   {q.options.map((opt: string, optIdx: number) => (
-                    <label key={optIdx} className={`${styles.option} ${answers[qIdx] === optIdx ? styles.selected : ''}`}>
-                      <input 
-                        type="radio" 
-                        name={`q-${qIdx}`} 
-                        checked={answers[qIdx] === optIdx}
-                        onChange={() => {
-                          const newAns = [...answers];
-                          newAns[qIdx] = optIdx;
-                          setAnswers(newAns);
-                        }}
-                      />
+                    <button 
+                      key={optIdx} 
+                      className={`${styles.optBtn} ${answers[qIdx] === optIdx ? styles.selected : ''}`}
+                      onClick={() => {
+                        const newAns = [...answers];
+                        newAns[qIdx] = optIdx;
+                        setAnswers(newAns);
+                      }}
+                    >
                       <span className={styles.optLetter}>{String.fromCharCode(65 + optIdx)}</span>
-                      {opt}
-                    </label>
+                      <span className={styles.optText}>{opt}</span>
+                    </button>
                   ))}
                 </div>
               </div>
             ))}
           </div>
-          <button 
-            className={styles.submitBtn} 
-            onClick={handleSubmitTest}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Evaluating...' : 'Submit Answers'}
-          </button>
+
+          <div className={styles.testFooter}>
+            <div className={styles.completionStatus}>
+              {answers.filter(a => a !== -1).length} of {test.questions.length} answered
+            </div>
+            <button 
+              className="sb-btnPrimary" 
+              onClick={handleSubmitTest}
+              disabled={isSubmitting}
+              style={{ border: 'none' }}
+            >
+              {isSubmitting ? 'Evaluating Performance...' : 'Submit Assessment —>'}
+            </button>
+          </div>
         </section>
       )}
 

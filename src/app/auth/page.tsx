@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import styles from './auth.module.css';
 
@@ -12,8 +12,17 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLogin, setIsLogin] = useState(true);
+  
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createSupabaseBrowser();
+
+  useEffect(() => {
+    const err = searchParams.get('error');
+    if (err) {
+      setError(err === 'auth-failed' ? 'Authentication failed. Please try again.' : err);
+    }
+  }, [searchParams]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,34 +37,50 @@ export default function AuthPage() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: name } },
+          options: { 
+            data: { full_name: name },
+            emailRedirectTo: `${window.location.origin}/auth/callback`
+          },
         });
         if (error) throw error;
+        setError('Check your email for the confirmation link.');
+        return;
       }
       router.push('/dashboard');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { 
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || 'Google Auth failed');
+    }
   };
 
   return (
-    <div className={styles.container}>
+    <div className="sb-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
       <div className={styles.authCard}>
         <h1 className={styles.title}>{isLogin ? 'Welcome Back' : 'Join SkillBridge'}</h1>
         <p className={styles.subtitle}>
           {isLogin ? 'Access your peer learning network' : 'Start your journey today'}
         </p>
 
-        {error && <div className={styles.error}>{error}</div>}
+        {error && <div className={`${styles.error} ${error.includes('email') ? styles.success : ''}`}>{error}</div>}
 
         <form onSubmit={handleAuth} className={styles.form}>
           {!isLogin && (
@@ -75,7 +100,7 @@ export default function AuthPage() {
             <input id="password" type="password" placeholder="••••••••" value={password}
               onChange={e => setPassword(e.target.value)} required />
           </div>
-          <button type="submit" className={styles.submitBtn} disabled={loading}>
+          <button type="submit" className="sb-btnPrimary" style={{ width: '100%', marginTop: '1rem', border: 'none' }} disabled={loading}>
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
         </form>
@@ -89,7 +114,7 @@ export default function AuthPage() {
 
         <p className={styles.toggleText}>
           {isLogin ? "Don't have an account?" : 'Already have an account?'}
-          <button onClick={() => setIsLogin(!isLogin)} className={styles.toggleBtn}>
+          <button onClick={() => setIsLogin(!isLogin)} className={styles.toggleBtn} type="button">
             {isLogin ? 'Sign Up' : 'Log In'}
           </button>
         </p>

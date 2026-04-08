@@ -2,31 +2,37 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { doubtApi, aiApi } from '@/lib/api';
+import { doubtApi, aiApi, subjectApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import styles from './doubts.module.css';
 
 export default function DoubtsPage() {
   const [doubts, setDoubts] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeSubject, setActiveSubject] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchDoubts() {
+    async function loadData() {
       try {
-        const data = await doubtApi.getDoubts();
-        setDoubts(data || []);
+        const [doubtsData, subjectsData] = await Promise.all([
+          doubtApi.getDoubts(activeSubject ? { subject_id: activeSubject } : undefined),
+          subjectApi.getSubjects()
+        ]);
+        setDoubts(doubtsData || []);
+        setSubjects(subjectsData || []);
       } catch (err: any) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     }
-    fetchDoubts();
-  }, []);
+    loadData();
+  }, [activeSubject]);
 
   const [isAiSolving, setIsAiSolving] = useState(false);
-  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [aiResponse, setAiResponse] = useState<any>(null);
   const [aiQuestion, setAiQuestion] = useState('');
 
   const handleAiSolve = async () => {
@@ -35,108 +41,147 @@ export default function DoubtsPage() {
     setAiResponse(null);
     try {
       const data = await aiApi.solveDoubt({ question: aiQuestion });
-      setAiResponse(data.answer || data.solution || 'No solution found.');
+      setAiResponse(data);
     } catch (err) {
-      setAiResponse('AI service temporary unavailable. Try again later.');
+      setError('AI service temporary unavailable. Try again later.');
     } finally {
       setIsAiSolving(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <h1 className={styles.title}>Doubt Feed</h1>
-          <p className={styles.subtitle}>Ask questions, share knowledge, and earn reputation points.</p>
-          
-          <div className={`${styles.aiCard} glass`}>
+    <div className="sb-page">
+      <header className={styles.premiumHeader}>
+        <div className="sb-section">
+          <div className="sb-heroBadge">
+            <span className="sb-badgeDot" />
+            24/7 Peer & AI Support
+          </div>
+          <h1 className="sb-title">Doubt <span>Feed</span></h1>
+          <p className="sb-subtitle">
+            Get instant logical breakdowns from AI or connect with top-rated student peers for conceptual clarity.
+          </p>
+
+          <div className={`${styles.aiSection} glass`} style={{ marginTop: '40px', borderRadius: '32px', padding: '32px' }}>
             <div className={styles.aiHeader}>
-              <span className={styles.aiBadge}>✨ AI ASSISTANT</span>
-              <h3>Ask AI for an instant solution</h3>
+              <span className={styles.aiBadge}>✨ SkillBridge AI Agent</span>
+              <h2 className={styles.aiTitle}>Instant Conceptual Guidance</h2>
             </div>
-            <div className={styles.aiInputGroup}>
+            <div className={styles.aiInputWrapper}>
               <input 
                 type="text" 
-                placeholder="Describe your conceptual doubt..." 
+                placeholder="Explain the intuition behind 'P vs NP' or ask a specific doubt..." 
                 value={aiQuestion}
                 onChange={(e) => setAiQuestion(e.target.value)}
                 className={styles.aiInput}
               />
               <button 
                 onClick={handleAiSolve}
-                className={styles.aiBtn}
+                className="sb-btnPrimary"
                 disabled={isAiSolving}
+                style={{ borderRadius: '16px', border: 'none' }}
               >
-                {isAiSolving ? 'Solving...' : 'Solve with AI'}
+                {isAiSolving ? 'Synthesizing...' : 'Solve with AI'}
               </button>
             </div>
             {aiResponse && (
-              <div className={styles.aiSolution}>
-                <p>{aiResponse}</p>
+              <div className={styles.aiOutput} style={{ animation: 'fadeUp 0.6s ease both' }}>
+                <div className={styles.aiExplanation}>
+                  <h3>Logical Breakdown</h3>
+                  <p>{aiResponse.explanation}</p>
+                </div>
+                {aiResponse.steps?.length > 0 && (
+                  <div className={styles.aiSteps}>
+                    {aiResponse.steps.map((step: string, i: number) => (
+                      <div key={i} className={styles.aiStep}>
+                        <span>{i + 1}</span>
+                        <p>{step}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
-        <button className={styles.askBtn}>Ask Community</button>
       </header>
 
-
-      <div className={styles.filters}>
-        <button className={`${styles.filterTab} ${styles.active}`}>Latest</button>
-        <button className={styles.filterTab}>Trending</button>
-        <button className={styles.filterTab}>Unanswered</button>
-        <div className={styles.searchBar}>
-          <input type="text" placeholder="Search doubts..." className={styles.searchInput} />
+      <main className="sb-section" style={{ paddingTop: '0' }}>
+        <div className={styles.filterBar}>
+          <div className={styles.subjectScroll}>
+            <button 
+              className={`${styles.subjectBtn} ${!activeSubject ? styles.active : ''}`}
+              onClick={() => setActiveSubject(null)}
+            >
+              All Subjects
+            </button>
+            {subjects.map(s => (
+              <button 
+                key={s.id} 
+                className={`${styles.subjectBtn} ${activeSubject === s.id ? styles.active : ''}`}
+                onClick={() => setActiveSubject(s.id)}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+          <Link href="/doubts/ask" className="sb-btnPrimary" style={{ whiteSpace: 'nowrap', border: 'none' }}>
+            Ask Community
+          </Link>
         </div>
-      </div>
 
-      {loading ? (
-        <div className={styles.loading}>Loading community doubts...</div>
-      ) : error ? (
-        <div className={styles.errorBanner}>{error}</div>
-      ) : (
-        <div className={styles.doubtList}>
-          {doubts.map((doubt) => (
-            <Link href={`/doubts/${doubt.id}`} key={doubt.id} className={`${styles.doubtCard} glass`}>
-              <div className={styles.voteSidebar}>
-                <button className={styles.voteBtn}>▲</button>
-                <span className={styles.voteCount}>{doubt.votes || 0}</span>
-                <button className={styles.voteBtn}>▼</button>
-              </div>
-              <div className={styles.cardMain}>
+        {loading ? (
+          <div className={styles.loadingState}>
+            <div className={styles.skeletonPulse} />
+            <p>Gathering academic insights...</p>
+          </div>
+        ) : error ? (
+          <div className={styles.errorCard}>{error}</div>
+        ) : (
+          <div className={styles.feedGrid}>
+            {doubts.map((doubt) => (
+              <Link href={`/doubts/${doubt.id}`} key={doubt.id} className={`${styles.premiumCard} glass`}>
                 <div className={styles.cardHeader}>
-                  <div className={styles.tags}>
-                    {doubt.subjects?.name && <span className={styles.tag}>{doubt.subjects.name}</span>}
+                  <div className={styles.subjectTag}>
+                    {doubt.subjects?.name || 'General'}
                   </div>
-                  {doubt.status === 'resolved' && <span className={styles.resolvedBadge}>✓ Resolved</span>}
+                  {doubt.status === 'resolved' && <span className={styles.statusBadge}>✓ Solved</span>}
                 </div>
-                <h3 className={styles.doubtTitle}>{doubt.title}</h3>
-                <p className={styles.doubtSnippet}>
-                  {doubt.content?.substring(0, 200)}
-                  {doubt.content?.length > 200 ? '...' : ''}
+                
+                <h3 className={styles.cardTitle}>{doubt.title}</h3>
+                <p className={styles.cardSnippet}>
+                  {doubt.content?.substring(0, 150)}...
                 </p>
-                <div className={styles.cardFooter}>
-                  <div className={styles.userInfo}>
-                    {doubt.profiles?.avatar_url && (
-                      <img src={doubt.profiles.avatar_url} alt="" className={styles.avatar} />
-                    )}
-                    <div className={styles.userDetails}>
-                      <span className={styles.userName}>{doubt.profiles?.username || 'Learner'}</span>
+
+                <div className={styles.cardInfo}>
+                  <div className={styles.author}>
+                    <div className={styles.authAvatar}>
+                      {doubt.profiles?.avatar_url ? (
+                        <img src={doubt.profiles.avatar_url} alt="" />
+                      ) : (
+                        <span>{doubt.profiles?.username?.[0] || 'L'}</span>
+                      )}
+                    </div>
+                    <div>
+                      <span className={styles.authName}>{doubt.profiles?.username || 'Learner'}</span>
                       <ReputationBadge points={doubt.profiles?.reputation_points || 0} />
                     </div>
                   </div>
-
-                  <div className={styles.meta}>
+                  <div className={styles.cardMeta}>
                     <span>{new Date(doubt.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
+              </Link>
+            ))}
+            {doubts.length === 0 && (
+              <div className={styles.emptyState}>
+                <h2>Workspace is silent.</h2>
+                <p>Be the first to ignite a discussion in this subject.</p>
               </div>
-            </Link>
-          ))}
-          {doubts.length === 0 && <p className={styles.emptyState}>No doubts found. Be the first to ask!</p>}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
