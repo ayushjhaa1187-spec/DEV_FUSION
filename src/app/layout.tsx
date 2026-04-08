@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
+import ConditionalNavbar from '@/components/layout/ConditionalNavbar';
+import { AuthProvider } from '@/components/auth/auth-provider';
 
 export const metadata: Metadata = {
   title: "SkillBridge | Peer Learning & Doubt Resolution Ecosystem",
   description: "SkillBridge is a college-focused platform for resolving doubts, connecting with mentors, and growing through community learning.",
   keywords: ["education", "mentorship", "doubt resolution", "college", "student learning"],
 };
-
-import { AuthProvider } from '@/components/auth/auth-provider';
 
 export default function RootLayout({
   children,
@@ -19,8 +18,8 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-          <Navbar />
-          <main style={{ marginTop: '72px' }}>
+          <ConditionalNavbar />
+          <main>
             {children}
           </main>
         </AuthProvider>
