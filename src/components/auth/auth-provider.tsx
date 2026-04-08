@@ -24,14 +24,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const supabase = createSupabaseBrowser();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        setLoading(false);
+
+        // Award daily login points when user signs in
+        if (currentUser && _event === 'SIGNED_IN') {
+          try {
+            await fetch('/api/auth/daily-login', { method: 'POST' });
+          } catch (err) {
+            // Non-blocking catch
+          }
+        }
+      }
+    );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
       setLoading(false);
+      
+      // Also trigger for initial session if already signed in
+      if (currentUser) {
+        fetch('/api/auth/daily-login', { method: 'POST' }).catch(() => {});
+      }
     });
 
     return () => subscription.unsubscribe();

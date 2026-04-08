@@ -4,7 +4,7 @@
 CREATE TYPE public.user_role AS ENUM ('student', 'mentor', 'admin');
 CREATE TYPE public.doubt_status AS ENUM ('open', 'answered', 'resolved', 'archived');
 CREATE TYPE public.booking_status AS ENUM ('pending', 'confirmed', 'cancelled', 'completed', 'refunded');
-CREATE TYPE public.notification_type AS ENUM ('answer_received', 'answer_accepted', 'session_reminder', 'reputation_gain', 'badge_earned');
+CREATE TYPE public.notification_type AS ENUM ('answer_received', 'answer_accepted', 'answer_posted', 'session_reminder', 'reputation_gain', 'badge_earned', 'booking_confirmed');
 CREATE TYPE public.mentor_application_status AS ENUM ('pending', 'approved', 'rejected');
 
 -- 2. Core Tables
@@ -16,8 +16,14 @@ CREATE TABLE public.profiles (
   role public.user_role DEFAULT 'student' NOT NULL,
   reputation_points INTEGER DEFAULT 0 NOT NULL,
   branch TEXT,
-  semester INTEGER,
+  semester INTEGER CHECK (semester BETWEEN 1 AND 8),
   bio TEXT,
+  college TEXT,
+  github_url TEXT,
+  linkedin_url TEXT,
+  website_url TEXT,
+  login_streak INTEGER DEFAULT 0,
+  last_login_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -100,6 +106,7 @@ CREATE TABLE public.mentor_bookings (
   mentor_id UUID REFERENCES public.mentor_profiles(id) NOT NULL,
   slot_id UUID REFERENCES public.mentor_slots(id) NOT NULL,
   status public.booking_status DEFAULT 'pending' NOT NULL,
+  payment_status TEXT DEFAULT 'pending',
   payment_id TEXT,
   meeting_link TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL

@@ -62,6 +62,36 @@
   color: #10b981;
 }
 
+.followBtn {
+  padding: 10px 24px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: rgba(124, 58, 237, 0.1);
+  color: var(--violet-light);
+  border: 1.5px solid rgba(124, 58, 237, 0.3);
+}
+
+.followBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: rgba(124, 58, 237, 0.2);
+  border-color: var(--violet-primary);
+  box-shadow: 0 10px 25px rgba(124, 58, 237, 0.25);
+}
+
+.followBtn.following {
+  background: var(--violet-primary);
+  color: white;
+  border-color: var(--violet-primary);
+}
+
+.followBtn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 .contentGrid {
   display: grid;
   grid-template-columns: 1fr 340px;

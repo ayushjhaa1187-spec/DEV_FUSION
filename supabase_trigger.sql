@@ -3,12 +3,23 @@
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, username, full_name, avatar_url)
+  INSERT INTO public.profiles (
+    id, 
+    username, 
+    full_name, 
+    avatar_url,
+    college,
+    branch,
+    semester,
+    bio,
+    login_streak
+  )
   VALUES (
     NEW.id,
     split_part(NEW.email, '@', 1) || '_' || floor(random() * 9000 + 1000)::text,
     COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
-    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NULL)
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NULL),
+    NULL, NULL, NULL, NULL, 0
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;

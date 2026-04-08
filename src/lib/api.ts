@@ -12,6 +12,26 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
 
 export const authApi = {
   getMyProfile: () => apiFetch('/api/profile'),
+  updateProfile: (data: unknown) =>
+    apiFetch('/api/profile', { method: 'PATCH', body: JSON.stringify(data) }),
+  getMySubjects: () => apiFetch('/api/profile/subjects'),
+  updateSubjects: (ids: string[]) =>
+    apiFetch('/api/profile/subjects', { method: 'POST', body: JSON.stringify({ subject_ids: ids }) }),
+};
+
+export const reputationApi = {
+  getHistory: (limit = 20, offset = 0) =>
+    apiFetch(`/api/reputation?limit=${limit}&offset=${offset}`),
+  awardDailyLogin: () =>
+    apiFetch('/api/auth/daily-login', { method: 'POST' }),
+};
+
+export const badgeApi = {
+  getBadges: () => apiFetch('/api/badges'),
+};
+
+export const leaderboardApi = {
+  getTop: (limit = 10) => apiFetch(`/api/leaderboard?limit=${limit}`),
 };
 
 export const doubtApi = {
@@ -52,6 +72,7 @@ export const subjectApi = {
 };
 
 export const testApi = {
+  getHistory: () => apiFetch('/api/tests/history'),
   generate: (data: unknown) => apiFetch('/api/tests/generate', { method: 'POST', body: JSON.stringify(data) }),
   submit: (testId: string, answers: number[]) =>
     apiFetch(`/api/tests/${testId}/submit`, { method: 'POST', body: JSON.stringify({ answers }) }),
@@ -64,4 +85,8 @@ export const aiApi = {
 export const notificationApi = {
   getNotifications: () => apiFetch('/api/notifications'),
   getUnreadCount: () => apiFetch('/api/notifications/unread'),
+  markRead: (id: string) =>
+    apiFetch('/api/notifications', { method: 'POST', body: JSON.stringify({ notification_id: id }) }),
+  markAllRead: () =>
+    apiFetch('/api/notifications', { method: 'POST', body: JSON.stringify({ mark_all: true }) }),
 };

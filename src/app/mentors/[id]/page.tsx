@@ -18,6 +18,9 @@ export default function MentorProfilePage({
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  
+  const [following, setFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -28,6 +31,13 @@ export default function MentorProfilePage({
         ]);
         setProfile(profileData);
         setSlots(slotsData);
+        
+        // Check follow status
+        if (user) {
+          const followRes = await fetch(`/api/mentors/${id}/follow`);
+          const { following } = await followRes.json();
+          setFollowing(following);
+        }
       } catch (err) {
         console.error('Failed to load mentor profile', err);
       } finally {
@@ -35,7 +45,21 @@ export default function MentorProfilePage({
       }
     }
     fetchData();
-  }, [id]);
+  }, [id, user]);
+
+  const handleFollow = async () => {
+    if (!user) return alert('Please log in to follow mentors.');
+    setFollowLoading(true);
+    try {
+      const res = await fetch(`/api/mentors/${id}/follow`, { method: 'POST' });
+      const { following: newFollowing } = await res.json();
+      setFollowing(newFollowing);
+    } catch (err) {
+      alert('Follow action failed');
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   const loadRazorpay = () => {
     return new Promise((resolve) => {
@@ -117,8 +141,19 @@ export default function MentorProfilePage({
           />
         </div>
         <div className={styles.info}>
-          <h1 className={styles.name}>{profile.full_name || profile.username}</h1>
-          <p className={styles.specialty}>{profile.mentor_profiles?.specialty || 'Academic Mentor'}</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <h1 className={styles.name}>{profile.full_name || profile.username}</h1>
+              <p className={styles.specialty}>{profile.mentor_profiles?.specialty || 'Academic Mentor'}</p>
+            </div>
+            <button 
+              className={`${styles.followBtn} ${following ? styles.following : ''}`} 
+              onClick={handleFollow}
+              disabled={followLoading}
+            >
+              {followLoading ? '...' : following ? '✓ Following' : '+ Follow Mentor'}
+            </button>
+          </div>
           <div className={styles.statsRow}>
             <span>⭐ {profile.mentor_profiles?.rating || '5.0'}</span>
             <span>📅 {profile.mentor_profiles?.sessions_completed || 0} Sessions</span>

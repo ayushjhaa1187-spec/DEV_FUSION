@@ -87,12 +87,23 @@ export default function DoubtDetailPage({
     }
   };
 
+  const handleVote = async (answerId: string, type: number) => {
+    try {
+      const { totalVotes } = await answerApi.vote(answerId, type);
+      setAnswers(answers.map(a => 
+        a.id === answerId ? { ...a, votes: totalVotes } : a
+      ));
+    } catch (err) {
+      console.error('Vote failed');
+    }
+  };
+
   if (loading) return <div className={styles.loading}>Loading discussion...</div>;
   if (!doubt) return <div className={styles.errorBanner}>Doubt not found or was deleted.</div>;
 
   return (
     <div className={styles.container}>
-      <article className={`${styles.mainDoubt} glass`}>
+      <article className={`${styles.mainDoubt} glass sb-stagger-1`}>
         <header className={styles.header}>
           <div className={styles.tags}>
             {doubt.subjects?.name && <span className={styles.tag}>{doubt.subjects.name}</span>}
@@ -129,12 +140,14 @@ export default function DoubtDetailPage({
         {aiSolution && (
           <div className={styles.aiCard}>
             <h4>AI Assistant Suggestion</h4>
-            <p>{aiSolution}</p>
+            <div className="preview-content">
+               {aiSolution.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+            </div>
           </div>
         )}
       </article>
 
-      <section className={styles.answersSection}>
+      <section className={`${styles.answersSection} sb-stagger-2`}>
         <h2 className={styles.sectionTitle}>{answers.length} Answers</h2>
         <div className={styles.answerList}>
           {answers.map(answer => (
@@ -155,9 +168,9 @@ export default function DoubtDetailPage({
               </div>
               <div className={styles.answerFooter}>
                 <div className={styles.actions}>
-                  <button className={styles.voteBtn}>▲</button>
+                  <button onClick={() => handleVote(answer.id, 1)} className={styles.voteBtn}>▲</button>
                   <span className={styles.voteCount}>{answer.votes || 0}</span>
-                  <button className={styles.voteBtn}>▼</button>
+                  <button onClick={() => handleVote(answer.id, -1)} className={styles.voteBtn}>▼</button>
                 </div>
                 
                 {user?.id === doubt.author_id && !answer.is_accepted && (

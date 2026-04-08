@@ -494,116 +494,88 @@ body {
   font-weight: 700;
 }
 
-@keyframes fadeDown {
+/* --- NEW PREMIUM ANIMATIONS --- */
+@keyframes fadeUpStaggered {
   from {
     opacity: 0;
-    transform: translateY(-18px);
+    transform: translateY(30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(26px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.sb-stagger-1 { animation: fadeUpStaggered 0.8s 0.1s ease both; }
+.sb-stagger-2 { animation: fadeUpStaggered 0.8s 0.2s ease both; }
+.sb-stagger-3 { animation: fadeUpStaggered 0.8s 0.3s ease both; }
+
+/* --- FLASH CARD ENHANCEMENT --- */
+.sb-flash {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+  background: rgba(17, 17, 27, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-@keyframes pulseDot {
-  0%,
-  100% {
-    opacity: 0.7;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.18);
-  }
+.sb-flash:hover {
+  transform: translateY(-12px) rotateX(10deg) rotateY(5deg);
+  border-color: var(--purple);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 30px rgba(124, 58, 237, 0.15);
 }
 
-@keyframes hueLoop {
-  from {
-    filter: hue-rotate(0deg);
-  }
-  to {
-    filter: hue-rotate(360deg);
-  }
+.sb-flashAura {
+  position: absolute;
+  inset: -1px;
+  background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.06), transparent 40%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-@keyframes floatCard {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-1deg);
-  }
-  50% {
-    transform: translateY(-14px) rotate(1deg);
-  }
+/* --- BLOG & TESTIMONIAL CARDS INCREASED DESIGN --- */
+.sb-testi {
+  background: linear-gradient(145deg, rgba(23, 23, 38, 0.8), rgba(17, 17, 27, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 34px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
 }
 
-@keyframes borderFlash {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
-  50% {
-    opacity: 1;
-  }
+.sb-testi:hover {
+  transform: translateY(-10px) scale(1.02);
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.5);
 }
 
-@keyframes testimonialFlash {
-  0%,
-  100% {
-    opacity: 0.18;
-    filter: blur(0px);
-  }
-  50% {
-    opacity: 0.55;
-    filter: blur(2px);
-  }
+.sb-blog {
+  border-radius: 28px;
+  background: var(--surface);
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-@media (max-width: 900px) {
-  .sb-nav {
-    padding: 16px 20px;
-  }
-
-  .sb-navLinks {
-    display: none;
-  }
-
-  .sb-hero {
-    padding-top: 80px;
-  }
-
-  .sb-stats {
-    gap: 20px;
-  }
+.sb-blogThumb {
+  border-radius: 24px 24px 0 0;
+  transition: transform 0.5s ease;
 }
 
+.sb-blog:hover .sb-blogThumb {
+  transform: scale(1.05);
+}
+
+.sb-blogBody h3 {
+  font-family: "Instrument Serif", serif;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.sb-blog:hover {
+  box-shadow: 0 40px 80px -24px rgba(0,0,0,0.6);
+  border-color: var(--purple);
+}
+
+/* --- RESPONSIVE POLISH --- */
 @media (max-width: 640px) {
-  .sb-navCta {
-    display: none;
-  }
-
-  .sb-section {
-    padding: 64px 16px;
-  }
-
-  .sb-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .sb-btnPrimary,
-  .sb-btnGhost {
-    width: 100%;
-    text-align: center;
+  .sb-flash, .sb-testi, .sb-blog {
+    margin-bottom: 24px;
   }
 }

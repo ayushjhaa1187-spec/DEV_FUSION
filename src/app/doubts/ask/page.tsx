@@ -25,6 +25,8 @@ export default function AskDoubtPage() {
     subjectApi.getSubjects().then(setSubjects).catch(console.error);
   }, []);
 
+  const [previewMode, setPreviewMode] = useState(false);
+
   const handleAnalize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.subject_id) {
@@ -32,6 +34,7 @@ export default function AskDoubtPage() {
       return;
     }
     setIsLoading(true);
+    setPreviewMode(false);
     setError(null);
     try {
       // Use the solving endpoint but for pre-post analysis
@@ -63,8 +66,8 @@ export default function AskDoubtPage() {
 
   if (step === 3) {
     return (
-      <div className="sb-page ask-container success-view">
-        <div className="success-card glass">
+      <div className="sb-page ask-container success-view transition-all">
+        <div className="success-card glass sb-stagger-1">
           <div className="success-icon">✓</div>
           <h2>Doubt Published!</h2>
           <p>Redirecting you to the feed...</p>
@@ -75,12 +78,12 @@ export default function AskDoubtPage() {
 
   return (
     <div className="sb-page ask-container">
-      <div className="ask-header">
+      <div className="ask-header sb-stagger-1">
         <h1 className="sb-title">Ask the <span>Community</span></h1>
         <p className="sb-subtitle">SkillBridge encourages learning intuition over just answers. Ask AI first to clarify your concepts.</p>
       </div>
 
-      <div className="ask-progress">
+      <div className="ask-progress sb-stagger-2">
         <div className={`progress-step ${step >= 1 ? 'active' : ''}`}>1. Draft Doubt</div>
         <div className="progress-line" />
         <div className={`progress-step ${step >= 2 ? 'active' : ''}`}>2. AI Conceptual Review</div>
@@ -89,7 +92,7 @@ export default function AskDoubtPage() {
       </div>
 
       {step === 1 ? (
-        <form onSubmit={handleAnalize} className="ask-form glass">
+        <form onSubmit={handleAnalize} className="ask-form glass sb-stagger-2">
           <div className="form-group">
             <label>Headline</label>
             <input 
@@ -125,14 +128,39 @@ export default function AskDoubtPage() {
           </div>
 
           <div className="form-group">
-            <label>Detailed Content</label>
-            <textarea 
-              placeholder="Provide context, code snippets, or what you've tried..." 
-              value={formData.content}
-              onChange={e => setFormData({...formData, content: e.target.value})}
-              rows={8}
-              required
-            />
+            <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={{ margin: 0 }}>Detailed Content</label>
+              <button 
+                type="button" 
+                onClick={() => setPreviewMode(!previewMode)}
+                className="sb-btnGhost" 
+                style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+              >
+                {previewMode ? 'Edit Content' : 'Preview Rich Text'}
+              </button>
+            </div>
+            {previewMode ? (
+              <div className="rich-preview glass" style={{ minHeight: '200px', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
+                <div className="preview-content" style={{ opacity: 0.9 }}>
+                  {formData.content.split('\n').map((line, i) => (
+                    <p key={i} style={{ marginBottom: line ? '0.5rem' : '1rem' }}>
+                      {line.startsWith('```') ? <code style={{ display: 'block', background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '4px' }}>{line.replace(/```/g, '')}</code> : line}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <textarea 
+                placeholder="Provide context, code snippets, or what you've tried..." 
+                value={formData.content}
+                onChange={e => setFormData({...formData, content: e.target.value})}
+                rows={8}
+                required
+              />
+            )}
+            <p className="help-text" style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '8px' }}>
+              Pro tip: Use ``` to start/end code blocks. AI will help with auto-tagging.
+            </p>
           </div>
 
           {error && <p className="error-text">{error}</p>}

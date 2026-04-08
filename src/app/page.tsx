@@ -36,6 +36,7 @@ const ParticleBackground = () => {
       r: number = 0;
       color: string = '';
       alpha: number = 0;
+      glow: string = '';
 
       constructor() {
         this.reset();
@@ -43,48 +44,88 @@ const ParticleBackground = () => {
       reset() {
         this.x = Math.random() * W;
         this.y = Math.random() * H;
-        this.vx = (Math.random() - 0.5) * 0.4;
-        this.vy = (Math.random() - 0.5) * 0.4;
-        this.r = Math.random() * 2 + 0.5;
-        const hues = ['124,58,237', '6,214,160', '245,158,11', '99,102,241'];
-        this.color = hues[Math.floor(Math.random() * hues.length)];
-        this.alpha = Math.random() * 0.5 + 0.2;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.3;
+        this.r = Math.random() * 1.5 + 0.8;
+        const hues = ['124,58,237', '6,214,160', '245,158,11', '139,92,246'];
+        const choice = Math.floor(Math.random() * hues.length);
+        this.color = hues[choice];
+        this.glow = `rgba(${hues[choice]}, 0.5)`;
+        this.alpha = Math.random() * 0.4 + 0.3;
       }
       update() {
         this.x += this.vx;
         this.y += this.vy;
-        const dx = this.x - mouse.x, dy = this.y - mouse.y, d = Math.sqrt(dx * dx + dy * dy);
-        if (d < 100) {
-          this.x += dx / d * 1.2;
-          this.y += dy / d * 1.2;
+
+        // Subtle repulsion from mouse
+        const mdx = this.x - mouse.x;
+        const mdy = this.y - mouse.y;
+        const dist = Math.sqrt(mdx * mdx + mdy * mdy);
+        if (dist < 150) {
+          this.x += (mdx / dist) * 0.5;
+          this.y += (mdy / dist) * 0.5;
         }
-        if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
+
+        if (this.x < -20) this.x = W + 20;
+        if (this.x > W + 20) this.x = -20;
+        if (this.y < -20) this.y = H + 20;
+        if (this.y > H + 20) this.y = -20;
       }
       draw() {
         if (!ctx) return;
+        ctx.save();
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${this.color},${this.alpha})`;
+        
+        // Add neon glow to nodes
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = this.glow;
+        ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
         ctx.fill();
+        ctx.restore();
       }
     }
 
-    for (let i = 0; i < 110; i++) particles.push(new Particle());
+    // Increased density for premium feel
+    const count = Math.min(Math.floor((window.innerWidth * window.innerHeight) / 9000), 180);
+    for (let i = 0; i < count; i++) particles.push(new Particle());
 
     function drawLines() {
       if (!ctx) return;
+      
+      // 1. Connect particles to each other (Spider Web)
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 120) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dSq = dx * dx + dy * dy;
+          
+          if (dSq < 14400) { // 120px
+            const dist = Math.sqrt(dSq);
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(124,58,237,${0.15 * (1 - d / 120)})`;
-            ctx.lineWidth = 0.5;
+            const lineAlpha = (1 - dist / 120) * 0.2;
+            ctx.strokeStyle = `rgba(124,58,237, ${lineAlpha})`;
+            ctx.lineWidth = 0.4;
             ctx.stroke();
           }
+        }
+
+        // 2. ACTIVE WEBBING: Connect particles to Mouse Cursor (Dynamic Web)
+        const mouseDx = particles[i].x - mouse.x;
+        const mouseDy = particles[i].y - mouse.y;
+        const mouseDistSq = mouseDx * mouseDx + mouseDy * mouseDy;
+        
+        if (mouseDistSq < 40000) { // 200px radius for mouse webbing
+          const mDist = Math.sqrt(mouseDistSq);
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(mouse.x, mouse.y);
+          const mAlpha = (1 - mDist / 200) * 0.35;
+          ctx.strokeStyle = `rgba(6,214,160, ${mAlpha})`;
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
         }
       }
     }
@@ -97,7 +138,10 @@ const ParticleBackground = () => {
     };
     animate();
 
-    return () => window.removeEventListener('resize', resize);
+    return () => {
+      window.removeEventListener('resize', resize);
+      // Clean up mouse listener would be ideal but browser event listeners stay active
+    };
   }, []);
 
   return <canvas id="bg-canvas" ref={canvasRef} />;
@@ -153,6 +197,8 @@ export default function HomePage() {
           <Link href="/doubts">Doubts</Link>
           <Link href="/mentors">Mentors</Link>
           <Link href="/tests">Practice</Link>
+          <Link href="/dashboard/progress">My Progress</Link>
+          <Link href="/dashboard/sessions">Live Sessions</Link>
         </div>
 
         <Link href="/auth" className="sb-navCta">
@@ -203,12 +249,12 @@ export default function HomePage() {
       </section>
 
       <section id="features" className="sb-section">
-        <div className="sb-sectionHead">
+        <div className="sb-sectionHead sb-stagger-1">
           <p>Platform highlights</p>
           <h2>Flash-card glow. Live reactions. Premium motion.</h2>
         </div>
 
-        <div className="sb-cards">
+        <div className="sb-cards sb-stagger-2">
           <article className="sb-card purple">
             <div className="sb-cardGlow" />
             <h3>AI Doubt Solver</h3>
@@ -228,37 +274,37 @@ export default function HomePage() {
           </article>
         </div>
 
-        <div className="sb-flashRow">
-          <article className="sb-flash purple">
-            <div className="sb-flashAura" />
-            <span>Data Structures</span>
-            <h4>What is the complexity of binary search?</h4>
-            <p>O(log n), because the search space halves at every step.</p>
-          </article>
-
-          <article className="sb-flash green">
-            <div className="sb-flashAura" />
-            <span>Operating Systems</span>
-            <h4>Process vs thread?</h4>
-            <p>A process owns memory; threads share a process memory space.</p>
-          </article>
-
-          <article className="sb-flash gold">
-            <div className="sb-flashAura" />
-            <span>Machine Learning</span>
-            <h4>What does learning rate control?</h4>
-            <p>It controls how large each optimization step is during training.</p>
-          </article>
+        <div className="sb-flashRow sb-stagger-3">
+          {[
+            { tag: 'Data Structures', q: 'What is the complexity of binary search?', a: 'O(log n), because the search space halves at every step.', color: 'purple' },
+            { tag: 'Operating Systems', q: 'Process vs thread?', a: 'A process owns memory; threads share a process memory space.', color: 'green' },
+            { tag: 'Machine Learning', q: 'What does learning rate control?', a: 'It controls how large each optimization step is during training.', color: 'gold' }
+          ].map((card, i) => (
+            <article 
+              key={i} 
+              className={`sb-flash ${card.color}`}
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+              }}
+            >
+              <div className="sb-flashAura" />
+              <span>{card.tag}</span>
+              <h4>{card.q}</h4>
+              <p>{card.a}</p>
+            </article>
+          ))}
         </div>
       </section>
 
       <section id="testimonials" className="sb-section">
-        <div className="sb-sectionHead">
+        <div className="sb-sectionHead sb-stagger-1">
           <p>Student voices</p>
           <h2>Flashing testimonial cards that feel alive.</h2>
         </div>
 
-        <div className="sb-testimonials">
+        <div className="sb-testimonials sb-stagger-2">
           <article className="sb-testi t1">
             <h3>★★★★★</h3>
             <p>“I got an AI hint instantly and a peer answer within minutes. It actually helped before my exam.”</p>
@@ -280,12 +326,12 @@ export default function HomePage() {
       </section>
 
       <section id="blogs" className="sb-section">
-        <div className="sb-sectionHead">
+        <div className="sb-sectionHead sb-stagger-1">
           <p>From the blog</p>
           <h2>Polished blog cards with hover lift.</h2>
         </div>
 
-        <div className="sb-blogs">
+        <div className="sb-blogs sb-stagger-2">
           <article className="sb-blog">
             <div className="sb-blogThumb purple">AI</div>
             <div className="sb-blogBody">
@@ -312,7 +358,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="sb-section sb-cta">
+      <section className="sb-section sb-cta sb-stagger-3">
         <div className="sb-sectionHead">
           <h2>Ready to bridge your skill gap?</h2>
           <p style={{ marginTop: '16px', fontSize: '1.2rem', color: 'var(--muted)', textTransform: 'none', letterSpacing: 'normal' }}>
