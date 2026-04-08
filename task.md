@@ -1,26 +1,26 @@
-- `[/]` Phase 1: Database & RLS Refactoring
-  - `[ ]` Define Enums (`user_role`, `doubt_status`, etc.)
-  - `[ ]` Create granular tables (`reputation_events`, `practice_tests`, etc.)
-  - `[ ]` Finalize RLS policies for all roles
-  - `[ ]` Seed `subjects` and test data
-- `[ ]` Phase 2: Community Engine (CRUD & Core)
-  - `[ ]` Implement `src/lib/supabase/server.ts`
-  - `[ ]` Build Doubts CRUD (with snapshotting)
-  - `[ ]` Build Answers CRUD & Voting
-  - `[ ]` Implement Accepted Answer flow
-- `[ ]` Phase 3: AI Backend (Gemini Wrapper)
-  - `[ ]` Refine `src/lib/ai-service.ts` for MCQ generation
-  - `[ ]` Implement JSON validation for AI output
-  - `[ ]` Add AI-First flow routes
-- `[ ]` Phase 4: Reputation & Notifications
-  - `[ ]` Implement append-only Reputation Ledger
-  - `[ ]` Add Badge automation logic
-  - `[ ]` Setup Notification handlers (Realtime)
-- `[ ]` Phase 5: Mentor & Booking Flow
-  - `[ ]` Mentor application & review workflow
-  - `[ ]` Slot management & Booking logic
-  - `[ ]` Payment sandbox order creation
-- `[ ]` Phase 6: Practice Tests & Hardening
-  - `[ ]` Test attempt lifecycle & scoring
-  - `[ ]` Audit logs & Moderation endpoints
-  - `[ ]` Final build verification
+- `[x]` Phase 1: Database & RLS Refactoring
+  - `[x]` Define Enums (`user_role`, `doubt_status`, etc.)
+  - `[x]` Create granular tables (`reputation_events`, `practice_tests`, etc.)
+  - `[x]` Finalize RLS policies for all roles
+  - `[x]` Seed `subjects` and test data
+- `[x]` Phase 2: Community Engine (CRUD & Core)
+  - `[x]` Implement `src/lib/supabase/server.ts`
+  - `[x]` Build Doubts CRUD (with snapshotting)
+  - `[x]` Build Answers CRUD & Voting
+  - `[x]` Implement Accepted Answer flow
+- `[x]` Phase 3: AI Backend (Gemini Wrapper)
+  - `[x]` Refine `src/lib/ai-service.ts` for MCQ generation
+  - `[x]` Implement JSON validation for AI output
+  - `[x]` Add AI-First flow routes
+- `[x]` Phase 4: Reputation & Notifications
+  - `[x]` Implement append-only Reputation Ledger
+  - `[x]` Add Badge automation logic
+  - `[x]` Setup Notification handlers (Realtime)
+- `[x]` Phase 5: Mentor & Booking Flow
+  - `[x]` Mentor application & review workflow
+  - `[x]` Slot management & Booking logic
+  - `[x]` Payment sandbox order creation
+- `[x]` Phase 6: Practice Tests & Hardening
+  - `[x]` Test attempt lifecycle & scoring
+  - `[x]` Audit logs & Moderation endpoints
+  - `[x]` Final build verification

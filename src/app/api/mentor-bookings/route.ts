@@ -32,8 +32,7 @@ export async function POST(req: NextRequest) {
         student_id: user.id,
         mentor_id: slot.mentor_id,
         slot_id: slot_id,
-        status: 'confirmed', // Confirmed directly for v1 (as per plan's confirmed flow)
-        payment_status: 'paid', // Mocking paid status
+        status: 'confirmed', 
         meeting_link: 'https://meet.jit.si/' + Math.random().toString(36).substring(7)
       })
       .select()
@@ -56,7 +55,7 @@ export async function POST(req: NextRequest) {
         user_id: slot.mentor_id,
         title: 'New Session Booked!',
         message: `A student has booked a 30-minute session for ${slot.start_time}.`,
-        type: 'session_reminder',
+        type: 'booking_confirmed',
         link: '/mentors/bookings'
       });
 

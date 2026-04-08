@@ -68,6 +68,18 @@ BEGIN
     SELECT u_id, b.id FROM public.badges b WHERE b.name = 'Subject Expert'
     ON CONFLICT (user_id, badge_id) DO NOTHING;
   END IF;
+
+  -- Badge: Streak Master (7-day login streak)
+  DECLARE
+    v_streak INTEGER;
+  BEGIN
+    SELECT login_streak INTO v_streak FROM public.profiles WHERE id = u_id;
+    IF v_streak >= 7 THEN
+      INSERT INTO public.user_badges (user_id, badge_id)
+      SELECT u_id, b.id FROM public.badges b WHERE b.name = 'Streak Master'
+      ON CONFLICT (user_id, badge_id) DO NOTHING;
+    END IF;
+  END;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

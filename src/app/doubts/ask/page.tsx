@@ -130,14 +130,38 @@ export default function AskDoubtPage() {
           <div className="form-group">
             <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <label style={{ margin: 0 }}>Detailed Content</label>
-              <button 
-                type="button" 
-                onClick={() => setPreviewMode(!previewMode)}
-                className="sb-btnGhost" 
-                style={{ padding: '4px 12px', fontSize: '0.75rem' }}
-              >
-                {previewMode ? 'Edit Content' : 'Preview Rich Text'}
-              </button>
+              <div className="editor-toolbar" style={{ display: 'flex', gap: '8px' }}>
+                <button type="button" onClick={() => {
+                  const ta = document.querySelector('textarea');
+                  if (!ta) return;
+                  const start = ta.selectionStart;
+                  const end = ta.selectionEnd;
+                  const text = ta.value;
+                  const before = text.substring(0, start);
+                  const selected = text.substring(start, end);
+                  const after = text.substring(end);
+                  setFormData({...formData, content: before + '**' + selected + '**' + after});
+                }} className="sb-btnGhost" style={{ padding: '2px 8px', minWidth: '32px' }}><b>B</b></button>
+                <button type="button" onClick={() => {
+                  const ta = document.querySelector('textarea');
+                  if (!ta) return;
+                  const start = ta.selectionStart;
+                  const end = ta.selectionEnd;
+                  const text = ta.value;
+                  const before = text.substring(0, start);
+                  const selected = text.substring(start, end);
+                  const after = text.substring(end);
+                  setFormData({...formData, content: before + '`' + selected + '`' + after});
+                }} className="sb-btnGhost" style={{ padding: '2px 8px', minWidth: '32px' }}><code>{'<>'}</code></button>
+                <button 
+                  type="button" 
+                  onClick={() => setPreviewMode(!previewMode)}
+                  className="sb-btnGhost" 
+                  style={{ padding: '4px 12px', fontSize: '0.75rem' }}
+                >
+                  {previewMode ? 'Edit Content' : 'Preview Rich Text'}
+                </button>
+              </div>
             </div>
             {previewMode ? (
               <div className="rich-preview glass" style={{ minHeight: '200px', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>

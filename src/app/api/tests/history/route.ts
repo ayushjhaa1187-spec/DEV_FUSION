@@ -12,7 +12,12 @@ export async function GET(req: NextRequest) {
       .from('practice_attempts')
       .select(`
         *,
-        subjects(name)
+        practice_tests (
+          topic,
+          subjects (
+            name
+          )
+        )
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });

@@ -45,11 +45,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setLoading(false);
-      
-      // Also trigger for initial session if already signed in
-      if (currentUser) {
-        fetch('/api/auth/daily-login', { method: 'POST' }).catch(() => {});
-      }
     });
 
     return () => subscription.unsubscribe();

@@ -27,8 +27,9 @@ export async function POST(
 
     // 2. Score the attempt
     let score = 0;
-    questions.forEach((q, index) => {
-      if (answers[index] === q.correct_answer_index) {
+    // Expect answers to be an object: { [question_id]: selected_index }
+    questions.forEach((q) => {
+      if (answers[q.id] === q.correct_answer_index) {
         score++;
       }
     });
@@ -50,11 +51,10 @@ export async function POST(
     if (attemptError) return NextResponse.json({ error: attemptError.message }, { status: 500 });
 
     // 4. Award Reputation (Atomic point logic)
-    // We can use RPC or insert into ledger
     await supabase.rpc('award_points', {
       u_id: user.id,
       p_count: 5,
-      e_type: 'test_complete',
+      e_type: 'test_completed',
       ent_id: id,
       i_key: 'test_att_' + attempt.id
     });

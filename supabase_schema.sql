@@ -73,6 +73,15 @@ CREATE TABLE public.answer_votes (
   UNIQUE (answer_id, user_id)
 );
 
+CREATE TABLE public.doubt_votes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  doubt_id UUID REFERENCES public.doubts(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) NOT NULL,
+  vote_type INTEGER NOT NULL, -- 1 for upvote, -1 for downvote
+  UNIQUE (doubt_id, user_id)
+);
+
+
 -- 3. Mentorship System
 CREATE TABLE public.mentor_applications (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -205,3 +214,30 @@ CREATE POLICY "Owner Edit: answers" ON public.answers FOR UPDATE USING (auth.uid
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Private Read: notifications" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Private Update: notifications" ON public.notifications FOR UPDATE USING (auth.uid() = user_id);
+
+-- 8. Views for Performance & Analytics
+CREATE OR REPLACE VIEW public.doubts_with_stats AS
+SELECT 
+  d.*,
+  p.username as author_username,
+  p.avatar_url as author_avatar_url,
+  s.name as subject_name,
+  (SELECT COUNT(*) FROM public.answers a WHERE a.doubt_id = d.id) as answers_count,
+  -- PS#2 Formula: (votes * 0.7 + answers_count * 0.3)
+  (d.votes * 0.7 + (SELECT COUNT(*) FROM public.answers a WHERE a.doubt_id = d.id) * 0.3) as trending_score
+FROM public.doubts d
+JOIN public.profiles p ON d.author_id = p.id
+LEFT JOIN public.subjects s ON d.subject_id = s.id;
+
+CREATE OR REPLACE VIEW public.mentor_public_directory AS
+SELECT 
+  mp.*,
+  p.username,
+  p.full_name,
+  p.avatar_url,
+  p.reputation_points,
+  ma.status as application_status
+FROM public.mentor_profiles mp
+JOIN public.profiles p ON mp.id = p.id
+JOIN public.mentor_applications ma ON mp.id = ma.user_id
+WHERE ma.status = 'approved';
