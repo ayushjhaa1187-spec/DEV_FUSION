@@ -28,7 +28,12 @@ export async function POST(req: NextRequest) {
     }
 
     const aiResponse = await askAIDoubt(question, context);
-    return NextResponse.json({ ...aiResponse, remaining });
+    return NextResponse.json({
+    explanation: aiResponse.explanation,
+    steps: aiResponse.steps,
+    suggested_tags: aiResponse.suggested_tags,
+    remaining,
+  });
   } catch (error) {
     console.error('API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
