@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { doubtApi, aiApi, subjectApi } from '@/lib/api';
+import { doubtApi, aiApi, subjectApi, authApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import { DoubtCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -16,12 +16,42 @@ export default function DoubtsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<string>('all');
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userSubjects, setUserSubjects] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function loadUserData() {
+      try {
+        const [profile, subjects] = await Promise.all([
+          authApi.getMyProfile(),
+          authApi.getMySubjects()
+        ]);
+        setUserProfile(profile);
+        setUserSubjects(subjects.map((s: any) => s.subject_id));
+      } catch (err) {
+        console.error('Failed to load user context', err);
+      }
+    }
+    loadUserData();
+  }, []);
 
   useEffect(() => {
     async function loadData() {
+      setLoading(true);
       try {
+        const params: any = {};
+        if (activeSubject) params.subject_id = activeSubject;
+        
+        if (filterType === 'unanswered') params.filter = 'unanswered';
+        if (filterType === 'my-branch' && userProfile?.branch) params.branch = userProfile.branch;
+        if (filterType === 'my-subjects' && userSubjects.length > 0) {
+          params.filter = 'my_subjects';
+          params.user_subjects = userSubjects.join(',');
+        }
+
         const [doubtsData, subjectsData] = await Promise.all([
-          doubtApi.getDoubts(activeSubject ? { subject_id: activeSubject } : undefined),
+          doubtApi.getDoubts(Object.keys(params).length ? params : undefined),
           subjectApi.getSubjects()
         ]);
         setDoubts(doubtsData || []);
@@ -33,7 +63,7 @@ export default function DoubtsPage() {
       }
     }
     loadData();
-  }, [activeSubject]);
+  }, [activeSubject, filterType, userProfile, userSubjects]);
 
   const [isAiSolving, setIsAiSolving] = useState(false);
   const [aiResponse, setAiResponse] = useState<any>(null);
@@ -129,6 +159,38 @@ export default function DoubtsPage() {
               </button>
             ))}
           </div>
+
+          <div className={styles.filterToggles}>
+            <button 
+              onClick={() => setFilterType('all')}
+              className={`${styles.toggleBtn} ${filterType === 'all' ? styles.active : ''}`}
+            >
+              Recent
+            </button>
+            <button 
+              onClick={() => setFilterType('unanswered')}
+              className={`${styles.toggleBtn} ${filterType === 'unanswered' ? styles.active : ''}`}
+            >
+              Unanswered
+            </button>
+            {userProfile?.branch && (
+              <button 
+                onClick={() => setFilterType('my-branch')}
+                className={`${styles.toggleBtn} ${filterType === 'my-branch' ? styles.active : ''}`}
+              >
+                My Branch
+              </button>
+            )}
+            {userSubjects.length > 0 && (
+              <button 
+                onClick={() => setFilterType('my-subjects')}
+                className={`${styles.toggleBtn} ${filterType === 'my-subjects' ? styles.active : ''}`}
+              >
+                My Subjects
+              </button>
+            )}
+          </div>
+
           <Link href="/doubts/ask" className="sb-btnPrimary" style={{ whiteSpace: 'nowrap', border: 'none' }}>
             Ask Community
           </Link>

@@ -8,18 +8,24 @@ export async function GET(req: NextRequest) {
   
   const subjectId   = searchParams.get('subject_id');
   const status      = searchParams.get('status');
-  const sort        = searchParams.get('sort');         // 'newest', 'votes', 'trending'
-  const filter      = searchParams.get('filter');       // 'unanswered'
+  const sort        = searchParams.get('sort');
+  const filter      = searchParams.get('filter');
+  const branch      = searchParams.get('branch');
+  const userSubjects = searchParams.get('user_subjects')?.split(',') || [];
 
-  let query = supabase.from('doubts').select('*, profiles(username, avatar_url, reputation_points), subjects(name)');
+  let query = supabase.from('doubts').select('*, profiles(username, avatar_url, reputation_points, branch), subjects(name)');
 
   if (subjectId) query = query.eq('subject_id', subjectId);
   if (status)    query = query.eq('status', status);
+  if (branch)    query = query.eq('academic_context_snapshot->branch', branch);
+  
+  if (userSubjects.length > 0 && filter === 'my_subjects') {
+    query = query.in('subject_id', userSubjects);
+  }
 
   if (filter === 'unanswered') {
-    // Note: depending on schema, we might use a count column or a join
-    // For now filter where status is open
-    query = query.eq('status', 'open');
+    // We now use the proper answer_count field
+    query = query.eq('answer_count', 0);
   }
 
   const sortMap: Record<string, { column: string, ascending: boolean }> = {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { doubtApi, aiApi, subjectApi } from '@/lib/api';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 import './doubts-ask.css';
 
 export default function AskDoubtPage() {
@@ -10,7 +11,7 @@ export default function AskDoubtPage() {
   const [subjects, setSubjects] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     title: '',
-    content: '',
+    content: null as any,
     subject_id: '',
     branch: '',
     semester: '',
@@ -25,8 +26,6 @@ export default function AskDoubtPage() {
     subjectApi.getSubjects().then(setSubjects).catch(console.error);
   }, []);
 
-  const [previewMode, setPreviewMode] = useState(false);
-
   const handleAnalize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.subject_id) {
@@ -34,7 +33,6 @@ export default function AskDoubtPage() {
       return;
     }
     setIsLoading(true);
-    setPreviewMode(false);
     setError(null);
     try {
       // Use the solving endpoint but for pre-post analysis
@@ -128,62 +126,14 @@ export default function AskDoubtPage() {
           </div>
 
           <div className="form-group">
-            <div className="label-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <label style={{ margin: 0 }}>Detailed Content</label>
-              <div className="editor-toolbar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => {
-                  const ta = document.querySelector('textarea');
-                  if (!ta) return;
-                  const start = ta.selectionStart;
-                  const end = ta.selectionEnd;
-                  const text = ta.value;
-                  const before = text.substring(0, start);
-                  const selected = text.substring(start, end);
-                  const after = text.substring(end);
-                  setFormData({...formData, content: before + '**' + selected + '**' + after});
-                }} className="sb-btnGhost" style={{ padding: '6px 12px', minWidth: '32px' }}><b>B</b></button>
-                <button type="button" onClick={() => {
-                  const ta = document.querySelector('textarea');
-                  if (!ta) return;
-                  const start = ta.selectionStart;
-                  const end = ta.selectionEnd;
-                  const text = ta.value;
-                  const before = text.substring(0, start);
-                  const selected = text.substring(start, end);
-                  const after = text.substring(end);
-                  setFormData({...formData, content: before + '`' + selected + '`' + after});
-                }} className="sb-btnGhost" style={{ padding: '6px 12px', minWidth: '32px' }}><code>{'<>'}</code></button>
-                <button 
-                  type="button" 
-                  onClick={() => setPreviewMode(!previewMode)}
-                  className="sb-btnGhost" 
-                  style={{ padding: '6px 12px', fontSize: '0.75rem', flex: 1 }}
-                >
-                  {previewMode ? 'Edit Content' : 'Preview Rich Text'}
-                </button>
-              </div>
-            </div>
-            {previewMode ? (
-              <div className="rich-preview glass" style={{ minHeight: '200px', padding: '14px 18px', borderRadius: '12px', border: '1px solid var(--color-border)', background: 'rgba(255,255,255,0.02)' }}>
-                <div className="preview-content" style={{ opacity: 0.9 }}>
-                  {formData.content.split('\n').map((line, i) => (
-                    <p key={i} style={{ marginBottom: line ? '0.5rem' : '1rem' }}>
-                      {line.startsWith('```') ? <code style={{ display: 'block', background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '4px' }}>{line.replace(/```/g, '')}</code> : line}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <textarea 
-                placeholder="Provide context, code snippets, or what you've tried..." 
-                value={formData.content}
-                onChange={e => setFormData({...formData, content: e.target.value})}
-                rows={8}
-                required
-              />
-            )}
+            <label style={{ marginBottom: '8px', display: 'block' }}>Detailed Content</label>
+            <RichTextEditor 
+              content={formData.content} 
+              onChange={(json) => setFormData({...formData, content: json})}
+              placeholder="Provide context, code snippets, or what you've tried..."
+            />
             <p className="help-text" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '8px' }}>
-              Pro tip: Use ``` to start/end code blocks. AI will help with auto-tagging.
+              Pro tip: Use the toolbar to add code snippets or images for faster peer resolution.
             </p>
           </div>
 

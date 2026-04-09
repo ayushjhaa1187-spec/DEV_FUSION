@@ -46,6 +46,9 @@ export async function POST(
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Manually increment answer_count as a fallback for the trigger
+    await supabase.rpc('increment_answer_count', { doubt_id_param: id });
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
