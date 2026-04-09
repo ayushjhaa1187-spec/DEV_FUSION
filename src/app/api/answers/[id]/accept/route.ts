@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { logAuditEvent } from '@/lib/audit';
 
 export async function POST(
   req: NextRequest,
@@ -36,7 +37,10 @@ export async function POST(
   }
 
   if (doubt.author_id !== user.id) {
-    return NextResponse.json({ error: 'Forbidden: only the doubt author can accept answers' }, { status: 403 });
+    return NextResponse.json(
+      { error: 'Forbidden: only the doubt author can accept answers' },
+      { status: 403 }
+    );
   }
 
   // 3. Unaccept any previously accepted answer for this doubt
@@ -80,6 +84,12 @@ export async function POST(
     reference_id: id,
   }).then(({ error: notifErr }) => {
     if (notifErr) console.warn('[accept] Notification failed (non-fatal):', notifErr.message);
+  });
+
+  // 8. Audit log
+  await logAuditEvent(user.id, 'answer_accepted', 'answer', id, {
+    doubt_id: answer.doubt_id,
+    answerer_id: answer.author_id,
   });
 
   return NextResponse.json({ success: true, message: 'Answer accepted as solution' });
