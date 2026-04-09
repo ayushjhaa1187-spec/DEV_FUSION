@@ -16,6 +16,7 @@ export default function AskDoubtModal({ isOpen, onClose, onPublished }: { isOpen
   });
   const [step, setStep] = useState(1); // 1: Input, 2: AI Review, 3: Success
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [isAiStreaming, setIsAiStreaming] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,32 +25,28 @@ export default function AskDoubtModal({ isOpen, onClose, onPublished }: { isOpen
       subjectApi.getSubjects().then(setSubjects).catch(console.error);
       setStep(1);
       setError(null);
+      setAiAnalysis(null);
     }
   }, [isOpen]);
 
-  const handleAnalyze = async (e: React.FormEvent) => {
+  const handleAskAI = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.subject_id) {
       setError('Please fill in the title, content, and select a subject.');
       return;
     }
-    setIsLoading(true);
+    setStep(2);
+    setIsAiStreaming(true);
     setError(null);
+    
     try {
       const textToAnalyze = `${formData.title}\n\n${typeof formData.content === 'string' ? formData.content : JSON.stringify(formData.content)}`;
       const analysis = await aiApi.solveDoubt({ question: textToAnalyze });
       setAiAnalysis(analysis);
-      setStep(2);
     } catch (err: any) {
-      if (err.message?.includes('Free tier limit reached')) {
-        setError(err.message);
-        // We stay on step 1 so they can see the error
-      } else {
-        setError('AI analysis fragmented. Proceed to community post?');
-        setStep(2);
-      }
+      setError('AI guidance interrupted. You can still post to the community.');
     } finally {
-      setIsLoading(false);
+      setIsAiStreaming(false);
     }
   };
 
@@ -208,7 +205,7 @@ export default function AskDoubtModal({ isOpen, onClose, onPublished }: { isOpen
             <div style={{ padding: '32px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               {step === 1 && (
                 <button 
-                  onClick={handleAnalyze} 
+                  onClick={handleAskAI} 
                   disabled={isLoading}
                   style={{ 
                     padding: '16px 32px', borderRadius: '16px', background: 'var(--color-primary)', 
@@ -216,24 +213,25 @@ export default function AskDoubtModal({ isOpen, onClose, onPublished }: { isOpen
                     display: 'flex', alignItems: 'center', gap: '12px'
                   }}
                 >
-                  {isLoading ? 'Processing...' : 'Ready to Ask AI First'} 
+                  {isLoading ? 'Processing...' : 'Ask AI First'} 
                   <ArrowRight size={20} />
                 </button>
               )}
-              {step === 2 && (
+              {step === 2 && !isAiStreaming && (
                 <>
                   <button 
-                    onClick={() => setStep(1)}
-                    style={{ padding: '16px 32px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', color: 'white', border: '1px solid var(--color-border)', fontWeight: 800, cursor: 'pointer' }}
+                    onClick={onClose}
+                    className="sb-btnGhost"
+                    style={{ padding: '16px 32px', borderRadius: '16px', fontWeight: 800, cursor: 'pointer' }}
                   >
-                    Edit Draft
+                    This helped ✓
                   </button>
                   <button 
                     onClick={handlePost}
                     disabled={isLoading}
                     style={{ padding: '16px 32px', borderRadius: '16px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 800, cursor: 'pointer' }}
                   >
-                    {isLoading ? 'Publishing...' : 'Post to Community'}
+                    {isLoading ? 'Publishing...' : 'Still confused — post to community'}
                   </button>
                 </>
               )}

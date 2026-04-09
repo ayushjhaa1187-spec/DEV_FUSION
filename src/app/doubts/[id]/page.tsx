@@ -8,6 +8,8 @@ import ReputationBadge from '@/components/user/ReputationBadge';
 import { Sparkles, MessageSquare, ChevronRight } from 'lucide-react';
 import styles from './doubt-detail.module.css';
 import { LoadingPage } from '@/components/ui/Loading';
+import ReactMarkdown from 'react-markdown';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 
 export default function DoubtDetailPage({
   params,
@@ -132,7 +134,9 @@ export default function DoubtDetailPage({
           </div>
         </header>
         <div className={styles.content}>
-          <p>{doubt.content}</p>
+          <div className="prose prose-invert max-w-none">
+            <ReactMarkdown>{doubt.content}</ReactMarkdown>
+          </div>
         </div>
         <footer className={styles.footer}>
           <div className={styles.actions}>
@@ -189,7 +193,9 @@ export default function DoubtDetailPage({
                 <span className={styles.date}>{new Date(answer.created_at).toLocaleDateString()}</span>
               </div>
               <div className={styles.answerContent}>
-                <p>{answer.content}</p>
+                <div className="prose prose-invert max-w-none">
+                  <ReactMarkdown>{answer.content}</ReactMarkdown>
+                </div>
               </div>
               <div className={styles.answerFooter}>
                 <div className={styles.actions}>
@@ -198,7 +204,7 @@ export default function DoubtDetailPage({
                   <button onClick={() => handleVote(answer.id, -1)} className={styles.voteBtn}>▼</button>
                 </div>
                 
-                {user?.id === doubt.author_id && !answer.is_accepted && (
+                {user?.id === doubt.user_id && !answer.is_accepted && doubt.status !== 'resolved' && (
                   <button 
                     onClick={() => handleAcceptAnswer(answer.id)}
                     className={styles.acceptBtn}
@@ -216,16 +222,17 @@ export default function DoubtDetailPage({
       {user ? (
         <section className={`${styles.postAnswer} glass`}>
           <h3>Your Answer</h3>
-          <textarea 
-            className={styles.textarea} 
-            placeholder="Write your solution here... (earn +10 reputation)"
-            value={newAnswer}
-            onChange={(e) => setNewAnswer(e.target.value)}
-          ></textarea>
+          <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+            <RichTextEditor 
+              content={newAnswer}
+              onChange={setNewAnswer}
+              placeholder="Provide a logical step-by-step resolution..."
+            />
+          </div>
           <button 
             className={styles.postBtn} 
             onClick={handlePostAnswer}
-            disabled={posting}
+            disabled={posting || !newAnswer.trim()}
           >
             {posting ? 'Posting...' : 'Post Answer'}
           </button>
@@ -265,4 +272,3 @@ export default function DoubtDetailPage({
     </div>
   );
 }
-

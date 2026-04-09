@@ -74,10 +74,10 @@ export async function generatePracticeQuiz(subject: string, topic: string) {
     return [];
   }
 
-  const prompt = `Generate 5 high-quality, conceptual multiple-choice questions for college students studying "${subject}" on the topic "${topic}".
-Ensure clear distinctions between answer options.
+  const prompt = `Generate 20 high-quality, conceptual multiple-choice questions for college students studying "${subject}" on the topic "${topic}".
+Ensure clear distinctions between answer options and provide a logical step-by-step explanation for the correct answer.
 
-Respond ONLY with a valid JSON array (no markdown, no code fences):
+Respond ONLY with a JSON array of 20 objects like this:
 [
   {
     "question_text": "...",

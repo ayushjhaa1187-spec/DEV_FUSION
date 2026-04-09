@@ -35,9 +35,21 @@ export async function GET(request: Request) {
       }
     );
     const appUrl = (process.env.NEXT_PUBLIC_APP_URL || origin).replace(/\/$/, '');
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      // Always redirect to dashboard (or deep-link target) after successful OAuth
+    const { data: { session } } = await supabase.auth.exchangeCodeForSession(code);
+    if (session) {
+      // Check if profile is complete
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('college')
+        .eq('id', session.user.id)
+        .single();
+      
+      const appUrl = (process.env.NEXT_PUBLIC_APP_URL || origin).replace(/\/$/, '');
+      
+      if (!profile || !profile.college) {
+        return NextResponse.redirect(`${appUrl}/auth/onboarding`);
+      }
+
       const path = next.startsWith('/') ? next : '/dashboard';
       return NextResponse.redirect(`${appUrl}${path}`);
     }
