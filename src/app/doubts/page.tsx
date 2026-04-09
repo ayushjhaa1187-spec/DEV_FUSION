@@ -36,9 +36,20 @@ export default function DoubtsPage() {
     loadUserData();
   }, []);
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRefreshKey(prev => prev + 1);
+    }, 15000); // Auto-refresh every 15s
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     async function loadData() {
-      setLoading(true);
+      // Only set loading on manual filter changes, not periodic refresh
+      if (refreshKey === 0) setLoading(true);
+      
       try {
         const params: any = {};
         if (activeSubject) params.subject_id = activeSubject;
@@ -55,7 +66,7 @@ export default function DoubtsPage() {
           subjectApi.getSubjects()
         ]);
         setDoubts(doubtsData || []);
-        setSubjects(subjectsData || []);
+        if (subjectsData) setSubjects(subjectsData);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -63,7 +74,7 @@ export default function DoubtsPage() {
       }
     }
     loadData();
-  }, [activeSubject, filterType, userProfile, userSubjects]);
+  }, [activeSubject, filterType, userProfile, userSubjects, refreshKey]);
 
   const [isAiSolving, setIsAiSolving] = useState(false);
   const [aiResponse, setAiResponse] = useState<any>(null);

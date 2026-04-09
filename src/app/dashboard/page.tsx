@@ -8,6 +8,37 @@ import { createSupabaseBrowser } from '@/lib/supabase/client';
 
 import { Skeleton } from '@/components/ui/Skeleton';
 
+function WeakAreasWidget() {
+  const [weakAreas, setWeakAreas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/analytics/weak-areas').then(res => res.json()).then(setWeakAreas).catch(console.error).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <Skeleton width="100%" height="100px" rounded />;
+  
+  if (weakAreas.length === 0) return (
+    <div className="glass" style={{ padding: '1.5rem', borderRadius: '24px', textAlign: 'center' }}>
+      <p style={{ margin: 0, opacity: 0.6 }}>Looking good! Keep taking tests to maintain mastery.</p>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+      {weakAreas.map(area => (
+        <div key={area.id} className="glass" style={{ padding: '1.5rem', borderRadius: '24px', borderLeft: '4px solid #ef4444' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '4px' }}>{area.name}</div>
+          <div style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '12px' }}>Avg Score: {area.avg}%</div>
+          <Link href="/tests" style={{ fontSize: '0.8rem', color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 600 }}>
+            Review Concept →
+          </Link>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
@@ -66,6 +97,29 @@ export default function DashboardPage() {
         )}
       </div>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+        <div className="glass" style={{ padding: '1.5rem', borderRadius: '24px' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', opacity: 0.6, marginBottom: '8px' }}>Reputation Gallon</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900 }}>{profile?.reputation_points || 0} <span style={{ fontSize: '1rem', fontWeight: 500, opacity: 0.6 }}>PTS</span></div>
+        </div>
+        <div className="glass" style={{ padding: '1.5rem', borderRadius: '24px' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', opacity: 0.6, marginBottom: '8px' }}>Tests Attempted</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900 }}>{profile?.tests_taken || 0} <span style={{ fontSize: '1rem', fontWeight: 500, opacity: 0.6 }}>QUIZZES</span></div>
+        </div>
+        <div className="glass" style={{ padding: '1.5rem', borderRadius: '24px' }}>
+          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', opacity: 0.6, marginBottom: '8px' }}>Doubts Answered</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 900 }}>{profile?.doubts_answered || 0} <span style={{ fontSize: '1rem', fontWeight: 500, opacity: 0.6 }}>SOLVED</span></div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '3rem' }}>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '1.5rem' }}>🎯</span> Academic Health Check
+        </h2>
+        <WeakAreasWidget />
+      </div>
+
+      <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Quick Actions</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
         {cards.map(card => (
           <Link key={card.href} href={card.href} style={{

@@ -8,6 +8,20 @@
   padding: 2rem;
 }
 
+.forgotBtn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.forgotBtn:hover {
+  text-decoration: underline;
+}
+
 .authCard {
   width: 100%;
   max-width: 450px;

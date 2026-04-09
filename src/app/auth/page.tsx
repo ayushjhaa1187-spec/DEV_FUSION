@@ -99,7 +99,25 @@ function AuthForm() {
               onChange={e => setEmail(e.target.value)} required />
           </div>
           <div className={styles.inputGroup}>
-            <label htmlFor="password">Password</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label htmlFor="password">Password</label>
+              {isLogin && (
+                <button 
+                  type="button" 
+                  onClick={async () => {
+                    if (!email) return setError('Enter your email first');
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/auth/reset-password`,
+                    });
+                    if (error) setError(error.message);
+                    else setError('Password reset link sent to your email.');
+                  }}
+                  className={styles.forgotBtn}
+                >
+                  Forgot?
+                </button>
+              )}
+            </div>
             <input id="password" type="password" placeholder="••••••••" value={password}
               onChange={e => setPassword(e.target.value)} required />
           </div>
