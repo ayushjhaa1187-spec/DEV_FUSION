@@ -74,7 +74,7 @@ export const subjectApi = {
 export const testApi = {
   getHistory: () => apiFetch('/api/tests/history'),
   generate: (data: unknown) => apiFetch('/api/tests/generate', { method: 'POST', body: JSON.stringify(data) }),
-  submit: (testId: string, answers: number[]) =>
+  submit: (testId: string, answers: any) =>
     apiFetch(`/api/tests/${testId}/submit`, { method: 'POST', body: JSON.stringify({ answers }) }),
 };
 

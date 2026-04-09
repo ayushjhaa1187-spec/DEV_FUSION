@@ -1,19 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/auth-provider';
 import { testApi, subjectApi } from '@/lib/api';
 import { Skeleton } from '@/components/ui/Skeleton';
 import styles from './tests.module.css';
 
 export default function PracticeTestsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [subjects, setSubjects] = useState<any[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('');
   const [topic, setTopic] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [test, setTest] = useState<any>(null);
-  const [answers, setAnswers] = useState<number[]>([]);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -43,7 +45,7 @@ export default function PracticeTestsPage() {
     try {
       const data = await testApi.generate({ subject_id: selectedSubject, topic });
       setTest(data);
-      setAnswers(new Array(data.questions.length).fill(-1));
+      setAnswers({});
       setTimeLeft(300); // 5 Minutes
     } catch (err) {
       alert('Failed to generate test. Make sure you have subject data in your database.');
@@ -58,9 +60,13 @@ export default function PracticeTestsPage() {
     setIsSubmitting(true);
     setTimeLeft(null); // Stop timer
     try {
-      // Ensure we send current answers state
       const data = await testApi.submit(test.id, answers);
       setResult(data);
+      if (data.attemptId) {
+        setTimeout(() => {
+          router.push(`/tests/${data.attemptId}/results`);
+        }, 1500);
+      }
     } catch (err) {
       alert('Failed to submit test');
     } finally {
@@ -158,12 +164,8 @@ export default function PracticeTestsPage() {
                   {q.options.map((opt: string, optIdx: number) => (
                     <button 
                       key={optIdx} 
-                      className={`${styles.optBtn} ${answers[qIdx] === optIdx ? styles.selected : ''}`}
-                      onClick={() => {
-                        const newAns = [...answers];
-                        newAns[qIdx] = optIdx;
-                        setAnswers(newAns);
-                      }}
+                    className={`${styles.optBtn} ${answers[q.id] === optIdx ? styles.selected : ''}`}
+                    onClick={() => setAnswers({...answers, [q.id]: optIdx})}
                     >
                       <span className={styles.optLetter}>{String.fromCharCode(65 + optIdx)}</span>
                       <span className={styles.optText}>{opt}</span>
@@ -176,7 +178,7 @@ export default function PracticeTestsPage() {
 
           <div className={styles.testFooter}>
             <div className={styles.completionStatus}>
-              {answers.filter(a => a !== -1).length} of {test.questions.length} answered
+              {Object.keys(answers).length} of {test.questions.length} answered
             </div>
             <button 
               className="sb-btnPrimary" 

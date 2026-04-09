@@ -43,6 +43,7 @@ export async function POST(
         user_id: user.id,
         test_id: id,
         score: finalScore,
+        selected_answers: answers, // Persisting for result analysis
         completed_at: new Date().toISOString()
       })
       .select()
