@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/auth-provider';
-import { Bell, Menu, X, MessageSquare, Trophy, AtSign, FileText, ChevronRight } from 'lucide-react';
+import { Bell, Menu, X, MessageSquare, Trophy, AtSign, FileText, ChevronRight, Check } from 'lucide-react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import styles from './Navbar.module.css';
 
@@ -17,6 +17,7 @@ export default function Navbar() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const mainLinks = [
@@ -27,7 +28,6 @@ export default function Navbar() {
     { name: 'Practice', href: '/tests' },
     { name: 'Leaderboard', href: '/leaderboard' },
   ];
-
 
   useEffect(() => {
     if (!user) return;
@@ -52,6 +52,34 @@ export default function Navbar() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const openNotifications = async () => {
+    setIsNotifOpen(!isNotifOpen);
+    if (!isNotifOpen && user) {
+      setNotifLoading(true);
+      try {
+        const res = await fetch('/api/notifications?limit=10');
+        const data = await res.json();
+        setNotifications(Array.isArray(data) ? data : []);
+        // Mark all as read
+        await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markAllRead: true }) });
+        setUnreadCount(0);
+      } finally {
+        setNotifLoading(false);
+      }
+    }
+  };
+
   useEffect(() => {
     if (isMobileMenuOpen) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = 'unset';
@@ -59,117 +87,124 @@ export default function Navbar() {
   }, [isMobileMenuOpen]);
 
   return (
-    <nav className={styles.navbar}>
-      <div className={styles.navContent}>
-        <Link href="/" className={styles.logo}>
-          <svg className={styles.logoIcon} viewBox="0 0 40 40" fill="none">
-            <path d="M4 28 Q20 8 36 28" stroke="url(#sbLogoGradNav)" strokeWidth="3" fill="none" strokeLinecap="round" />
-            <line x1="4" y1="28" x2="36" y2="28" stroke="url(#sbLogoGradNav)" strokeWidth="2.5" />
-            <defs>
-              <linearGradient id="sbLogoGradNav" x1="0" y1="0" x2="40" y2="40">
-                <stop offset="0%" stopColor="#7c3aed" /><stop offset="100%" stopColor="#06d6a0" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <span className={styles.logoText}>Skill<span>Bridge</span></span>
-        </Link>
+    <header className={styles.navbar}>
+      <div className={styles.navContainer}>
+        <Link href="/" className={styles.logo}>Skill Bridge</Link>
 
         {/* Desktop Links */}
-        <div className={styles.navLinks}>
+        <nav className={styles.desktopLinks}>
           {mainLinks.map(link => (
             <Link key={link.href} href={link.href} className={`${styles.navLink} ${pathname === link.href ? styles.active : ''}`}>
               {link.name}
               {pathname === link.href && (
-                <motion.div layoutId="underline" className={styles.underline} />
+                <motion.span className={styles.activeIndicator} layoutId="activeNav" />
               )}
             </Link>
           ))}
-        </div>
+        </nav>
 
-        <div className={styles.navRight}>
-          {user ? (
-            <div className="flex items-center gap-4">
-              <div className={styles.notifWrapper} ref={dropdownRef}>
-                <button className={styles.notifyBtn} onClick={() => setIsNotifOpen(!isNotifOpen)}>
-                  <Bell size={20} />
-                  {unreadCount > 0 && <span className={styles.notifyBadge}>{unreadCount}</span>}
-                </button>
-              </div>
-              <Link href="/dashboard" className={styles.avatarBtn}>
-                <div className={styles.avatar}>
-                   {profile?.avatar_url ? (
-                     <img src={profile.avatar_url} alt="" />
-                   ) : (
-                     <span>{profile?.full_name?.[0] || 'U'}</span>
-                   )}
-                </div>
-              </Link>
-            </div>
-          ) : (
-            <div className={styles.authActions}>
-              <Link href="/auth" className={styles.btnSecondary}>Sign In</Link>
-              <Link href="/auth" className={styles.btnPrimary}>Start Free</Link>
-            </div>
-          )}
+        {user ? (
+          <div className={styles.userActions}>
+            {/* Notification Bell */}
+            <div className={styles.notifWrapper} ref={dropdownRef}>
+              <button className={styles.iconBtn} onClick={openNotifications} aria-label="Notifications">
+                <Bell size={20} />
+                {unreadCount > 0 && <span className={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
+              </button>
 
-          <button className={styles.mobileToggle} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
+              <AnimatePresence>
+                {isNotifOpen && (
+                  <motion.div
+                    className={styles.notifDropdown}
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <div className={styles.notifHeader}>
+                      <span>Notifications</span>
+                      <button
+                        className={styles.markReadBtn}
+                        onClick={async () => {
+                          await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markAllRead: true }) });
+                          setUnreadCount(0);
+                          setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+                        }}
+                      >
+                        <Check size={12} /> Mark all read
+                      </button>
+                    </div>
+                    <div className={styles.notifList}>
+                      {notifLoading ? (
+                        <div className={styles.notifEmpty}>Loading...</div>
+                      ) : notifications.length === 0 ? (
+                        <div className={styles.notifEmpty}>No notifications yet</div>
+                      ) : (
+                        notifications.map(notif => (
+                          <Link
+                            key={notif.id}
+                            href={notif.link || '/doubts'}
+                            className={`${styles.notifItem} ${!notif.is_read ? styles.notifUnread : ''}`}
+                            onClick={() => setIsNotifOpen(false)}
+                          >
+                            <div className={styles.notifDot} />
+                            <p className={styles.notifMsg}>{notif.message}</p>
+                            <span className={styles.notifTime}>{new Date(notif.created_at).toLocaleDateString()}</span>
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                    <Link href="/notifications" className={styles.notifFooter} onClick={() => setIsNotifOpen(false)}>
+                      View all notifications
+                    </Link>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Avatar */}
+            {profile?.avatar_url ? (
+              <Link href="/dashboard"><img src={profile.avatar_url} alt="avatar" className={styles.avatar} /></Link>
+            ) : (
+              <Link href="/dashboard"><div className={styles.avatarPlaceholder}>{profile?.full_name?.[0] || 'U'}</div></Link>
+            )}
+          </div>
+        ) : (
+          <div className={styles.authButtons}>
+            <Link href="/login" className={styles.signInBtn}>Sign In</Link>
+            <Link href="/register" className={styles.startFreeBtn}>Start Free</Link>
+          </div>
+        )}
+
+        <button className={styles.mobileMenuBtn} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </div>
 
       {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className={styles.mobileDrawer}
-          >
-            <div className={styles.mobileDrawerContent}>
-              <div className={styles.mobileUserInfo}>
-                <div className={styles.mobileAvatarLarge}>
-                  {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : profile?.full_name?.[0]}
-                </div>
-                <div>
-                  <h3 className="font-black">{profile?.full_name || 'Student'}</h3>
-                  <p className="text-xs text-gray-500">@{profile?.username || 'learner'}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {mainLinks.map((link, i) => (
-                  <motion.div
-                    key={link.href}
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: i * 0.1 }}
-                  >
-                    <Link 
-                      href={link.href} 
-                      className={styles.mobileNavLink}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {link.name}
-                      <ChevronRight size={16} className="text-gray-700" />
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="mt-auto pt-8 border-t border-white/5 space-y-4">
-                 <Link href="/dashboard" className="block w-full text-center py-4 bg-white/5 rounded-2xl font-bold" onClick={() => setIsMobileMenuOpen(false)}>
-                   Dashboard
-                 </Link>
-                 <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="w-full text-center py-4 text-red-400 font-bold border border-red-400/20 rounded-2xl">
-                   Logout
-                 </button>
-              </div>
+      {isMobileMenuOpen && (
+        <motion.div
+          className={styles.mobileMenu}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+        >
+          <div className={styles.mobileProfile}>
+            {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className={styles.avatarLg} /> : <div className={styles.avatarPlaceholderLg}>{profile?.full_name?.[0]}</div>}
+            <div>
+              <h3 className={styles.mobileProfileName}>{profile?.full_name || 'Student'}</h3>
+              <p className={styles.mobileProfileUser}>@{profile?.username || 'learner'}</p>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+          </div>
+          {mainLinks.map((link, i) => (
+            <Link key={link.href} href={link.href} className={styles.mobileLink} onClick={() => setIsMobileMenuOpen(false)}>
+              {link.name}
+            </Link>
+          ))}
+          <Link href="/dashboard" className={styles.mobileLink} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
+          <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="w-full text-center py-4 text-red-400 font-bold border border-red-400/20 rounded-2xl">Logout</button>
+        </motion.div>
+      )}
+    </header>
   );
 }
