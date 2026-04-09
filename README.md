@@ -839,9 +839,9 @@ git push origin feature/your-feature-name
 
 | Member | Role |
 |---|---|
-| **Ayush Kumar Jha** | Full-Stack Lead, AI Integration, DB Architecture |
-| **Team Member 2** | Frontend UI/UX, Framer Motion Animations |
-| **Team Member 3** | Backend API Design, Supabase RLS |
+
+| **Jahnvi Chauhan** | Frontend UI/UX, Framer Motion Animations, Backend API Design |
+| **Ayush Kumar Jha** | Full-Stack Lead, AI Integration, DB Architecture, Supabase RLS |
 
 Built with ❤️ for the **DEV_FUSION Hackathon** — Problem Statement 2.
 
