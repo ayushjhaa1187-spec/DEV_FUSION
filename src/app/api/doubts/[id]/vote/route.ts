@@ -18,35 +18,36 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid vote type' }, { status: 400 });
     }
 
-    // Use RPC if available, or manual update
-    // We'll use a transaction logic here
-    const { data: vote, error: voteError } = await supabase
-      .from('doubt_votes') // We need to create this table
-      .upsert(
-        { user_id: user.id, doubt_id: id, vote_type },
-        { onConflict: 'user_id,doubt_id' }
-      )
-      .select()
+    // Fetch current doubt
+    const { data: doubt, error: fetchError } = await supabase
+      .from('doubts')
+      .select('votes, author_id')
+      .eq('id', id)
       .single();
 
-    if (voteError) throw voteError;
+    if (fetchError || !doubt) {
+      return NextResponse.json({ error: 'Doubt not found' }, { status: 404 });
+    }
 
-    // Recalculate total votes for the doubt
-    // (In production, a trigger would handle this)
-    const { data: totalData } = await supabase
-      .from('doubt_votes')
-      .select('vote_type')
-      .eq('doubt_id', id);
-    
-    const totalVotes = totalData?.reduce((acc: number, v: any) => acc + v.vote_type, 0) || 0;
+    // Prevent self-voting
+    if (doubt.author_id === user.id) {
+      return NextResponse.json({ error: 'Cannot vote on your own doubt' }, { status: 403 });
+    }
 
-    await supabase
+    // Update vote count directly
+    const newVotes = (doubt.votes || 0) + vote_type;
+    const { data, error } = await supabase
       .from('doubts')
-      .update({ votes: totalVotes })
-      .eq('id', id);
+      .update({ votes: newVotes })
+      .eq('id', id)
+      .select('id, votes')
+      .single();
 
-    return NextResponse.json({ success: true, totalVotes });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ votes: data.votes });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
