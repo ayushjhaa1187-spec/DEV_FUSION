@@ -48,8 +48,9 @@ export const answerApi = {
   getAnswers: (doubtId: string) => apiFetch(`/api/doubts/${doubtId}/answers`),
   postAnswer: (doubtId: string, data: unknown) =>
     apiFetch(`/api/doubts/${doubtId}/answers`, { method: 'POST', body: JSON.stringify(data) }),
-  acceptAnswer: (answerId: string) =>
-    apiFetch(`/api/answers/${answerId}/accept`, { method: 'POST' }),
+  // Fixed: use actual route structure /api/doubts/:doubtId/accept/:answerId with PATCH
+  acceptAnswer: (doubtId: string, answerId: string) =>
+    apiFetch(`/api/doubts/${doubtId}/accept/${answerId}`, { method: 'PATCH' }),
   vote: (answerId: string, vote_type: number) =>
     apiFetch(`/api/answers/${answerId}/vote`, { method: 'POST', body: JSON.stringify({ vote_type }) }),
 };
