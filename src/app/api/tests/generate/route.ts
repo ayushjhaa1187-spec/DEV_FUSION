@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { generatePracticeQuiz } from '@/lib/ai-service';
-import { checkRateLimit } from '@/lib/ai-service';
+import { checkRateLimit } from '@/lib/rate-limiter';
 import { checkAndIncrementUsage } from '@/lib/usage';
 
 export async function POST(req: NextRequest) {
@@ -9,12 +9,19 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Rate limit check
-  const rateCheck = checkRateLimit(user.id);
+  // Sliding-window rate limit check (5 requests / hour)
+  const rateCheck = await checkRateLimit(user.id, 'ai_generate_test');
   if (!rateCheck.allowed) {
+    const retryAfterSecs = Math.ceil((rateCheck.resetAt.getTime() - Date.now()) / 1000);
     return NextResponse.json(
-      { error: 'Rate limit exceeded. Try again later.', retryAfterMs: rateCheck.retryAfterMs },
-      { status: 429 }
+      {
+        error: 'Rate limit exceeded. Try again later.',
+        resetAt: rateCheck.resetAt.toISOString(),
+      },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(retryAfterSecs) },
+      }
     );
   }
 
@@ -23,6 +30,7 @@ export async function POST(req: NextRequest) {
     if (!subject_id || !topic) {
       return NextResponse.json({ error: 'Subject and Topic are required' }, { status: 400 });
     }
+
     // Check usage limits
     const { allowed, remaining } = await checkAndIncrementUsage(user.id, 'question');
     if (!allowed) {
@@ -31,16 +39,19 @@ export async function POST(req: NextRequest) {
         limitReached: true 
       }, { status: 403 });
     }
+
     const { data: subject } = await supabase
       .from('subjects')
       .select('name')
       .eq('id', subject_id)
       .single();
+
     const questions = await generatePracticeQuiz(subject?.name || 'General', topic);
     
     if (!questions || questions.length === 0) {
       return NextResponse.json({ error: 'Failed to generate quiz' }, { status: 500 });
     }
+
     // 1. Store Test
     const { data: test, error: testError } = await supabase
       .from('practice_tests')
@@ -52,7 +63,9 @@ export async function POST(req: NextRequest) {
       })
       .select()
       .single();
+
     if (testError) return NextResponse.json({ error: testError.message }, { status: 500 });
+
     // 2. Store Questions
     const formattedQuestions = questions.map((q: any) => ({
       test_id: test.id,
@@ -61,12 +74,20 @@ export async function POST(req: NextRequest) {
       correct_answer_index: q.correct_answer_index,
       explanation: q.explanation
     }));
+
     const { data: storedQuestions, error: questionError } = await supabase
       .from('practice_questions')
       .insert(formattedQuestions)
       .select();
+
     if (questionError) return NextResponse.json({ error: questionError.message }, { status: 500 });
-    return NextResponse.json({ ...test, questions: storedQuestions, remaining });
+
+    return NextResponse.json({
+      ...test,
+      questions: storedQuestions,
+      remaining,
+      rateLimitRemaining: rateCheck.remaining,
+    });
   } catch (error) {
     console.error('Test Generation Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
