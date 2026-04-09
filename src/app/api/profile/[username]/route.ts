@@ -16,37 +16,66 @@ export async function GET(
       .single();
 
     if (profileError || !profile) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    const [
-      { count: answers },
-      { count: accepted },
-      { count: doubts },
-      { data: badges },
-      { data: reputationEvents }
-    ] = await Promise.all([
-      supabase.from('answers').select('*', { count: 'exact', head: true }).eq('author_id', profile.id),
-      supabase.from('answers').select('*', { count: 'exact', head: true }).eq('author_id', profile.id).eq('is_accepted', true),
-      supabase.from('doubts').select('*', { count: 'exact', head: true }).eq('author_id', profile.id),
-      supabase.from('user_badges').select('*, badges(name, description, icon)').eq('user_id', profile.id),
-      supabase.from('reputation_history').select('*').eq('user_id', profile.id).order('created_at', { ascending: false })
-    ]);
+    // Get user's doubts with subject info
+    const { data: doubts } = await supabase
+      .from('doubts')
+      .select('id, title, status, votes, created_at, subjects(name)')
+      .eq('author_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    // Get user's answers
+    const { data: answers } = await supabase
+      .from('answers')
+      .select('id, content, votes, is_accepted, doubt_id, created_at')
+      .eq('author_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    // Compute reputation stats
+    const totalDoubts = doubts?.length || 0;
+    const totalAnswers = answers?.length || 0;
+    const acceptedAnswers = answers?.filter((a) => a.is_accepted).length || 0;
+    const answerVotes = answers?.reduce((sum, a) => sum + (a.votes || 0), 0) || 0;
+    const doubtVotes = doubts?.reduce((sum, d) => sum + (d.votes || 0), 0) || 0;
+    const reputationScore =
+      acceptedAnswers * 15 + answerVotes * 5 + doubtVotes * 2 + totalAnswers * 2;
+
+    // Determine badges
+    const badges: string[] = [];
+    if (acceptedAnswers >= 1) badges.push('First Answer Accepted');
+    if (acceptedAnswers >= 10) badges.push('Problem Solver');
+    if (acceptedAnswers >= 50) badges.push('Expert Solver');
+    if (totalAnswers >= 100) badges.push('Prolific Answerer');
+    if (reputationScore >= 500) badges.push('Rising Star');
+    if (reputationScore >= 2000) badges.push('Knowledge Champion');
+    if (totalDoubts >= 50) badges.push('Curious Mind');
+
+    // Determine rank
+    let rank = 'Beginner';
+    if (reputationScore >= 100) rank = 'Learner';
+    if (reputationScore >= 500) rank = 'Contributor';
+    if (reputationScore >= 1500) rank = 'Expert';
+    if (reputationScore >= 5000) rank = 'Master';
 
     return NextResponse.json({
       profile,
+      doubts: doubts || [],
+      answers: answers || [],
       stats: {
-        answers: answers || 0,
-        accepted: accepted || 0,
-        doubts: doubts || 0
+        totalDoubts,
+        totalAnswers,
+        acceptedAnswers,
+        reputationScore,
+        rank,
+        badges,
       },
-      badges: (badges || []).map((ub: any) => ({
-        ...ub.badges,
-        earned_at: ub.created_at
-      })),
-      reputationEvents: reputationEvents || []
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Profile API error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
