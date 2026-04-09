@@ -1,4 +1,4 @@
-import { getRank, getUnlockedBadges } from '@/lib/reputation';
+import { getRank, getUnlockedBadges } from '@/lib/reputation-service';
 import styles from './ReputationBadge.module.css';
 
 interface ReputationBadgeProps {
