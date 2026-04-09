@@ -35,3 +35,20 @@ export function getRank(points: number) {
   if (points >= 100) return 'Rising Star';
   return 'Beginner';
 }
+
+export function getUnlockedBadges(points: number) {
+  const icons: Record<string, string> = {
+    'Rising Star': '✨',
+    'Problem Solver': '🛠️',
+    'Knowledge Guru': '🧠',
+    'Legend': '👑'
+  };
+
+  return BADGE_THRESHOLDS
+    .filter(t => points >= t.min)
+    .map(t => ({
+      id: t.badge.toLowerCase().replace(/\s+/g, '-'),
+      name: t.badge,
+      icon: icons[t.badge] || '🏆'
+    }));
+}
