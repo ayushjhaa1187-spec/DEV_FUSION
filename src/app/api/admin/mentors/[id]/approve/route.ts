@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { logAuditEvent } from '@/lib/audit';
 
 export async function POST(
   req: NextRequest,
@@ -51,6 +52,15 @@ export async function POST(
         link: '/mentors/profile'
       });
     }
+
+    // 4. Audit log: mentor_approved or mentor_rejected
+    await logAuditEvent(
+      user!.id,
+      status === 'approved' ? 'mentor_approved' : 'mentor_rejected',
+      'mentor_application',
+      id,
+      { decision: status, admin_id: user!.id }
+    );
 
     return NextResponse.json({ success: true, status });
   } catch (error: any) {
