@@ -1,239 +1,194 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
-import ReputationBadge from '@/components/user/ReputationBadge';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, Award, TrendingUp, Calendar, MapPin } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useState, useRef } from 'react';
+import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import Image from 'next/image';
 
-const TIERS = [
-  { name: 'Diamond', min: 1000, color: '#00f2ff', icon: '💎' },
-  { name: 'Platinum', min: 500, color: '#e5e4e2', icon: '💍' },
-  { name: 'Gold', min: 250, color: '#ffd700', icon: '🥇' },
-  { name: 'Silver', min: 100, color: '#c0c0c0', icon: '🥈' },
-  { name: 'Bronze', min: 0, color: '#cd7f32', icon: '🥉' },
-];
+const TABS = ['All-Time', 'Monthly', 'Weekly'];
 
-const BRANCHES = ['All Branches', 'CSE', 'ECE', 'ME', 'CE', 'EE', 'IT'];
-
-const getTier = (points: number) => {
-  return TIERS.find(t => points >= t.min) || TIERS[TIERS.length - 1];
+const BADGE_CONFIG: Record<string, { label: string; color: string }> = {
+  Newcomer: { label: 'Newcomer', color: 'bg-gray-200 text-gray-700' },
+  Helper: { label: 'Helper', color: 'bg-blue-100 text-blue-700' },
+  Expert: { label: 'Expert', color: 'bg-purple-100 text-purple-700' },
+  Legend: { label: 'Legend', color: 'bg-yellow-100 text-yellow-700' },
 };
 
-export default function LeaderboardPage() {
-  const [leaders, setLeaders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [timeframe, setTimeframe] = useState('all');
-  const [branch, setBranch] = useState('All Branches');
+type LeaderboardEntry = {
+  rank: number;
+  user_id: string;
+  name: string;
+  username: string;
+  college: string;
+  avatar?: string;
+  badge: string;
+  points: number;
+  change: number;
+  is_current_user?: boolean;
+};
 
-  useEffect(() => {
-    async function loadLeaders() {
-      setLoading(true);
-      try {
-        const query = new URLSearchParams({
-          timeframe,
-          branch: branch === 'All Branches' ? 'all' : branch
-        });
-        const res = await fetch(`/api/leaderboard?${query}`);
-        const data = await res.json();
-        setLeaders(data || []);
-      } catch (err) {
-        console.error('Failed to load leaderboard');
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadLeaders();
-  }, [timeframe, branch]);
+async function fetchLeaderboard(period: string): Promise<{ entries: LeaderboardEntry[]; currentUser?: LeaderboardEntry }> {
+  const res = await fetch(`/api/leaderboard?period=${period.toLowerCase().replace('-', '_')}`);
+  if (!res.ok) throw new Error('Failed to fetch leaderboard');
+  return res.json();
+}
+
+export default function LeaderboardPage() {
+  const [activeTab, setActiveTab] = useState('All-Time');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['leaderboard', activeTab],
+    queryFn: () => fetchLeaderboard(activeTab),
+    refetchInterval: 300_000,
+  });
+
+  const entries = data?.entries ?? [];
+  const top3 = entries.slice(0, 3);
+  const rest = entries.slice(3);
+  const currentUser = data?.currentUser;
+  const currentUserInTop20 = entries.some((e) => e.is_current_user);
 
   return (
-    <main className="sb-page bg-[#0f0f1a] min-h-screen text-white">
-      <Navbar />
-      
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <header className="text-center mb-16">
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex justify-center mb-6"
-          >
-            <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-500">
-              <Award className="w-10 h-10" />
-            </div>
-          </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-white via-indigo-200 to-indigo-500 bg-clip-text text-transparent"
-          >
-            SkillBridge Champions
-          </motion.h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Honoring the top minds who bridge the gap between concept and creation through community contribution.
-          </p>
-        </header>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white flex items-center gap-2">
+          <Trophy className="w-8 h-8 text-yellow-500" />
+          Leaderboard
+        </h1>
 
-        {/* Controls */}
-        <div className="flex flex-col md:flex-row gap-6 mb-12">
-          <div className="flex-1 flex gap-2 p-1.5 bg-[#1e1e2e] border border-gray-800 rounded-2xl overflow-hidden">
-            {['all', 'weekly', 'monthly'].map((t) => (
-              <button
-                key={t}
-                onClick={() => setTimeframe(t)}
-                className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all capitalize ${timeframe === t ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white'}`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          
-          <div className="flex items-center gap-4 bg-[#1e1e2e] border border-gray-800 rounded-2xl px-4 py-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            <select 
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-              className="bg-transparent border-none text-sm font-medium outline-none text-white cursor-pointer"
+        {/* Tabs */}
+        <div className="flex gap-2 mb-8 border-b border-gray-200 dark:border-gray-700">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 font-medium transition border-b-2 -mb-px ${
+                activeTab === tab
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
             >
-              {BRANCHES.map(b => <option key={b} value={b} className="bg-[#1e1e2e]">{b}</option>)}
-            </select>
-          </div>
+              {tab}
+            </button>
+          ))}
         </div>
 
-        {/* Podium for Top 3 */}
-        {!loading && leaders.length >= 3 && timeframe === 'all' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 items-end">
-            {/* 2nd Place */}
-            <PodiumCard leader={leaders[1]} rank={2} timeframe={timeframe} />
-            {/* 1st Place */}
-            <PodiumCard leader={leaders[0]} rank={1} timeframe={timeframe} isMain />
-            {/* 3rd Place */}
-            <PodiumCard leader={leaders[2]} rank={3} timeframe={timeframe} />
+        {/* Skeleton */}
+        {isLoading && (
+          <div className="space-y-4">
+            <div className="flex justify-center gap-6 mb-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="animate-pulse flex flex-col items-center gap-2">
+                  <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                </div>
+              ))}
+            </div>
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="h-14 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+            ))}
           </div>
         )}
 
-        {/* List */}
-        <div className="bg-[#1e1e2e] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl">
-          <div className="hidden md:grid grid-cols-12 px-8 py-5 bg-[#161623] border-b border-gray-800 text-xs font-bold text-gray-500 uppercase tracking-widest">
-            <div className="col-span-1">Rank</div>
-            <div className="col-span-5">Student</div>
-            <div className="col-span-2 text-center">Tier</div>
-            <div className="col-span-2 text-center">Branch</div>
-            <div className="col-span-2 text-right">Reputation</div>
-          </div>
-
-          <div className="divide-y divide-gray-800">
-            {loading ? (
-              [...Array(5)].map((_, i) => (
-                <div key={i} className="px-8 py-6 animate-pulse bg-white/5 h-20"></div>
-              ))
-            ) : leaders.length > 0 ? (
-              leaders.map((student: any, i: number) => (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  key={student.id}
-                >
-                  <Link 
-                    href={`/profile/${student.username}`}
-                    className="grid grid-cols-12 px-8 py-6 items-center hover:bg-white/5 transition-all group no-underline"
-                  >
-                    <div className="col-span-1 text-2xl font-black text-gray-700 group-hover:text-indigo-500 transition-colors">
-                      {i + 1}
-                    </div>
-                    
-                    <div className="col-span-11 md:col-span-5 flex items-center gap-4">
-                      <div className="relative">
-                        <img 
-                          src={student.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.username}`} 
-                          alt="" 
-                          className="w-12 h-12 rounded-full border-2 border-gray-800 group-hover:border-indigo-500 transition-colors" 
-                        />
-                        {student.login_streak >= 7 && (
-                          <span className="absolute -top-1 -right-1 text-sm">🔥</span>
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-bold text-white group-hover:text-indigo-400 text-lg transition-colors">{student.username}</div>
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {student.college || 'Anonymous Campus'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="hidden md:flex col-span-2 justify-center">
-                      <div 
-                        className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border"
-                        style={{ 
-                          borderColor: `${getTier(student.reputation_points).color}40`, 
-                          color: getTier(student.reputation_points).color,
-                          backgroundColor: `${getTier(student.reputation_points).color}10`
-                        }}
-                      >
-                        {getTier(student.reputation_points).icon} {getTier(student.reputation_points).name}
-                      </div>
-                    </div>
-
-                    <div className="hidden md:block col-span-2 text-center text-sm font-medium text-gray-400">
-                      {student.branch || 'General'}
-                    </div>
-
-                    <div className="col-span-12 md:col-span-2 text-right">
-                      <div className="text-xl font-black text-white">
-                        {timeframe === 'all' ? student.reputation_points : student.period_points}
-                      </div>
-                      <div className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">
-                        Points this {timeframe}
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))
-            ) : (
-              <div className="py-32">
-                <EmptyState icon="❄️" title="Silence on the boards" description="Nobody has earned reputation in this category yet." />
+        {!isLoading && (
+          <>
+            {top3.length > 0 && (
+              <div className="flex items-end justify-center gap-4 mb-10">
+                {top3[1] && <PodiumCard entry={top3[1]} position={2} delay={200} />}
+                {top3[0] && <PodiumCard entry={top3[0]} position={1} delay={0} />}
+                {top3[2] && <PodiumCard entry={top3[2]} position={3} delay={400} />}
               </div>
             )}
-          </div>
-        </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-100 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Rank</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">User</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300 hidden sm:table-cell">College</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Badge</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Points</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Change</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {rest.map((entry) => <LeaderboardRow key={entry.user_id} entry={entry} />)}
+                </tbody>
+              </table>
+            </div>
+
+            {currentUser && !currentUserInTop20 && (
+              <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4 flex items-center gap-4 border-2 border-blue-400">
+                <span className="font-bold text-blue-600 dark:text-blue-400 w-10">{currentUser.rank}</span>
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-9 h-9 rounded-full bg-gray-300 overflow-hidden">
+                    {currentUser.avatar && <Image src={currentUser.avatar} alt={currentUser.name} width={36} height={36} />}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{currentUser.name} <span className="text-blue-500">(You)</span></p>
+                    <p className="text-xs text-gray-500">{currentUser.college}</p>
+                  </div>
+                </div>
+                <BadgeChip badge={currentUser.badge} />
+                <span className="font-bold text-gray-900 dark:text-white ml-auto">{currentUser.points.toLocaleString()}</span>
+              </div>
+            )}
+          </>
+        )}
       </div>
-      <Footer />
-    </main>
+    </div>
   );
 }
 
-function PodiumCard({ leader, rank, timeframe, isMain = false }: { leader: any, rank: number, timeframe: string, isMain?: boolean }) {
-  const tier = getTier(leader.reputation_points);
+function PodiumCard({ entry, position, delay }: { entry: LeaderboardEntry; position: number; delay: number }) {
+  const heights: Record<number, string> = { 1: 'h-32', 2: 'h-24', 3: 'h-20' };
+  const medals: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: rank * 0.1 }}
-      className={`relative flex flex-col items-center p-6 md:p-8 rounded-[40px] border transition-all ${isMain ? 'bg-indigo-600/10 border-indigo-500/50 md:scale-110 z-10 my-4 md:my-0' : 'bg-[#1e1e2e] border-gray-800 scale-95'}`}
-    >
-      <div className={`absolute top-0 -mt-6 w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black text-lg md:text-xl shadow-2xl ${rank === 1 ? 'bg-yellow-500 text-black' : rank === 2 ? 'bg-slate-300 text-black' : 'bg-amber-700 text-white'}`}>
-        {rank}
+    <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${delay}ms` }}>
+      <div className="text-3xl">{medals[position]}</div>
+      <div className="w-16 h-16 rounded-full bg-gray-300 overflow-hidden">
+        {entry.avatar && <Image src={entry.avatar} alt={entry.name} width={64} height={64} />}
       </div>
-      
-      <img 
-        src={leader.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${leader.username}`} 
-        className={`rounded-full border-4 mb-4 md:mb-6 shadow-2xl ${isMain ? 'w-20 h-20 md:w-24 md:h-24 border-indigo-500' : 'w-16 h-16 md:w-20 md:h-20 border-gray-700'}`}
-        alt="" 
-      />
-      
-      <h3 className="text-lg md:text-xl font-black mb-1">{leader.username}</h3>
-      <p className="text-[10px] md:text-xs text-indigo-400 font-bold mb-3 md:mb-4 uppercase tracking-widest">{tier.name} Tier</p>
-      
-      <div className="flex items-center gap-2">
-        <TrendingUp className="w-3 md:w-4 h-3 md:h-4 text-emerald-500" />
-        <span className="text-xl md:text-2xl font-black">{timeframe === 'all' ? leader.reputation_points : leader.period_points}</span>
-      </div>
-    </motion.div>
+      <p className="font-semibold text-gray-900 dark:text-white text-sm text-center">{entry.name}</p>
+      <p className="text-xs text-gray-500">{entry.points.toLocaleString()} pts</p>
+      <div className={`w-20 ${heights[position]} ${
+        position === 1 ? 'bg-yellow-400' : position === 2 ? 'bg-gray-400' : 'bg-orange-400'
+      } rounded-t-md`} />
+    </div>
   );
+}
+
+function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
+  return (
+    <tr className={`${
+      entry.is_current_user ? 'bg-blue-50 dark:bg-blue-900/20 font-semibold' : 'hover:bg-gray-50 dark:hover:bg-gray-750'
+    } transition`}>
+      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{entry.rank}</td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+            {entry.avatar && <Image src={entry.avatar} alt={entry.name} width={32} height={32} />}
+          </div>
+          <span className="text-gray-900 dark:text-white">{entry.name}</span>
+          {entry.is_current_user && <span className="text-blue-500 text-xs">(You)</span>}
+        </div>
+      </td>
+      <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{entry.college}</td>
+      <td className="px-4 py-3"><BadgeChip badge={entry.badge} /></td>
+      <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">{entry.points.toLocaleString()}</td>
+      <td className="px-4 py-3 text-center"><ChangeIndicator change={entry.change} /></td>
+    </tr>
+  );
+}
+
+function BadgeChip({ badge }: { badge: string }) {
+  const config = BADGE_CONFIG[badge] ?? { label: badge, color: 'bg-gray-100 text-gray-600' };
+  return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}>{config.label}</span>;
+}
+
+function ChangeIndicator({ change }: { change: number }) {
+  if (change > 0) return <span className="text-green-500 flex items-center justify-center gap-1"><TrendingUp className="w-4 h-4" /> +{change}</span>;
+  if (change < 0) return <span className="text-red-500 flex items-center justify-center gap-1"><TrendingDown className="w-4 h-4" /> {change}</span>;
+  return <span className="text-gray-400 flex items-center justify-center"><Minus className="w-4 h-4" /></span>;
 }
