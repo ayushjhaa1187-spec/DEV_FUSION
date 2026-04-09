@@ -1,20 +1,26 @@
+-- ============================================================
+-- Migration 001: Initial Schema (aligned with API code)
+-- SkillBridge / DEV_FUSION Platform
+-- ============================================================
+
 -- Enable Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. Profiles Table
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username TEXT UNIQUE,
   full_name TEXT,
   email TEXT UNIQUE,
   avatar_url TEXT,
   role TEXT DEFAULT 'student' CHECK (role IN ('student', 'mentor', 'admin')),
   college TEXT,
-  branch_id UUID,
-  semester_id UUID,
+  branch TEXT,
+  semester INT CHECK (semester BETWEEN 1 AND 8),
   bio TEXT,
   social_links JSONB DEFAULT '{}',
-  reputation_score INT DEFAULT 0,
-  streak_count INT DEFAULT 0,
+  reputation_points INT DEFAULT 0,
+  login_streak INT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -28,58 +34,43 @@ CREATE TABLE subjects (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Branches Table
-CREATE TABLE branches (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 4. Semesters Table
-CREATE TABLE semesters (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  number INT UNIQUE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 5. Questions Table
-CREATE TABLE questions (
+-- 3. Doubts Table
+CREATE TABLE doubts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   author_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
-  body TEXT NOT NULL,
+  content TEXT NOT NULL,
   subject_id UUID REFERENCES subjects(id),
-  branch_id UUID REFERENCES branches(id),
-  semester_id UUID REFERENCES semesters(id),
   status TEXT DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'closed')),
   source_type TEXT DEFAULT 'manual' CHECK (source_type IN ('manual', 'ai_escalated')),
   accepted_answer_id UUID,
-  answers_count INT DEFAULT 0,
+  answer_count INT DEFAULT 0,
+  votes INT DEFAULT 0,
   views_count INT DEFAULT 0,
+  academic_context_snapshot JSONB DEFAULT '{}',
   last_activity_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 6. Answers Table
+-- 4. Answers Table
 CREATE TABLE answers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  question_id UUID REFERENCES questions(id) ON DELETE CASCADE,
+  doubt_id UUID REFERENCES doubts(id) ON DELETE CASCADE,
   author_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  body TEXT NOT NULL,
+  content TEXT NOT NULL,
+  votes INT DEFAULT 0,
   upvotes_count INT DEFAULT 0,
   downvotes_count INT DEFAULT 0,
-  score_cached INT DEFAULT 0,
   is_accepted BOOLEAN DEFAULT FALSE,
   is_ai_seeded BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add circular reference back to answers for accepted_answer_id
-ALTER TABLE questions ADD CONSTRAINT fk_accepted_answer FOREIGN KEY (accepted_answer_id) REFERENCES answers(id) ON DELETE SET NULL;
+ALTER TABLE doubts ADD CONSTRAINT fk_accepted_answer FOREIGN KEY (accepted_answer_id) REFERENCES answers(id) ON DELETE SET NULL;
 
--- 7. Answer Votes Table
+-- 5. Answer Votes
 CREATE TABLE answer_votes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   answer_id UUID REFERENCES answers(id) ON DELETE CASCADE,
@@ -89,7 +80,7 @@ CREATE TABLE answer_votes (
   UNIQUE(answer_id, user_id)
 );
 
--- 8. AI Attempts Table
+-- 6. AI Attempts
 CREATE TABLE ai_attempts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -100,26 +91,29 @@ CREATE TABLE ai_attempts (
   ai_response_json JSONB,
   confidence_score INT,
   helpful_feedback BOOLEAN,
-  escalated_to_question BOOLEAN DEFAULT FALSE,
-  question_id UUID REFERENCES questions(id) ON DELETE SET NULL,
+  escalated_to_doubt BOOLEAN DEFAULT FALSE,
+  doubt_id UUID REFERENCES doubts(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 9. Mentor Profiles Table
+-- 7. Mentor Profiles
 CREATE TABLE mentor_profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
   headline TEXT,
   bio TEXT,
+  specialty TEXT,
+  subjects TEXT[],
   verification_status TEXT DEFAULT 'pending' CHECK (verification_status IN ('pending', 'approved', 'rejected')),
   hourly_rate INT DEFAULT 0,
   rating_avg DECIMAL(3,2) DEFAULT 0,
   rating_count INT DEFAULT 0,
   sessions_completed INT DEFAULT 0,
+  is_free_session_available BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 10. Mentor Slots Table
+-- 8. Mentor Slots
 CREATE TABLE mentor_slots (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   mentor_id UUID REFERENCES mentor_profiles(id) ON DELETE CASCADE,
@@ -130,13 +124,16 @@ CREATE TABLE mentor_slots (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 11. Bookings Table
+-- 9. Bookings
 CREATE TABLE bookings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   student_id UUID REFERENCES profiles(id),
   mentor_id UUID REFERENCES mentor_profiles(id),
   slot_id UUID REFERENCES mentor_slots(id),
   payment_id TEXT,
+  razorpay_order_id TEXT,
+  razorpay_payment_id TEXT,
+  razorpay_signature TEXT,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
   meeting_link TEXT,
   meeting_provider TEXT DEFAULT 'jitsi',
@@ -145,7 +142,7 @@ CREATE TABLE bookings (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 12. Practice Tests Table
+-- 10. Tests
 CREATE TABLE tests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -158,7 +155,7 @@ CREATE TABLE tests (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 13. Test Questions Table
+-- 11. Test Questions
 CREATE TABLE test_questions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   test_id UUID REFERENCES tests(id) ON DELETE CASCADE,
@@ -170,7 +167,7 @@ CREATE TABLE test_questions (
   difficulty TEXT
 );
 
--- 14. Test Submissions Table
+-- 12. Test Submissions
 CREATE TABLE test_submissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   test_id UUID REFERENCES tests(id) ON DELETE CASCADE,
@@ -184,7 +181,7 @@ CREATE TABLE test_submissions (
   submitted_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 15. Reputation Ledger Table
+-- 13. Reputation Ledger
 CREATE TABLE reputation_ledger (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -196,11 +193,12 @@ CREATE TABLE reputation_ledger (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 16. Badges & User Badges
+-- 14. Badges
 CREATE TABLE badges (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT UNIQUE NOT NULL,
   description TEXT,
+  icon TEXT,
   image_url TEXT,
   requirement_type TEXT,
   requirement_value INT,
@@ -215,7 +213,7 @@ CREATE TABLE user_badges (
   UNIQUE(user_id, badge_id)
 );
 
--- 17. Notifications Table
+-- 15. Notifications
 CREATE TABLE notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -228,24 +226,82 @@ CREATE TABLE notifications (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 18. Row Level Security Policies (RLS)
+-- 16. RLS Policies
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
-CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Public profiles viewable" ON profiles FOR SELECT USING (true);
+CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
-ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Questions are viewable by everyone" ON questions FOR SELECT USING (true);
-CREATE POLICY "Authenticated users can create questions" ON questions FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Authors can update own questions" ON questions FOR UPDATE USING (auth.uid() = author_id);
+ALTER TABLE doubts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Doubts viewable" ON doubts FOR SELECT USING (true);
+CREATE POLICY "Auth users create doubts" ON doubts FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authors update doubts" ON doubts FOR UPDATE USING (auth.uid() = author_id);
+CREATE POLICY "Authors delete doubts" ON doubts FOR DELETE USING (auth.uid() = author_id);
 
 ALTER TABLE answers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Answers are viewable by everyone" ON answers FOR SELECT USING (true);
-CREATE POLICY "Authenticated users can create answers" ON answers FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Authors can update own answers" ON answers FOR UPDATE USING (auth.uid() = author_id);
+CREATE POLICY "Answers viewable" ON answers FOR SELECT USING (true);
+CREATE POLICY "Auth users create answers" ON answers FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authors update answers" ON answers FOR UPDATE USING (auth.uid() = author_id);
 
--- 19. Indexes for Performance
-CREATE INDEX idx_questions_subject ON questions(subject_id);
-CREATE INDEX idx_questions_author ON questions(author_id);
-CREATE INDEX idx_answers_question ON answers(question_id);
+ALTER TABLE answer_votes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Votes viewable" ON answer_votes FOR SELECT USING (true);
+CREATE POLICY "Auth users vote" ON answer_votes FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+ALTER TABLE mentor_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Mentor profiles viewable" ON mentor_profiles FOR SELECT USING (true);
+CREATE POLICY "Mentors update own" ON mentor_profiles FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Auth users apply mentor" ON mentor_profiles FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+ALTER TABLE mentor_slots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Slots viewable" ON mentor_slots FOR SELECT USING (true);
+CREATE POLICY "Mentors manage slots" ON mentor_slots FOR INSERT WITH CHECK (
+  auth.uid() = (SELECT user_id FROM mentor_profiles WHERE id = mentor_id)
+);
+
+ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Booking visibility" ON bookings FOR SELECT USING (
+  auth.uid() = student_id OR
+  auth.uid() = (SELECT user_id FROM mentor_profiles WHERE id = mentor_id)
+);
+CREATE POLICY "Students create bookings" ON bookings FOR INSERT WITH CHECK (auth.uid() = student_id);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Insert notifications" ON notifications FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users update notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
+
+ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Badges viewable" ON badges FOR SELECT USING (true);
+
+-- 17. Indexes
+CREATE INDEX idx_doubts_subject ON doubts(subject_id);
+CREATE INDEX idx_doubts_author ON doubts(author_id);
+CREATE INDEX idx_doubts_created ON doubts(created_at DESC);
+CREATE INDEX idx_answers_doubt ON answers(doubt_id);
+CREATE INDEX idx_answers_author ON answers(author_id);
 CREATE INDEX idx_reputation_user ON reputation_ledger(user_id);
 CREATE INDEX idx_notifications_user ON notifications(user_id, is_read);
+CREATE INDEX idx_profiles_reputation ON profiles(reputation_points DESC);
+CREATE INDEX idx_profiles_branch ON profiles(branch);
+
+-- 18. Auto-create profile on signup
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO profiles (id, email, full_name, username, avatar_url)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1)),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NULL)
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE handle_new_user();
