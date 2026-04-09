@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import { FileText, Download, Plus, Search, Filter, BookOpen, Youtube, Play, ExternalLink } from 'lucide-react';
+import { FileText, Download, Plus, Search, Filter, BookOpen, Play, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResourcesPage() {
@@ -133,7 +133,7 @@ export default function ResourcesPage() {
                      <div className="p-8 flex items-center justify-between">
                         <div>
                            <div className="flex items-center gap-2 mb-2">
-                              <Youtube size={16} color={playlist.color} />
+                              <Play size={16} fill={playlist.color} stroke={playlist.color} />
                               <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{playlist.channel}</span>
                            </div>
                            <h3 className="text-xl font-black font-heading">{playlist.title}</h3>

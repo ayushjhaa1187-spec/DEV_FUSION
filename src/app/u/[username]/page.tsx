@@ -4,7 +4,7 @@ import { useEffect, useState, use } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import { LoadingPage } from '@/components/ui/Loading';
-import { Github, Linkedin, Globe, Award, TrendingUp, Calendar } from 'lucide-react';
+import { Link as LinkIcon, ExternalLink, Globe, Award, TrendingUp, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 function StreakHeatmap({ events }: { events: any[] }) {
@@ -114,8 +114,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
                  {profile.branch && <div className="text-sm font-bold text-gray-300">📚 {profile.branch}</div>}
               </div>
               <div className="flex gap-4 mt-8">
-                {profile.github_url && <a href={profile.github_url} className="text-gray-500 hover:text-white transition-colors"><Github size={20} /></a>}
-                {profile.linkedin_url && <a href={profile.linkedin_url} className="text-gray-500 hover:text-white transition-colors"><Linkedin size={20} /></a>}
+                {profile.github_url && <a href={profile.github_url} className="text-gray-500 hover:text-white transition-colors"><LinkIcon size={20} /></a>}
+                {profile.linkedin_url && <a href={profile.linkedin_url} className="text-gray-500 hover:text-white transition-colors"><ExternalLink size={20} /></a>}
                 {profile.website_url && <a href={profile.website_url} className="text-gray-500 hover:text-white transition-colors"><Globe size={20} /></a>}
               </div>
             </div>
