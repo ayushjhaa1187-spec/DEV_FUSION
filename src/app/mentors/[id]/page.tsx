@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { mentorApi, bookingApi } from '@/lib/api';
 import styles from './profile.module.css';
+import confetti from 'canvas-confetti';
 
 export default function MentorProfilePage({
   params,
@@ -32,7 +33,6 @@ export default function MentorProfilePage({
         setProfile(profileData);
         setSlots(slotsData);
         
-        // Check follow status
         if (user) {
           const followRes = await fetch(`/api/mentors/${id}/follow`);
           const { following } = await followRes.json();
@@ -84,14 +84,12 @@ export default function MentorProfilePage({
         const res = await loadRazorpay();
         if (!res) throw new Error('Razorpay SDK failed to load');
 
-        // 1. Create Order
         const orderData = await fetch('/api/razorpay', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount: fee, mentor_id: id, slot_id: selectedSlot }),
         }).then(t => t.json());
 
-        // 2. Open Checkout
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: orderData.amount,
@@ -100,7 +98,6 @@ export default function MentorProfilePage({
           description: `Booking with ${profile.full_name}`,
           order_id: orderData.id,
           handler: async function (response: any) {
-            // 3. Confirm Booking with signature
             await bookingApi.create({ 
               slot_id: selectedSlot,
               razorpay_order_id: response.razorpay_order_id,
@@ -108,7 +105,13 @@ export default function MentorProfilePage({
               razorpay_signature: response.razorpay_signature
             } as any);
             setSuccess(true);
-            setTimeout(() => window.location.href = '/dashboard', 2000);
+            confetti({
+              particleCount: 150,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ['#7c3aed', '#06d6a0', '#ffffff']
+            });
+            setTimeout(() => window.location.href = '/dashboard/sessions', 3000);
           },
           prefill: {
             name: user.email?.split('@')[0],
@@ -120,10 +123,15 @@ export default function MentorProfilePage({
         const rzp = new (window as any).Razorpay(options);
         rzp.open();
       } else {
-        // Free booking
         await bookingApi.create({ slot_id: selectedSlot });
         setSuccess(true);
-        setTimeout(() => window.location.href = '/dashboard', 2000);
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#7c3aed', '#06d6a0', '#ffffff']
+        });
+        setTimeout(() => window.location.href = '/dashboard/sessions', 3000);
       }
     } catch (err: any) {
       alert(err.message || 'Booking failed');
@@ -170,36 +178,15 @@ export default function MentorProfilePage({
       <div className={styles.contentGrid}>
         <main className={styles.mainContent}>
           <section className={`${styles.card} glass`}>
-            <h3>Expertise & Skills</h3>
-            <div className={styles.tags}>
-               <span className={styles.tag}>{profile.mentor_profiles?.specialty}</span>
-               {/* Expertise areas could be added here if available */}
-            </div>
             <h3>Bio</h3>
-            <p className={styles.bio}>{profile.bio || "This mentor hasn't provided a bio yet, but they're ready to help you excel!"}</p>
-
-            {profile.mentor_profiles?.tutorial_video_url && (
-              <section style={{ marginTop: '40px' }}>
-                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '1.5rem' }}>📺</span> Featured Video Tutorial
-                </h3>
-                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '24px', background: '#000' }}>
-                  <iframe
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                    src={profile.mentor_profiles.tutorial_video_url.replace('watch?v=', 'embed/')}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </section>
-            )}
+            <p className={styles.bio}>{profile.bio || "This mentor is ready to help you excel!"}</p>
           </section>
         </main>
 
         <aside className={styles.sideContent}>
           <div className={`${styles.bookingCard} glass`}>
             <div className={styles.priceHeader}>
-              <span className={styles.price}>₹{profile.mentor_profiles?.price_per_session || 0}</span>
+              <span className={styles.price}>₹{profile.mentor_profiles?.hourly_rate || 0}</span>
               <span className={styles.duration}>/ 30 min session</span>
             </div>
 
@@ -228,7 +215,6 @@ export default function MentorProfilePage({
             >
               {success ? '✅ Session Booked!' : bookingLoading ? 'Reserving...' : 'Book Now'}
             </button>
-            {success && <p className={styles.successMsg}>Redirecting to your dashboard...</p>}
           </div>
         </aside>
       </div>

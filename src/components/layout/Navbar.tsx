@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/auth-provider';
-import { Bell, Menu, X, MessageSquare, Trophy, AtSign, FileText } from 'lucide-react';
+import { Bell, Menu, X, MessageSquare, Trophy, AtSign, FileText, ChevronRight } from 'lucide-react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import styles from './Navbar.module.css';
 
@@ -19,17 +19,22 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const mainLinks = [
+    { name: 'Doubts', href: '/doubts' },
+    { name: 'Mentors', href: '/mentors' },
+    { name: 'Practice', href: '/tests' },
+    { name: 'Resources', href: '/resources' },
+    { name: 'Leaderboard', href: '/leaderboard' },
+  ];
+
   useEffect(() => {
     if (!user) return;
-
     const fetchUnread = async () => {
       const res = await fetch('/api/notifications/unread');
       const data = await res.json();
       setUnreadCount(data.count || 0);
     };
     fetchUnread();
-
-    const interval = setInterval(fetchUnread, 30000);
 
     const supabase = createSupabaseBrowser();
     const channel = supabase
@@ -39,177 +44,69 @@ export default function Navbar() {
         schema: 'public',
         table: 'notifications',
         filter: `user_id=eq.${user.id}`
-      }, () => {
-        setUnreadCount(prev => prev + 1);
-      })
+      }, () => setUnreadCount(prev => prev + 1))
       .subscribe();
 
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsNotifOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const fetchNotifications = async () => {
-    const res = await fetch('/api/notifications');
-    const data = await res.json();
-    setNotifications(data || []);
-  };
-
-  const handleNotifClick = () => {
-    setIsNotifOpen(!isNotifOpen);
-    if (!isNotifOpen) fetchNotifications();
-  };
-
-  const markAllRead = async () => {
-    await fetch('/api/notifications', { 
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markAllRead: true })
-    });
-    setUnreadCount(0);
-    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-  };
-
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (href.startsWith('#') && pathname === '/') {
-      e.preventDefault();
-      const element = document.querySelector(href);
-      element?.scrollIntoView({ behavior: 'smooth' });
-    } else if (href.startsWith('#')) {
-      e.preventDefault();
-      router.push(`/${href}`);
-    }
-    setIsMobileMenuOpen(false);
-  };
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'answer': return <MessageSquare size={16} />;
-      case 'badge': return <Trophy size={16} />;
-      case 'mention': return <AtSign size={16} />;
-      case 'test': return <FileText size={16} />;
-      default: return <Bell size={16} />;
-    }
-  };
-
-  const timeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
-  };
+    if (isMobileMenuOpen) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = 'unset';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isMobileMenuOpen]);
 
   return (
     <nav className={styles.navbar}>
       <div className={styles.navContent}>
         <Link href="/" className={styles.logo}>
-          <svg className={styles.logoIcon} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg className={styles.logoIcon} viewBox="0 0 40 40" fill="none">
+            <path d="M4 28 Q20 8 36 28" stroke="url(#sbLogoGradNav)" strokeWidth="3" fill="none" strokeLinecap="round" />
+            <line x1="4" y1="28" x2="36" y2="28" stroke="url(#sbLogoGradNav)" strokeWidth="2.5" />
             <defs>
               <linearGradient id="sbLogoGradNav" x1="0" y1="0" x2="40" y2="40">
-                <stop offset="0%" stopColor="#7c3aed" />
-                <stop offset="100%" stopColor="#06d6a0" />
+                <stop offset="0%" stopColor="#7c3aed" /><stop offset="100%" stopColor="#06d6a0" />
               </linearGradient>
             </defs>
-            <path d="M4 28 Q20 8 36 28" stroke="url(#sbLogoGradNav)" strokeWidth="3" fill="none" strokeLinecap="round" />
-            <line x1="4" y1="28" x2="36" y2="28" stroke="url(#sbLogoGradNav)" strokeWidth="2.5" strokeLinecap="round" />
-            <line x1="13" y1="20" x2="13" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
-            <line x1="27" y1="20" x2="27" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="20" cy="10.5" r="3" fill="#06d6a0" opacity=".95" />
-            <circle cx="20" cy="10.5" r="6" fill="#06d6a0" opacity=".18" />
           </svg>
           <span className={styles.logoText}>Skill<span>Bridge</span></span>
         </Link>
 
+        {/* Desktop Links */}
         <div className={styles.navLinks}>
-          <Link href="/doubts" className={`${styles.navLink} ${pathname === '/doubts' ? styles.active : ''}`}>Doubts</Link>
-          <Link href="/mentors" className={`${styles.navLink} ${pathname === '/mentors' ? styles.active : ''}`}>Mentors</Link>
-          <Link href="/resources" className={`${styles.navLink} ${pathname === '/resources' ? styles.active : ''}`}>Resources</Link>
-          <Link href="/community/groups" className={`${styles.navLink} ${pathname === '/community/groups' ? styles.active : ''}`}>Circles</Link>
-          <Link href="/leaderboard" className={`${styles.navLink} ${pathname === '/leaderboard' ? styles.active : ''}`}>Leaderboard</Link>
-          <Link href={user ? "/tests" : "/auth"} className={`${styles.navLink} ${pathname === '/tests' ? styles.active : ''}`}>Practice</Link>
-          <Link href="/settings/billing" className={`${styles.navLink} ${pathname === '/settings/billing' ? styles.active : ''}`}>Pricing</Link>
-          {profile?.role === 'admin' && (
-            <Link href="/admin/applications" className={`${styles.navLink} ${styles.adminLink} ${pathname.startsWith('/admin') ? styles.active : ''}`}>
-              Admin
+          {mainLinks.map(link => (
+            <Link key={link.href} href={link.href} className={`${styles.navLink} ${pathname === link.href ? styles.active : ''}`}>
+              {link.name}
+              {pathname === link.href && (
+                <motion.div layoutId="underline" className={styles.underline} />
+              )}
             </Link>
-          )}
-          <a href="#features" onClick={(e) => handleNavClick(e, '#features')} className={styles.navLink}>Features</a>
+          ))}
         </div>
 
         <div className={styles.navRight}>
           {user ? (
-            <>
+            <div className="flex items-center gap-4">
               <div className={styles.notifWrapper} ref={dropdownRef}>
-                <button className={styles.notifyBtn} onClick={handleNotifClick}>
+                <button className={styles.notifyBtn} onClick={() => setIsNotifOpen(!isNotifOpen)}>
                   <Bell size={20} />
                   {unreadCount > 0 && <span className={styles.notifyBadge}>{unreadCount}</span>}
                 </button>
-
-                {isNotifOpen && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className={styles.notifDropdown}
-                  >
-                    <div className={styles.notifHeader}>
-                      <div>
-                        <h3>Notifications</h3>
-                        <p>{unreadCount} unread message{unreadCount !== 1 ? 's' : ''}</p>
-                      </div>
-                      <button onClick={markAllRead} className={styles.markReadBtn}>Mark all as read</button>
-                    </div>
-                    <div className={styles.notifList}>
-                      {notifications.length > 0 ? notifications.map(n => (
-                        <Link 
-                          href={n.link || '#'} 
-                          key={n.id} 
-                          onClick={() => setIsNotifOpen(false)}
-                          className={`${styles.notifItem} ${!n.is_read ? styles.unread : ''}`}
-                        >
-                          <div className={`${styles.notifIcon} ${styles[n.type]}`}>
-                            {getIcon(n.type)}
-                          </div>
-                          <div className={styles.notifContent}>
-                            <p className={styles.notifMessage}>{n.message}</p>
-                            <time className={styles.notifTime}>{timeAgo(n.created_at)}</time>
-                          </div>
-                          {!n.is_read && <span className={styles.unreadDot} />}
-                        </Link>
-                      )) : (
-                        <div className={styles.emptyNotif}>
-                          <div className={styles.emptyIcon}>🔔</div>
-                          <p>You're all caught up!</p>
-                          <span>New alerts will appear here</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className={styles.notifFooter}>
-                      <Link href="/dashboard" onClick={() => setIsNotifOpen(false)}>See all notifications</Link>
-                    </div>
-                  </motion.div>
-                )}
               </div>
-              <Link href="/dashboard" className={styles.dashboardBtn}>Dashboard</Link>
-              <button onClick={() => signOut()} className={styles.logoutBtn}>Logout</button>
-            </>
+              <Link href="/dashboard" className={styles.avatarBtn}>
+                <div className={styles.avatar}>
+                   {profile?.avatar_url ? (
+                     <img src={profile.avatar_url} alt="" />
+                   ) : (
+                     <span>{profile?.full_name?.[0] || 'U'}</span>
+                   )}
+                </div>
+              </Link>
+            </div>
           ) : (
             <div className={styles.authActions}>
               <Link href="/auth" className={styles.btnSecondary}>Sign In</Link>
-              <Link href="/auth" className={styles.btnPrimary}>Get Started</Link>
+              <Link href="/auth" className={styles.btnPrimary}>Start Free</Link>
             </div>
           )}
 
@@ -219,23 +116,54 @@ export default function Navbar() {
         </div>
       </div>
 
+      {/* Mobile Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div 
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className={styles.mobileDrawer}
           >
             <div className={styles.mobileDrawerContent}>
-              <Link href="/doubts" className={pathname === '/doubts' ? styles.activeNav : ''} onClick={() => setIsMobileMenuOpen(false)}>Doubts</Link>
-              <Link href="/mentors" className={pathname === '/mentors' ? styles.activeNav : ''} onClick={() => setIsMobileMenuOpen(false)}>Mentors</Link>
-              <Link href="/tests" className={pathname === '/tests' ? styles.activeNav : ''} onClick={() => setIsMobileMenuOpen(false)}>Practice</Link>
-              <Link href="/dashboard" className={pathname === '/dashboard' ? styles.activeNav : ''} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
-              <a href="#features" onClick={(e) => handleNavClick(e, '#features')}>Features</a>
-              {!user && <Link href="/auth" className={styles.mobileAuthBtn} onClick={() => setIsMobileMenuOpen(false)}>Get Started</Link>}
-              {user && <button onClick={() => signOut()} className={styles.mobileLogoutBtn}>Logout</button>}
+              <div className={styles.mobileUserInfo}>
+                <div className={styles.mobileAvatarLarge}>
+                  {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : profile?.full_name?.[0]}
+                </div>
+                <div>
+                  <h3 className="font-black">{profile?.full_name || 'Student'}</h3>
+                  <p className="text-xs text-gray-500">@{profile?.username || 'learner'}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {mainLinks.map((link, i) => (
+                  <motion.div
+                    key={link.href}
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <Link 
+                      href={link.href} 
+                      className={styles.mobileNavLink}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {link.name}
+                      <ChevronRight size={16} className="text-gray-700" />
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="mt-auto pt-8 border-t border-white/5 space-y-4">
+                 <Link href="/dashboard" className="block w-full text-center py-4 bg-white/5 rounded-2xl font-bold" onClick={() => setIsMobileMenuOpen(false)}>
+                   Dashboard
+                 </Link>
+                 <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="w-full text-center py-4 text-red-400 font-bold border border-red-400/20 rounded-2xl">
+                   Logout
+                 </button>
+              </div>
             </div>
           </motion.div>
         )}

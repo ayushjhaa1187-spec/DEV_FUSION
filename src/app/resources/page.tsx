@@ -4,15 +4,22 @@ import { useEffect, useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import { FileText, Download, Plus, Search, Filter, BookOpen } from 'lucide-react';
+import { FileText, Download, Plus, Search, Filter, BookOpen, Youtube, Play, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResourcesPage() {
   const [resources, setResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('All');
+  const [activeTab, setActiveTab] = useState<'notes' | 'videos'>('notes');
   const supabase = createSupabaseBrowser();
+
+  const curatedPlaylists = [
+    { title: 'Data Structures & Algorithms', channel: 'Abdul Bari', id: 'PL2_aWCzGMAwI3W_JlcBbtYTQAn7-tc6Yx', color: '#ef4444' },
+    { title: 'Operating Systems Full Course', channel: 'Gate Smashers', id: 'PLmXKhU9FNesSFvj6gASuWmQd23Ul5omtD', color: '#3b82f6' },
+    { title: 'Database Management Systems', channel: 'Knowledge Gate', id: 'PLmXKhU9FNesR1rLmcTu7LDv33W8938qec', color: '#10b981' },
+    { title: 'System Design Interview', channel: 'Gaurav Sen', id: 'PLMCXHnjXnTnvo6alSjVkgxV-VH6EPyvoX', color: '#f59e0b' }
+  ];
 
   useEffect(() => {
     async function loadResources() {
@@ -31,118 +38,120 @@ export default function ResourcesPage() {
     loadResources();
   }, [supabase]);
 
-  const filteredResources = resources.filter(r => {
-    const matchesSearch = r.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         r.subjects?.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === 'All' || r.file_type === selectedType.toLowerCase();
-    return matchesSearch && matchesType;
-  });
+  const filteredResources = resources.filter(r => 
+    r.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    r.subjects?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <main className="min-h-screen bg-[#0f0f1a] text-white">
+    <main className="min-h-screen bg-[#0d0d1a] text-white">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-6 py-20">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-          <div>
-            <div className="flex items-center gap-2 text-indigo-500 mb-2">
-              <BookOpen className="w-5 h-5" />
-              <span className="text-sm font-bold uppercase tracking-widest">Knowledge Hub</span>
-            </div>
-            <h1 className="text-4xl font-extrabold tracking-tight">Resource Sharing</h1>
-            <p className="text-gray-400 mt-2 max-w-xl">
-              Access high-quality study materials, cheat sheets, and handwritten notes shared by top contributors.
-            </p>
-          </div>
-          
-          <div className="flex gap-4">
-            <button className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-2xl font-bold transition-all shadow-xl shadow-indigo-500/10">
-              <Plus className="w-5 h-5" />
-              Upload Resource
-            </button>
-          </div>
+      <div className="max-w-7xl mx-auto px-6 py-24">
+        <header className="mb-16">
+           <div className="flex items-center gap-2 text-indigo-500 mb-4">
+              <BookOpen className="w-6 h-6" />
+              <span className="text-xs font-black uppercase tracking-[0.2em]">Academic Ecosystem</span>
+           </div>
+           <h1 className="text-5xl md:text-6xl font-black font-heading tracking-tighter mb-6">Knowledge <span>Hub</span></h1>
+           <p className="text-gray-500 max-w-2xl text-lg">
+             Access industry-standard curated video lectures and peer-contributed study materials in one unified laboratory.
+           </p>
         </header>
 
-        {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-4 mb-12">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-            <input 
-              type="text"
-              placeholder="Search by topic or subject..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-[#1e1e2e] border border-gray-800 rounded-2xl outline-none focus:border-indigo-500/50 transition-colors"
-            />
-          </div>
-          <div className="flex gap-2 p-1.5 bg-[#1e1e2e] border border-gray-800 rounded-2xl">
-            {['All', 'PDF', 'Notes', 'Cheat-Sheet'].map(type => (
-              <button
-                key={type}
-                onClick={() => setSelectedType(type)}
-                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${selectedType === type ? 'bg-indigo-600' : 'text-gray-500 hover:text-white'}`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
+        {/* Tab Switcher */}
+        <div className="flex gap-4 p-2 bg-white/5 w-fit rounded-2xl border border-white/5 mb-12">
+           <button 
+             onClick={() => setActiveTab('notes')}
+             className={`px-8 py-3 rounded-xl font-black text-sm transition-all ${activeTab === 'notes' ? 'bg-indigo-600 shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white'}`}
+           >
+             Study Materials
+           </button>
+           <button 
+             onClick={() => setActiveTab('videos')}
+             className={`px-8 py-3 rounded-xl font-black text-sm transition-all ${activeTab === 'videos' ? 'bg-indigo-600 shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white'}`}
+           >
+             Video Lectures
+           </button>
         </div>
 
-        {/* Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {[...Array(6)].map((_, i) => <div key={i} className="h-64 bg-white/5 animate-pulse rounded-3xl" />)}
-          </div>
-        ) : filteredResources.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResources.map((res, i) => (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05 }}
-                key={res.id}
-                className="group bg-[#1e1e2e] border border-gray-800 p-8 rounded-[32px] hover:border-indigo-500/30 transition-all flex flex-col"
-              >
-                <div className="flex justify-between items-start mb-6">
-                  <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400">
-                    <FileText className="w-8 h-8" />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 bg-gray-800/50 px-3 py-1 rounded-full">
-                    {res.file_type}
-                  </span>
+        <AnimatePresence mode="wait">
+           {activeTab === 'notes' ? (
+             <motion.div 
+               key="notes"
+               initial={{ opacity: 0, x: -20 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: 20 }}
+             >
+                <div className="relative mb-12">
+                   <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600" />
+                   <input 
+                     type="text"
+                     placeholder="Search documentation, cheat sheets, or notes..."
+                     value={searchTerm}
+                     onChange={(e) => setSearchTerm(e.target.value)}
+                     className="w-full bg-[#13132b] border border-white/5 py-6 pl-16 pr-8 rounded-[24px] outline-none focus:border-indigo-500/30 transition-all font-bold"
+                   />
                 </div>
-                
-                <h3 className="text-xl font-bold mb-2 group-hover:text-indigo-400 transition-colors line-clamp-1">{res.title}</h3>
-                <p className="text-gray-500 text-sm mb-6 line-clamp-2">{res.description || 'No description provided.'}</p>
-                
-                <div className="mt-auto pt-6 border-t border-gray-800 flex items-center justify-between">
-                  <div>
-                    <div className="text-xs font-bold text-indigo-500 uppercase tracking-tighter mb-1">{res.subjects?.name || 'General'}</div>
-                    <div className="text-xs text-gray-600">by @{res.profiles?.username}</div>
-                  </div>
-                  <a 
-                    href={res.file_url} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="p-3 bg-gray-800 hover:bg-indigo-600 rounded-xl transition-all"
-                  >
-                    <Download className="w-5 h-5" />
-                  </a>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                   {filteredResources.map((res) => (
+                     <div key={res.id} className="bg-[#13132b] border border-white/5 p-8 rounded-[40px] hover:border-indigo-500/20 transition-all group">
+                        <div className="flex justify-between items-start mb-8">
+                           <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                              <FileText size={24} />
+                           </div>
+                           <a href={res.file_url} className="text-gray-500 hover:text-white transition-colors"><Download size={20} /></a>
+                        </div>
+                        <h3 className="text-xl font-black mb-2 line-clamp-1">{res.title}</h3>
+                        <p className="text-gray-500 text-sm mb-8 line-clamp-2 leading-relaxed">{res.description}</p>
+                        <div className="flex items-center justify-between pt-6 border-t border-white/5">
+                           <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">{res.subjects?.name}</span>
+                           <span className="text-[10px] font-bold text-gray-700">@{res.profiles?.username}</span>
+                        </div>
+                     </div>
+                   ))}
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <div className="py-32 flex flex-col items-center justify-center text-center opacity-40">
-            <div className="w-24 h-24 rounded-full border-2 border-dashed border-gray-600 flex items-center justify-center mb-8">
-              <BookOpen className="w-10 h-10" />
-            </div>
-            <h3 className="text-2xl font-bold mb-3 text-white">No resources yet — be the first to share!</h3>
-            <p className="max-w-md mx-auto text-sm text-gray-400">
-              Contribute to the collective knowledge of SkillBridge. Upload your notes or cheat sheets to help others grow.
-            </p>
-          </div>
-        )}
+             </motion.div>
+           ) : (
+             <motion.div 
+               key="videos"
+               initial={{ opacity: 0, x: 20 }}
+               animate={{ opacity: 1, x: 0 }}
+               exit={{ opacity: 0, x: -20 }}
+               className="grid grid-cols-1 md:grid-cols-2 gap-8"
+             >
+                {curatedPlaylists.map((playlist) => (
+                  <div key={playlist.id} className="bg-[#13132b] border border-white/5 rounded-[40px] overflow-hidden group hover:border-indigo-500/20 transition-all">
+                     <div className="aspect-video relative overflow-hidden">
+                        <iframe 
+                          src={`https://www.youtube.com/embed/videoseries?list=${playlist.id}`}
+                          className="w-full h-full border-none"
+                          allowFullScreen
+                        />
+                     </div>
+                     <div className="p-8 flex items-center justify-between">
+                        <div>
+                           <div className="flex items-center gap-2 mb-2">
+                              <Youtube size={16} color={playlist.color} />
+                              <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{playlist.channel}</span>
+                           </div>
+                           <h3 className="text-xl font-black font-heading">{playlist.title}</h3>
+                        </div>
+                        <a 
+                          href={`https://youtube.com/playlist?list=${playlist.id}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center hover:bg-indigo-600 transition-all group-hover:scale-110"
+                        >
+                           <ExternalLink size={20} />
+                        </a>
+                     </div>
+                  </div>
+                ))}
+             </motion.div>
+           )}
+        </AnimatePresence>
       </div>
       <Footer />
     </main>

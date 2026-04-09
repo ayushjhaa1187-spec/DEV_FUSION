@@ -77,9 +77,9 @@ export default function GroupChatPage({ params }: { params: Promise<{ id: string
     }
   };
 
-  if (!group) return <LoadingPage text="Connecting to Circle..." />;
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  if (!group) return <LoadingPage text="Connecting to Circle..." />;
 
   return (
     <main className="h-screen bg-[#0f0f1a] flex flex-col pt-[72px]">

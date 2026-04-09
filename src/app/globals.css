@@ -1,45 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,500,300,400&f[]=cabinet-grotesk@800,700,500&display=swap');
 
 :root {
-  /* Brand Colors */
-  --color-primary: #6c63ff;
-  --color-primary-hover: #574fd6;
-  --color-primary-active: #3f3aa0;
-  --color-accent: #00d4aa;
+  /* Brand Colors - High Vibe */
+  --color-primary: #7c3aed; /* Vibrant Violet */
+  --color-primary-hover: #6d28d9;
+  --color-accent: #06d6a0; /* Signature Emerald */
+  --color-accent-soft: rgba(6, 214, 160, 0.1);
   --color-bg: #0d0d1a;
   --color-surface: #13132b;
-  --color-surface-2: #1a1a35;
-  --color-border: rgba(255,255,255,0.08);
-  --color-text: #e8e8f0;
-  --color-text-muted: #9090b0;
-  --color-text-faint: #55556a;
-  --color-error: #ff4d6d;
-  --color-success: #00d4aa;
-  --color-warning: #f59e0b;
-  --color-notification: #ff6b6b;
+  --color-surface-lighter: #1a1a35;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(124, 58, 237, 0.2);
+  
+  /* Text Tokens */
+  --color-text: #ffffff;
+  --color-text-muted: #94a3b8;
+  --color-text-faint: #475569;
+  
+  /* Spacing - Phase 2.5 Strictness */
+  --gap-4: 1rem;
+  --gap-6: 1.5rem;
+  --gap-8: 2rem;
+  --gap-12: 3rem;
 
-  /* Spacing */
-  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
-  --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem;
-  --space-12: 3rem; --space-16: 4rem;
+  /* Typography - Phase 2.5 */
+  --font-body: 'Satoshi', sans-serif;
+  --font-heading: 'Cabinet Grotesk', sans-serif;
 
-  /* Typography */
-  --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
-  --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
-  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
-  --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
-  --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
-  --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
-  --font-body: 'Inter', sans-serif;
-  --font-display: 'Space Grotesk', sans-serif;
-
-  /* Radius & Shadows */
-  --radius-sm: 0.375rem; --radius-md: 0.5rem;
-  --radius-lg: 0.75rem; --radius-xl: 1rem;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg: 0 12px 40px rgba(0,0,0,0.5);
-  --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  /* Shadows & Glass */
+  --glass-bg: rgba(19, 19, 43, 0.8);
+  --glass-blur: blur(20px);
+  --shadow-premium: 0 20px 40px rgba(0, 0, 0, 0.4);
+  
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-full: 9999px;
+  
+  --transition-smooth: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 * {
@@ -65,17 +62,54 @@ body {
 }
 
 h1, h2, h3, .font-display {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
-/* Utility Classes */
+/* Ticker Animation for Phase 2.1 */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee-container {
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+  gap: var(--gap-12);
+  padding: var(--gap-6) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.marquee-content {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-around;
+  min-width: 100%;
+  gap: var(--gap-12);
+  animation: marquee 30s linear infinite;
+}
+
+.marquee-item {
+  color: var(--color-text-muted);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* Glass Enhancement */
 .glass {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(19, 19, 43, 0.7);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  background: var(--glass-bg);
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
 }
 
 .sb-page {

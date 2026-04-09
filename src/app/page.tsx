@@ -2,12 +2,99 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import Footer from '@/components/layout/Footer';
-import { CountUp } from '@/components/ui/CountUp';
+import Navbar from '@/components/layout/Navbar';
 import './landing.css';
 
-// ── PARTICLE CANVAS LOGIC (Internal Component) ──
+// ── COMPONENTS ──
+
+const RotatingTagline = () => {
+  const lines = [
+    "Solve doubts faster.",
+    "Learn from peers.",
+    "Earn your reputation.",
+    "Master your subjects."
+  ];
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setIndex(i => (i + 1) % lines.length), 3000);
+    return () => clearInterval(timer);
+  }, [lines.length]);
+
+  return (
+    <div className="h-[1.2em] relative overflow-hidden flex justify-center">
+      <AnimatePresence mode="wait">
+        <motion.div
+           key={index}
+           initial={{ y: 40, opacity: 0 }}
+           animate={{ y: 0, opacity: 1 }}
+           exit={{ y: -40, opacity: 0 }}
+           transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+           className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400"
+        >
+          {lines[index]}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const StatCounter = ({ value, label, suffix = "" }: { value: number, label: string, suffix?: string }) => {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+
+  useEffect(() => {
+    if (isInView) {
+      let start = 0;
+      const end = value;
+      const duration = 2000;
+      const stepTime = Math.abs(Math.floor(duration / end));
+      const timer = setInterval(() => {
+        start += 1;
+        setCount(start);
+        if (start >= end) clearInterval(timer);
+      }, stepTime);
+      return () => clearInterval(timer);
+    }
+  }, [isInView, value]);
+
+  return (
+    <div ref={ref} className="text-center">
+      <div className="text-4xl md:text-5xl font-black mb-2 font-heading tracking-tighter">
+        {count}{suffix}
+      </div>
+      <div className="text-xs font-black uppercase tracking-widest text-gray-500">{label}</div>
+    </div>
+  );
+};
+
+class Particle {
+  x: number = 0;
+  y: number = 0;
+  vx: number = 0;
+  vy: number = 0;
+  constructor(W: number, H: number) {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.vx = (Math.random() - 0.5) * 0.2;
+    this.vy = (Math.random() - 0.5) * 0.2;
+  }
+  update(W: number, H: number) {
+    this.x += this.vx; this.y += this.vy;
+    if (this.x < 0 || this.x > W) this.vx *= -1;
+    if (this.y < 0 || this.y > H) this.vy *= -1;
+  }
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.fillStyle = 'rgba(124, 58, 237, 0.2)';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 const ParticleBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -17,395 +104,170 @@ const ParticleBackground = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let W: number, H: number, particles: Particle[] = [], mouse = { x: -999, y: -999 };
-
+    let W: number, H: number, particles: Particle[] = [];
     const resize = () => {
       W = canvas.width = window.innerWidth;
       H = canvas.height = window.innerHeight;
     };
     resize();
     window.addEventListener('resize', resize);
-    window.addEventListener('mousemove', (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    });
 
-    class Particle {
-      x: number = 0;
-      y: number = 0;
-      vx: number = 0;
-      vy: number = 0;
-      r: number = 0;
-      color: string = '';
-      alpha: number = 0;
-      glow: string = '';
+    for (let i = 0; i < 100; i++) particles.push(new Particle(W, H));
 
-      constructor() {
-        this.reset();
-      }
-      reset() {
-        this.x = Math.random() * W;
-        this.y = Math.random() * H;
-        this.vx = (Math.random() - 0.5) * 0.3;
-        this.vy = (Math.random() - 0.5) * 0.3;
-        this.r = Math.random() * 1.5 + 0.8;
-        const hues = ['124,58,237', '6,214,160', '245,158,11', '139,92,246'];
-        const choice = Math.floor(Math.random() * hues.length);
-        this.color = hues[choice];
-        this.glow = `rgba(${hues[choice]}, 0.5)`;
-        this.alpha = Math.random() * 0.4 + 0.3;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-
-        // Subtle repulsion from mouse
-        const mdx = this.x - mouse.x;
-        const mdy = this.y - mouse.y;
-        const dist = Math.sqrt(mdx * mdx + mdy * mdy);
-        if (dist < 150) {
-          this.x += (mdx / dist) * 0.5;
-          this.y += (mdy / dist) * 0.5;
-        }
-
-        if (this.x < -20) this.x = W + 20;
-        if (this.x > W + 20) this.x = -20;
-        if (this.y < -20) this.y = H + 20;
-        if (this.y > H + 20) this.y = -20;
-      }
-      draw() {
-        if (!ctx) return;
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-        
-        // Add neon glow to nodes
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = this.glow;
-        ctx.fillStyle = `rgba(${this.color}, ${this.alpha})`;
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-
-    // Increased density for premium feel
-    const count = Math.min(Math.floor((window.innerWidth * window.innerHeight) / 9000), 180);
-    for (let i = 0; i < count; i++) particles.push(new Particle());
-
-    function drawLines() {
-      if (!ctx) return;
-      
-      // 1. Connect particles to each other (Spider Web)
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dSq = dx * dx + dy * dy;
-          
-          if (dSq < 14400) { // 120px
-            const dist = Math.sqrt(dSq);
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            const lineAlpha = (1 - dist / 120) * 0.2;
-            ctx.strokeStyle = `rgba(124,58,237, ${lineAlpha})`;
-            ctx.lineWidth = 0.4;
-            ctx.stroke();
-          }
-        }
-
-        // 2. ACTIVE WEBBING: Connect particles to Mouse Cursor (Dynamic Web)
-        const mouseDx = particles[i].x - mouse.x;
-        const mouseDy = particles[i].y - mouse.y;
-        const mouseDistSq = mouseDx * mouseDx + mouseDy * mouseDy;
-        
-        if (mouseDistSq < 40000) { // 200px radius for mouse webbing
-          const mDist = Math.sqrt(mouseDistSq);
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(mouse.x, mouse.y);
-          const mAlpha = (1 - mDist / 200) * 0.35;
-          ctx.strokeStyle = `rgba(6,214,160, ${mAlpha})`;
-          ctx.lineWidth = 0.6;
-          ctx.stroke();
-        }
-      }
-    }
-
-    const animate = () => {
-      ctx.clearRect(0, 0, W, H);
-      particles.forEach(p => { p.update(); p.draw(); });
-      drawLines();
-      requestAnimationFrame(animate);
+    const anim = () => {
+      ctx.clearRect(0,0,W,H);
+      particles.forEach(p => { p.update(W, H); p.draw(ctx); });
+      requestAnimationFrame(anim);
     };
-    animate();
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      // Clean up mouse listener would be ideal but browser event listeners stay active
-    };
+    anim();
+    return () => window.removeEventListener('resize', resize);
   }, []);
 
-  // High-performance background particles with mouse interaction
-  return <canvas id="bg-canvas" ref={canvasRef} style={{ pointerEvents: 'none' }} />;
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none opacity-50 z-0" />;
 };
 
 export default function HomePage() {
   return (
-    <main className="sb-page">
+    <main className="min-h-screen bg-[#0d0d1a] text-white selection:bg-indigo-500/30">
       <ParticleBackground />
+      <Navbar />
 
-      <nav className="sb-nav">
-        <Link href="/" className="sb-logo">
-          <svg
-            className="sb-logoIcon"
-            viewBox="0 0 40 40"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-label="SkillBridge logo"
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-24 px-6 overflow-hidden">
+        <div className="max-w-6xl mx-auto text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold mb-8"
           >
-            <defs>
-              <linearGradient id="sbLogoGrad" x1="0" y1="0" x2="40" y2="40">
-                <stop offset="0%" stopColor="#7c3aed" />
-                <stop offset="100%" stopColor="#06d6a0" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M4 28 Q20 8 36 28"
-              stroke="url(#sbLogoGrad)"
-              strokeWidth="3"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <line
-              x1="4"
-              y1="28"
-              x2="36"
-              y2="28"
-              stroke="url(#sbLogoGrad)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            <line x1="13" y1="20" x2="13" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
-            <line x1="27" y1="20" x2="27" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="20" cy="10.5" r="3" fill="#06d6a0" opacity=".95" />
-            <circle cx="20" cy="10.5" r="6" fill="#06d6a0" opacity=".18" />
-          </svg>
-          <span className="sb-logoText">
-            Skill<span>Bridge</span>
-          </span>
-        </Link>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            Stack Overflow, built for your college.
+          </motion.div>
 
-        <div className="sb-navLinks">
-          <Link href="/doubts">Doubts</Link>
-          <Link href="/mentors">Mentors</Link>
-          <Link href="/tests">Practice</Link>
-          <Link href="/dashboard/progress">My Progress</Link>
-          <Link href="/dashboard/sessions">Live Sessions</Link>
-        </div>
+          <motion.h1 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-6xl md:text-8xl font-black font-heading mb-6 tracking-tight leading-[0.9]"
+          >
+            Bridge the Gap. <br />
+            <RotatingTagline />
+          </motion.h1>
 
-        <Link href="/auth" className="sb-navCta">
-          Get Started
-        </Link>
-      </nav>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-gray-400 max-w-2xl mx-auto text-lg md:text-xl mb-12 leading-relaxed"
+          >
+            SkillBridge is the professional peer-learning network where curiosity meets resolution. 
+            Post doubts, book experts, and build your academic equity.
+          </motion.p>
 
-      <section className="sb-hero">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="sb-heroBadge"
-        >
-          <span className="sb-badgeDot" />
-          AI-powered student growth platform
-        </motion.div>
-
-        <motion.h1 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.2 }}
-          className="sb-title"
-        >
-          Bridge the Gap.
-          <br />
-          <span>Learn. Earn. Grow.</span>
-        </motion.h1>
-
-        <motion.p 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.4 }}
-          className="sb-subtitle"
-        >
-          Get doubts solved, practice smarter with AI, build reputation, and book expert mentors — all in one
-          premium student platform.
-        </motion.p>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.6 }}
-          className="sb-actions"
-        >
-          <Link href="/auth" className="sb-btnPrimary">
-            Start Free
-          </Link>
-          <Link href="#features" className="sb-btnGhost">
-            Explore Platform
-          </Link>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 0.8 }}
-          className="sb-stats"
-        >
-          <div>
-            <CountUp to={4.8} suffix="K+" duration={2} />
-            <span>Doubts solved</span>
-          </div>
-          <div>
-            <CountUp to={320} suffix="+" duration={2} />
-            <span>Mentors onboard</span>
-          </div>
-          <div>
-            <CountUp to={12.6} suffix="K+" duration={2} />
-            <span>Points earned</span>
-          </div>
-        </motion.div>
-      </section>
-
-      <section id="features" className="sb-section">
-        <div className="sb-sectionHead sb-stagger-1">
-          <p>Platform highlights</p>
-          <h2>Flash-card glow. Live reactions. Premium motion.</h2>
-        </div>
-
-        <div className="sb-cards sb-stagger-2">
-          <article className="sb-card purple">
-            <div className="sb-cardGlow" />
-            <h3>AI Doubt Solver</h3>
-            <p>Instant hints and structured explanations powered by Gemini.</p>
-          </article>
-
-          <article className="sb-card green">
-            <div className="sb-cardGlow" />
-            <h3>Reputation System</h3>
-            <p>Earn points automatically when your answers help others.</p>
-          </article>
-
-          <article className="sb-card gold">
-            <div className="sb-cardGlow" />
-            <h3>Practice Engine</h3>
-            <p>Generate tests, answer quickly, and see polished score feedback.</p>
-          </article>
-        </div>
-
-        <div className="sb-flashRow sb-stagger-3">
-          {[
-            { tag: 'Data Structures', q: 'What is the complexity of binary search?', a: 'O(log n), because the search space halves at every step.', color: 'purple' },
-            { tag: 'Operating Systems', q: 'Process vs thread?', a: 'A process owns memory; threads share a process memory space.', color: 'green' },
-            { tag: 'Machine Learning', q: 'What does learning rate control?', a: 'It controls how large each optimization step is during training.', color: 'gold' }
-          ].map((card, i) => {
-            const [flipped, setFlipped] = useState(false);
-            return (
-              <article 
-                key={i} 
-                className={`sb-flash-card ${card.color} ${flipped ? 'is-flipped' : ''}`}
-                onClick={() => setFlipped(!flipped)}
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
-                  e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
-                }}
-              >
-                <div className="sb-flash-inner">
-                  <div className="sb-flash-front">
-                    <div className="sb-flashAura" />
-                    <span>{card.tag}</span>
-                    <h4>{card.q}</h4>
-                    <div className="sb-flash-hint">Click to reveal answer</div>
-                  </div>
-                  <div className="sb-flash-back">
-                    <p>{card.a}</p>
-                    <div className="sb-flash-hint">Click to flip back</div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="flex flex-col md:flex-row items-center justify-center gap-4"
+          >
+            <Link href="/auth" className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-500/20 active:scale-95">
+              Start Your Journey — It&apos;s Free
+            </Link>
+            <Link href="#features" className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-black rounded-2xl border border-white/10 transition-all active:scale-95">
+              How it works
+            </Link>
+          </motion.div>
         </div>
       </section>
 
-      <section id="testimonials" className="sb-section">
-        <div className="sb-sectionHead sb-stagger-1">
-          <p>Student voices</p>
-          <h2>Flashing testimonial cards that feel alive.</h2>
+      {/* Marquee Ticker */}
+      <div className="marquee-container mb-24">
+        <div className="marquee-content">
+          {['React', 'DBMS', 'OS', 'CN', 'DSA', 'SQL', 'System Design', 'ML', 'Cloud'].map(tag => (
+            <div key={tag} className="marquee-item">{tag}</div>
+          ))}
+          {/* Duplicate for seamless scroll */}
+          {['React', 'DBMS', 'OS', 'CN', 'DSA', 'SQL', 'System Design', 'ML', 'Cloud'].map(tag => (
+            <div key={tag} className="marquee-item">{tag}</div>
+          ))}
         </div>
+      </div>
 
-        <div className="sb-testimonials sb-stagger-2">
-          <article className="sb-testi t1">
-            <h3>★★★★★</h3>
-            <p>“I got an AI hint instantly and a peer answer within minutes. It actually helped before my exam.”</p>
-            <span>Riya · CSE Student</span>
-          </article>
-
-          <article className="sb-testi t2">
-            <h3>★★★★★</h3>
-            <p>“The practice tests feel premium and the leaderboard gives real motivation to contribute.”</p>
-            <span>Arjun · MCA Final Year</span>
-          </article>
-
-          <article className="sb-testi t3">
-            <h3>★★★★★</h3>
-            <p>“Mentor booking was smooth, and I could genuinely showcase expertise through reputation.”</p>
-            <span>Priya · Mentor</span>
-          </article>
+      {/* Stats Section */}
+      <section className="max-w-6xl mx-auto px-6 mb-32">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 py-12 border-y border-white/5">
+          <StatCounter value={10000} suffix="+" label="Doubts Solved" />
+          <StatCounter value={500} suffix="+" label="Expert Mentors" />
+          <StatCounter value={98} suffix="%" label="Resolution Rate" />
         </div>
       </section>
 
-      <section id="blogs" className="sb-section">
-        <div className="sb-sectionHead sb-stagger-1">
-          <p>From the blog</p>
-          <h2>Polished blog cards with hover lift.</h2>
+      {/* Bento Grid Features */}
+      <section id="features" className="max-w-6xl mx-auto px-6 mb-32">
+        <div className="mb-16">
+          <h2 className="text-4xl md:text-5xl font-black font-heading mb-4">Engineered for Students.</h2>
+          <p className="text-gray-500 max-w-xl">A suite of powerful tools designed to accelerate your technical growth.</p>
         </div>
 
-        <div className="sb-blogs sb-stagger-2">
-          <article className="sb-blog">
-            <div className="sb-blogThumb purple">AI</div>
-            <div className="sb-blogBody">
-              <span>AI Learning</span>
-              <h3>How AI-generated MCQs improve revision speed</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Full Width Bento Card */}
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="md:col-span-2 bg-gradient-to-br from-indigo-900/40 to-black p-12 rounded-[40px] border border-white/5 relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+               <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
             </div>
-          </article>
-
-          <article className="sb-blog">
-            <div className="sb-blogThumb green">REP</div>
-            <div className="sb-blogBody">
-              <span>Community</span>
-              <h3>Why reputation systems create stronger academic communities</h3>
+            <div className="relative z-10 max-w-xl">
+              <span className="text-indigo-400 font-bold uppercase tracking-widest text-[10px] mb-4 block">Core Engine</span>
+              <h3 className="text-4xl font-black font-heading mb-6">AI Doubt Solver</h3>
+              <p className="text-gray-400 text-lg mb-8">
+                Stuck on a conceptual roadblock? Our AI tutor provides instant logical breakdowns, code explanations, and step-by-step resolution.
+              </p>
+              <Link href="/doubts" className="inline-flex items-center gap-2 text-indigo-400 font-bold hover:gap-4 transition-all">
+                Try AI Solver now <span className="text-2xl">→</span>
+              </Link>
             </div>
-          </article>
+          </motion.div>
 
-          <article className="sb-blog">
-            <div className="sb-blogThumb gold">MNT</div>
-            <div className="sb-blogBody">
-              <span>Mentorship</span>
-              <h3>How student mentors can turn knowledge into income</h3>
+          {/* Half Width Cards */}
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="bg-[#13132b] p-10 rounded-[40px] border border-white/5"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-6">
+               <Award size={24} />
             </div>
-          </article>
+            <h3 className="text-2xl font-black font-heading mb-4">Reputation Score</h3>
+            <p className="text-gray-400 leading-relaxed">
+              Build your technical equity. Every answer you provide earns points that translate to profile trust and exclusive platform perks.
+            </p>
+          </motion.div>
+
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="bg-[#13132b] p-10 rounded-[40px] border border-white/5"
+          >
+             <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6">
+                <Calendar size={24} />
+             </div>
+             <h3 className="text-2xl font-black font-heading mb-4">Expert Sessions</h3>
+             <p className="text-gray-400 leading-relaxed">
+               Book 1-on-1 live sessions with verified seniors and industry experts from your own college network for personalized guidance.
+             </p>
+          </motion.div>
         </div>
       </section>
 
-      <section className="sb-section sb-cta sb-stagger-3">
-        <div className="sb-sectionHead">
-          <h2>Ready to bridge your skill gap?</h2>
-          <p style={{ marginTop: '16px', fontSize: '1.2rem', color: 'var(--color-text-muted)', textTransform: 'none', letterSpacing: 'normal' }}>
-            Join 4,800+ students already growing on SkillBridge. Free forever for learners.
-          </p>
-          <div className="sb-actions" style={{ marginTop: '40px' }}>
-            <Link href="/auth" className="sb-btnPrimary">Start Learning Free &rarr;</Link>
+      {/* CTA */}
+      <section className="max-w-4xl mx-auto px-6 mb-32 text-center">
+        <div className="bg-indigo-600 p-16 rounded-[60px] relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500 to-transparent opacity-50" />
+          <div className="relative z-10">
+            <h2 className="text-4xl md:text-6xl font-black font-heading mb-6 leading-none">Ready to bridge your skill gap?</h2>
+            <p className="text-indigo-100 text-lg mb-12 opacity-80">Join 10,000+ students already growing on SkillBridge.</p>
+            <Link href="/auth" className="inline-block bg-white text-indigo-600 px-12 py-5 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-2xl">
+              Launch SkillBridge
+            </Link>
           </div>
         </div>
       </section>
@@ -414,3 +276,6 @@ export default function HomePage() {
     </main>
   );
 }
+
+const Award = ({ size }: { size: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>;
+const Calendar = ({ size }: { size: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;

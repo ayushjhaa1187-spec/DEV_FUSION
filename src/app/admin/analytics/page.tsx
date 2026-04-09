@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { Users, MessageSquare, Video, Star, BarChart3, ShieldCheck } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Users, MessageSquare, Video, Star, BarChart3, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingPage } from '@/components/ui/Loading';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<any>(null);
@@ -30,7 +31,15 @@ export default function AdminAnalyticsPage() {
     loadStats();
   }, []);
 
-  if (loading) return <LoadingPage text="Loading Command Center..." />;
+  const handleResolveReport = async (doubtId: string) => {
+      // Mock resolution
+      setData((prev: any) => ({
+          ...prev,
+          reportedContent: prev.reportedContent.filter((d: any) => d.id !== doubtId)
+      }));
+  };
+
+  if (loading) return <LoadingPage text="Securing Command Center..." />;
   if (error) return <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center text-red-500">{error}</div>;
 
   const cardStats = [
@@ -40,91 +49,139 @@ export default function AdminAnalyticsPage() {
     { label: 'Avg Rating', value: '4.9', icon: Star, color: '#f59e0b' },
   ];
 
+  const COLORS = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
+
   return (
-    <main className="min-h-screen bg-[#0f0f1a] text-white">
+    <main className="min-h-screen bg-[#0d0d1a] text-white">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <header className="flex justify-between items-end mb-12">
-          <div>
-            <div className="flex items-center gap-2 text-indigo-500 mb-2">
-              <ShieldCheck className="w-5 h-5" />
-              <span className="text-sm font-bold uppercase tracking-widest">Admin Control</span>
-            </div>
-            <h1 className="text-4xl font-extrabold tracking-tight">Platform Analytics</h1>
+      <div className="max-w-7xl mx-auto px-6 py-24">
+        <header className="mb-16">
+          <div className="flex items-center gap-2 text-indigo-500 mb-4">
+            <ShieldCheck className="w-6 h-6" />
+            <span className="text-xs font-black uppercase tracking-[0.2em]">Platform Authority Console</span>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">Last updated</p>
-            <p className="text-lg font-mono">{new Date().toLocaleTimeString()}</p>
-          </div>
+          <h1 className="text-5xl md:text-6xl font-black font-heading tracking-tighter">Ecosystem <span>Analytics</span></h1>
         </header>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {/* Real-time Ticker Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-20">
           {cardStats.map((stat, i) => (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="bg-[#1e1e2e] border border-gray-800 p-6 rounded-3xl relative overflow-hidden group"
+              className="bg-[#13132b] border border-white/5 p-8 rounded-[32px] group hover:border-indigo-500/30 transition-all shadow-2xl relative overflow-hidden"
             >
-              <div 
-                className="absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 rounded-full opacity-10 group-hover:opacity-20 transition-opacity"
-                style={{ backgroundColor: stat.color }}
-              />
-              <stat.icon className="w-8 h-8 mb-4" style={{ color: stat.color }} />
-              <div className="text-4xl font-black mb-1">{stat.value}</div>
-              <div className="text-sm text-gray-500 font-bold uppercase tracking-wider">{stat.label}</div>
+              <stat.icon className="w-6 h-6 mb-6 opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: stat.color }} />
+              <div className="text-5xl font-black mb-2 font-heading tracking-tighter tabular-nums">{stat.value}</div>
+              <div className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{stat.label}</div>
             </motion.div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Popular Subjects */}
-          <div className="lg:col-span-2 bg-[#1e1e2e] border border-gray-800 rounded-3xl p-8">
-            <div className="flex items-center gap-3 mb-8">
-              <BarChart3 className="w-6 h-6 text-indigo-500" />
-              <h2 className="text-2xl font-bold">In-Demand Subjects</h2>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 mb-20">
+          {/* Test Performance Chart (Phase 3.2 Add) */}
+          <div className="xl:col-span-2 bg-[#13132b] border border-white/5 rounded-[40px] p-10">
+            <div className="flex items-center justify-between mb-12">
+              <div>
+                <h2 className="text-2xl font-black font-heading mb-1">Knowledge Accuracy</h2>
+                <p className="text-sm text-gray-500">Average test scores across academic verticals</p>
+              </div>
+              <BarChart3 className="w-6 h-6 text-indigo-500 opacity-50" />
             </div>
-            
-            <div className="space-y-6">
-              {data.popularSubjects.map((sub: any, i: number) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className="w-24 text-sm font-bold text-gray-500 truncate">{sub.subject_name || 'General'}</div>
-                  <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min((sub.trending_score || 10) * 5, 100)}%` }}
-                      className="h-full bg-indigo-500"
-                    />
-                  </div>
-                  <div className="text-sm font-mono text-gray-400">{(sub.trending_score || 0).toFixed(1)}</div>
-                </div>
-              ))}
+
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.testPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                  <Tooltip 
+                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                    contentStyle={{ background: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px' }}
+                  />
+                  <Bar dataKey="avg" radius={[8, 8, 0, 0]}>
+                    {data.testPerformance.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Top Mentors */}
-          <div className="bg-[#1e1e2e] border border-gray-800 rounded-3xl p-8">
-            <h2 className="text-2xl font-bold mb-8">Top Performing Mentors</h2>
-            <div className="space-y-6">
+          {/* Top Mentors Sidebar */}
+          <div className="bg-gradient-to-b from-[#13132b] to-black border border-white/5 rounded-[40px] p-10">
+            <h2 className="text-2xl font-black font-heading mb-10">Top Performers</h2>
+            <div className="space-y-8">
               {data.topMentors.map((mentor: any, i: number) => (
-                <div key={i} className="flex items-center gap-4 p-3 rounded-2xl hover:bg-white/5 transition-colors">
-                  <img src={mentor.profiles.avatar_url || `https://ui-avatars.com/api/?name=${mentor.profiles.username}`} className="w-12 h-12 rounded-full border-2 border-gray-800" alt="" />
+                <div key={i} className="flex items-center gap-4 group">
+                  <div className="relative">
+                     <img src={mentor.profiles.avatar_url || `https://ui-avatars.com/api/?name=${mentor.profiles.username}`} className="w-14 h-14 rounded-2xl grayscale group-hover:grayscale-0 transition-all border-2 border-white/5" alt="" />
+                     <div className="absolute -top-2 -right-2 w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black border-2 border-[#13132b]">#{i+1}</div>
+                  </div>
                   <div className="flex-1">
-                    <div className="font-bold">{mentor.profiles.username}</div>
-                    <div className="text-xs text-gray-500">{mentor.specialty}</div>
+                    <div className="font-black text-sm tracking-tight">{mentor.profiles.username}</div>
+                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{mentor.specialty}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-indigo-400 font-black">{mentor.sessions_completed}</div>
-                    <div className="text-[10px] uppercase text-gray-500 font-bold">Sessions</div>
+                    <div className="text-indigo-400 font-black font-heading">{mentor.sessions_completed}</div>
+                    <div className="text-[9px] uppercase text-gray-500 font-bold">Res.</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+
+        {/* Moderation Queue (Phase 3.2 Add) */}
+        <section className="bg-[#13132b] border border-white/5 rounded-[40px] p-10">
+          <div className="flex items-center gap-3 mb-10">
+            <AlertTriangle className="w-6 h-6 text-red-500" />
+            <h2 className="text-2xl font-black font-heading">Moderation Queue</h2>
+            <span className="ml-auto bg-red-500/10 text-red-500 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-red-500/20">
+              {data.reportedContent.length} Flagged
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence>
+              {data.reportedContent.length > 0 ? data.reportedContent.map((item: any) => (
+                <motion.div
+                  layout
+                  key={item.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-black/40 border border-white/5 p-6 rounded-[24px] hover:border-red-500/20 transition-all group"
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-[10px] font-black">
+                      {item.profiles?.username?.[0]}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-gray-400">Flagged Doubts</div>
+                      <div className="text-[10px] text-gray-600 font-bold">{new Date(item.created_at).toLocaleString()}</div>
+                    </div>
+                  </div>
+                  <h4 className="font-bold text-sm mb-4 line-clamp-2">{item.title}</h4>
+                  <div className="flex gap-2">
+                     <button onClick={() => handleResolveReport(item.id)} className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all">Ignore</button>
+                     <button className="flex-1 py-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all">Remove</button>
+                  </div>
+                </motion.div>
+              )) : (
+                <div className="col-span-full py-20 text-center bg-white/5 rounded-[32px] border border-dashed border-white/10">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4 opacity-50" />
+                  <h3 className="text-lg font-bold">Sanitized Environment</h3>
+                  <p className="text-sm text-gray-500">No active reports. Community is healthy.</p>
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
+        </section>
       </div>
       <Footer />
     </main>

@@ -7,7 +7,6 @@ export async function GET(req: NextRequest) {
 
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Check admin role
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
@@ -19,28 +18,38 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // Collect stats
     const [
       { count: totalUsers },
       { count: totalDoubts },
       { count: totalSessions },
-      { data: popularSubjects },
-      { data: topMentors }
+      { data: subjectsWithDoubts },
+      { data: topMentors },
+      { data: testPerformance },
+      { data: reportedContent }
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('doubts').select('*', { count: 'exact', head: true }),
       supabase.from('mentor_bookings').select('*', { count: 'exact', head: true }),
-      supabase.rpc('get_popular_subjects'), // Need to define this RPC or use a query
-      supabase.from('mentor_profiles').select('*, profiles(username, avatar_url)').order('sessions_completed', { ascending: false }).limit(5)
+      supabase.from('doubts').select('subject_id, subjects(name)'),
+      supabase.from('mentor_profiles').select('*, profiles(username, avatar_url)').order('sessions_completed', { ascending: false }).limit(5),
+      supabase.from('test_results').select('score, subjects(name)'),
+      supabase.from('doubts').select('*, profiles(username)').eq('is_reported', true)
     ]);
 
-    // Fallback for popular subjects if RPC fails
-    let subjects = popularSubjects;
-    if (!subjects) {
-      const { data } = await supabase.from('doubts_with_stats').select('subject_name').limit(10);
-      // Simple aggregation in JS if needed
-      subjects = data; 
-    }
+    // Aggregate in JS for flexibility
+    const subjectCounts: Record<string, number> = {};
+    subjectsWithDoubts?.forEach((d: any) => {
+      const name = d.subjects?.name || 'General';
+      subjectCounts[name] = (subjectCounts[name] || 0) + 1;
+    });
+
+    const testScores: Record<string, { total: number, count: number }> = {};
+    testPerformance?.forEach((t: any) => {
+        const name = t.subjects?.name || 'General';
+        if (!testScores[name]) testScores[name] = { total: 0, count: 0 };
+        testScores[name].total += t.score;
+        testScores[name].count += 1;
+    });
 
     return NextResponse.json({
       stats: {
@@ -48,8 +57,13 @@ export async function GET(req: NextRequest) {
         doubts: totalDoubts,
         sessions: totalSessions,
       },
-      popularSubjects: subjects,
-      topMentors
+      popularSubjects: Object.entries(subjectCounts).map(([name, count]) => ({ subject_name: name, count })),
+      testPerformance: Object.entries(testScores).map(([name, val]) => ({ 
+          name, 
+          avg: Math.round(val.total / val.count) 
+      })),
+      topMentors,
+      reportedContent: reportedContent || []
     });
   } catch (err: any) {
     console.error('Analytics Error:', err);

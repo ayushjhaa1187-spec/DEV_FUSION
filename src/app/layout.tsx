@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   keywords: ["education", "mentorship", "doubt resolution", "college", "student learning"],
 };
 
+import { ToastProvider } from '@/components/ui/Toast';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,11 +21,13 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-          <ConditionalNavbar />
-          <AIFloatingAssistant />
-          <main>
-            {children}
-          </main>
+          <ToastProvider>
+            <ConditionalNavbar />
+            <AIFloatingAssistant />
+            <main>
+              {children}
+            </main>
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>
