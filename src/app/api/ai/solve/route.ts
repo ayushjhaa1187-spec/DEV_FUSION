@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { askAIDoubt } from '@/lib/ai-service';
-import { checkRateLimit } from '@/lib/ai-service';
+import { checkRateLimit } from '@/lib/rate-limiter';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { checkAndIncrementUsage } from '@/lib/usage';
 
@@ -11,12 +11,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Rate limit check
-  const rateCheck = checkRateLimit(user.id);
+  // Sliding-window rate limit check (30 requests / hour)
+  const rateCheck = await checkRateLimit(user.id, 'ai_chat');
   if (!rateCheck.allowed) {
+    const retryAfterSecs = Math.ceil((rateCheck.resetAt.getTime() - Date.now()) / 1000);
     return NextResponse.json(
-      { error: 'Rate limit exceeded. Try again later.', retryAfterMs: rateCheck.retryAfterMs },
-      { status: 429 }
+      {
+        error: 'Rate limit exceeded. Try again later.',
+        resetAt: rateCheck.resetAt.toISOString(),
+      },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(retryAfterSecs) },
+      }
     );
   }
 
@@ -26,6 +33,7 @@ export async function POST(req: NextRequest) {
     if (!question) {
       return NextResponse.json({ error: 'Question is required' }, { status: 400 });
     }
+
     // Check usage limits (Questions)
     const { allowed, remaining } = await checkAndIncrementUsage(user.id, 'question');
     if (!allowed) {
@@ -34,12 +42,14 @@ export async function POST(req: NextRequest) {
         limitReached: true 
       }, { status: 403 });
     }
+
     const aiResponse = await askAIDoubt(question, context);
     return NextResponse.json({
       explanation: aiResponse.explanation,
       steps: aiResponse.steps,
       suggested_tags: aiResponse.suggested_tags,
       remaining,
+      rateLimitRemaining: rateCheck.remaining,
     });
   } catch (error) {
     console.error('API Error:', error);
