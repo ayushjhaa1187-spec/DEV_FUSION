@@ -44,7 +44,21 @@ export async function checkAndIncrementUsage(userId: string, type: UsageType): P
   const today = now.toISOString().split('T')[0];
   const thisMonth = today.substring(0, 7); // YYYY-MM
 
-  let currentUsage = usage || {
+// If no row exists yet, insert a fresh default row first
+  if (!usage) {
+    const defaultUsage = {
+      user_id: userId,
+      interviews_this_month: 0,
+      questions_today: 0,
+      last_reset_interviews: today,
+      last_reset_questions: today
+    };
+    const { error: insertError } = await supabase
+      .from('user_usage')
+      .insert(defaultUsage);
+    if (insertError) throw insertError;
+  }
+    let currentUsage = usage || {
     user_id: userId,
     interviews_this_month: 0,
     questions_today: 0,
@@ -80,7 +94,7 @@ export async function checkAndIncrementUsage(userId: string, type: UsageType): P
 
   const { error: updateError } = await supabase
     .from('user_usage')
-    .upsert(currentUsage);
+    .upsert(currentUsage, { onConflict: 'user_id' });
 
   if (updateError) throw updateError;
 
