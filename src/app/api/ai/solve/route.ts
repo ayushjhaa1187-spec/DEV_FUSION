@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { askAIDoubt } from '@/lib/ai-service';
+import { checkRateLimit } from '@/lib/ai-service';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { checkAndIncrementUsage } from '@/lib/usage';
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rate limit check
+  const rateCheck = checkRateLimit(user.id);
+  if (!rateCheck.allowed) {
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Try again later.', retryAfterMs: rateCheck.retryAfterMs },
+      { status: 429 }
+    );
   }
 
   try {
@@ -17,7 +26,6 @@ export async function POST(req: NextRequest) {
     if (!question) {
       return NextResponse.json({ error: 'Question is required' }, { status: 400 });
     }
-
     // Check usage limits (Questions)
     const { allowed, remaining } = await checkAndIncrementUsage(user.id, 'question');
     if (!allowed) {
@@ -26,14 +34,13 @@ export async function POST(req: NextRequest) {
         limitReached: true 
       }, { status: 403 });
     }
-
     const aiResponse = await askAIDoubt(question, context);
     return NextResponse.json({
-    explanation: aiResponse.explanation,
-    steps: aiResponse.steps,
-    suggested_tags: aiResponse.suggested_tags,
-    remaining,
-  });
+      explanation: aiResponse.explanation,
+      steps: aiResponse.steps,
+      suggested_tags: aiResponse.suggested_tags,
+      remaining,
+    });
   } catch (error) {
     console.error('API Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
