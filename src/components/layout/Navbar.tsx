@@ -9,7 +9,7 @@ import { createSupabaseBrowser } from '@/lib/supabase/client';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -163,6 +163,11 @@ export default function Navbar() {
           <Link href="/doubts" className={`${styles.navLink} ${pathname === '/doubts' ? styles.active : ''}`}>Doubts</Link>
           <Link href="/mentors" className={`${styles.navLink} ${pathname === '/mentors' ? styles.active : ''}`}>Mentors</Link>
           <Link href="/tests" className={`${styles.navLink} ${pathname === '/tests' ? styles.active : ''}`}>Practice</Link>
+          {profile?.role === 'admin' && (
+            <Link href="/admin/applications" className={`${styles.navLink} ${styles.adminLink} ${pathname.startsWith('/admin') ? styles.active : ''}`}>
+              Admin
+            </Link>
+          )}
           <a href="#features" onClick={(e) => handleNavClick(e, '#features')} className={styles.navLink}>Features</a>
         </div>
 
