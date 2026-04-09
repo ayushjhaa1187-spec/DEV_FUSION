@@ -90,21 +90,25 @@
 
 .mentorGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 32px;
 }
 
 .mentorCard {
   padding: 32px;
   border-radius: 40px;
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: linear-gradient(145deg, rgba(20, 20, 35, 0.4), rgba(10, 10, 18, 0.6));
+  backdrop-filter: blur(12px);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   flex-direction: column;
 }
 
 .mentorCard:hover {
-  transform: translateY(-8px);
-  border-color: var(--color-primary);
+  transform: translateY(-12px) scale(1.02);
+  border-color: rgba(124, 58, 237, 0.4);
+  box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6), 0 0 40px rgba(124, 58, 237, 0.1);
 }
 
 .cardHeader {
@@ -213,7 +217,12 @@
   box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
+  .mentorGrid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .mentorGrid { grid-template-columns: 1fr; }
   .header { flex-direction: column; align-items: flex-start; }
   .searchSection { flex-direction: column; align-items: stretch; }
 }

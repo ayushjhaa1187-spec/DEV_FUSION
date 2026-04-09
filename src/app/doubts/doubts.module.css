@@ -166,22 +166,26 @@
 }
 
 .feedGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 24px;
+  column-count: 2;
+  column-gap: 24px;
+  width: 100%;
 }
 
 .premiumCard {
+  break-inside: avoid;
+  display: block;
+  margin-bottom: 24px;
   text-decoration: none;
   color: inherit;
   padding: 24px;
   border-radius: 28px;
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .premiumCard:hover {
-  transform: translateY(-8px);
+  transform: translateY(-8px) scale(1.01);
   border-color: var(--color-primary);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
 }
 
 .cardHeader {
@@ -277,7 +281,8 @@
   animation: pulse 2s infinite;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
+  .feedGrid { column-count: 1; }
   .aiTitle { font-size: 1.8rem; }
   .aiInputWrapper { flex-direction: column; }
   .filterBar { flex-direction: column; align-items: stretch; }

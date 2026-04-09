@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '@/components/layout/Footer';
+import { CountUp } from '@/components/ui/CountUp';
 import './landing.css';
 
 // ── PARTICLE CANVAS LOGIC (Internal Component) ──
@@ -144,7 +146,8 @@ const ParticleBackground = () => {
     };
   }, []);
 
-  return <canvas id="bg-canvas" ref={canvasRef} />;
+  // High-performance background particles with mouse interaction
+  return <canvas id="bg-canvas" ref={canvasRef} style={{ pointerEvents: 'none' }} />;
 };
 
 export default function HomePage() {
@@ -207,45 +210,70 @@ export default function HomePage() {
       </nav>
 
       <section className="sb-hero">
-        <div className="sb-heroBadge">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="sb-heroBadge"
+        >
           <span className="sb-badgeDot" />
           AI-powered student growth platform
-        </div>
+        </motion.div>
 
-        <h1 className="sb-title">
+        <motion.h1 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.2 }}
+          className="sb-title"
+        >
           Bridge the Gap.
           <br />
           <span>Learn. Earn. Grow.</span>
-        </h1>
+        </motion.h1>
 
-        <p className="sb-subtitle">
+        <motion.p 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.4 }}
+          className="sb-subtitle"
+        >
           Get doubts solved, practice smarter with AI, build reputation, and book expert mentors — all in one
           premium student platform.
-        </p>
+        </motion.p>
 
-        <div className="sb-actions">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.6 }}
+          className="sb-actions"
+        >
           <Link href="/auth" className="sb-btnPrimary">
             Start Free
           </Link>
           <Link href="#features" className="sb-btnGhost">
             Explore Platform
           </Link>
-        </div>
+        </motion.div>
 
-        <div className="sb-stats">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.8 }}
+          className="sb-stats"
+        >
           <div>
-            <strong>4.8K+</strong>
+            <CountUp to={4.8} suffix="K+" duration={2} />
             <span>Doubts solved</span>
           </div>
           <div>
-            <strong>320+</strong>
+            <CountUp to={320} suffix="+" duration={2} />
             <span>Mentors onboard</span>
           </div>
           <div>
-            <strong>12.6K+</strong>
+            <CountUp to={12.6} suffix="K+" duration={2} />
             <span>Points earned</span>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       <section id="features" className="sb-section">

@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/components/auth/auth-provider';
 import { doubtApi, answerApi, aiApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
+import { Sparkles, MessageSquare, ChevronRight } from 'lucide-react';
 import styles from './doubt-detail.module.css';
+import { LoadingPage } from '@/components/ui/Loading';
 
 export default function DoubtDetailPage({
   params,
@@ -15,6 +18,7 @@ export default function DoubtDetailPage({
   const { id } = use(params);
   const [doubt, setDoubt] = useState<any>(null);
   const [answers, setAnswers] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [newAnswer, setNewAnswer] = useState('');
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
@@ -25,11 +29,15 @@ export default function DoubtDetailPage({
   useEffect(() => {
     async function fetchData() {
       try {
-        const doubtData = await doubtApi.getDoubt(id);
-        const answersData = await answerApi.getAnswers(id);
+        const [doubtData, answersData, recsData] = await Promise.all([
+          doubtApi.getDoubt(id),
+          answerApi.getAnswers(id),
+          fetch(`/api/doubts/${id}/recommendations`).then(res => res.json())
+        ]);
         
         setDoubt(doubtData);
         setAnswers(answersData || []);
+        setRecommendations(recsData || []);
       } catch (err) {
         console.error('Failed to load doubt details');
       } finally {
@@ -37,9 +45,6 @@ export default function DoubtDetailPage({
       }
     }
     fetchData();
-
-    // Note: In a full implementation, we would set up a Supabase Realtime subscription here
-    // for the 'answers' table filtered by doubt_id.
   }, [id]);
 
   const handlePostAnswer = async () => {
@@ -104,7 +109,7 @@ export default function DoubtDetailPage({
     }
   };
 
-  if (loading) return <div className={styles.loading}>Loading discussion...</div>;
+  if (loading) return <LoadingPage text="Synthesizing discussion..." />;
   if (!doubt) return <div className={styles.errorBanner}>Doubt not found or was deleted.</div>;
 
   return (
@@ -230,6 +235,33 @@ export default function DoubtDetailPage({
           <p>Please <a href="/auth">log in</a> to contribute to this discussion.</p>
         </section>
       )}
+
+      <aside className={styles.sidebar}>
+        <div className={`${styles.recommendCard} glass`}>
+          <h3 className={styles.sideTitle}>
+            <Sparkles className="w-4 h-4 text-indigo-400" />
+            Recommended for You
+          </h3>
+          <div className={styles.recommendList}>
+            {recommendations.length > 0 ? (
+              recommendations.map((rec: any) => (
+                <Link href={`/doubts/${rec.id}`} key={rec.id} className={styles.sideItem}>
+                  <div className={styles.sideInfo}>
+                    <span className={styles.sideSubject}>{rec.subjects?.name}</span>
+                    <p className={styles.sideText}>{rec.title}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-600" />
+                </Link>
+              ))
+            ) : (
+              <div className={styles.sideEmpty}>
+                <MessageSquare className="w-8 h-8 opacity-10 mb-2" />
+                <p>No similar discussions yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }

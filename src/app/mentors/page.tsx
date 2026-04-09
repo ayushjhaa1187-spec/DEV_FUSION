@@ -117,8 +117,8 @@ export default function MentorsPage() {
       ) : (
         <EmptyState 
           icon="🎓" 
-          title="No mentors found" 
-          description="We couldn't find any mentors matching your search. Try adjusting the filters." 
+          title="No mentors yet — be the first!" 
+          description="The mentorship circle is waiting for its first experts. Use the 'Become a Mentor' button to lead the community!" 
         />
       )}
     </div>

@@ -49,6 +49,7 @@ export default function DashboardPage() {
   const cards = [
     { href: '/doubts', label: 'Doubt Feed', icon: '❓', desc: 'Browse and answer community doubts' },
     { href: '/mentors', label: 'Mentors', icon: '🎓', desc: 'Book a 30-min session' },
+    { href: '/dashboard/sessions', label: 'My Sessions', icon: '📅', desc: 'Join your live meetings' },
     { href: '/tests', label: 'Practice Tests', icon: '📝', desc: 'AI-generated MCQ quizzes' },
     { href: '/profile', label: 'My Profile', icon: '👤', desc: 'View reputation and badges' },
   ];

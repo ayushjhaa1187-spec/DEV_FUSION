@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { generatePracticeQuiz } from '@/lib/ai-service';
+import { checkAndIncrementUsage } from '@/lib/usage';
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
@@ -13,6 +14,15 @@ export async function POST(req: NextRequest) {
 
     if (!subject_id || !topic) {
       return NextResponse.json({ error: 'Subject and Topic are required' }, { status: 400 });
+    }
+
+    // Check usage limits
+    const { allowed, remaining } = await checkAndIncrementUsage(user.id, 'question');
+    if (!allowed) {
+      return NextResponse.json({ 
+        error: 'Free tier limit reached (10 questions/day). Upgrade to Pro for unlimited access!',
+        limitReached: true 
+      }, { status: 403 });
     }
 
     const { data: subject } = await supabase

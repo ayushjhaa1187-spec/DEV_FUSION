@@ -69,15 +69,53 @@
   margin-bottom: 8px;
 }
 
+.scoreContainer {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 12px auto;
+}
+
+.circularProgress {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.circleBg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.05);
+  stroke-width: 8;
+}
+
+.circleProgress {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 283;
+}
+
+.scoreText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.2rem;
+  font-weight: 800;
+  display: flex;
+  align-items: baseline;
+}
+
+.scoreText span {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+}
+
 .statValue {
   font-size: 3rem;
   font-weight: 800;
   line-height: 1;
-}
-
-.statValue span {
-  font-size: 1.5rem;
-  color: var(--color-text-muted);
+  margin: 12px 0;
 }
 
 .sectionTitle {
@@ -185,12 +223,20 @@
   border: 1px solid rgba(124, 58, 237, 0.1);
 }
 
+.explHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .explanationBox h3 {
   font-size: 0.9rem;
-  color: var(--color-primary);
-  margin-bottom: 8px;
+  color: #a78bfa;
+  margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  font-weight: 800;
 }
 
 .explanationBox p {

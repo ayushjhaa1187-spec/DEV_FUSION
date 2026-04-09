@@ -100,8 +100,13 @@ export default function MentorProfilePage({
           description: `Booking with ${profile.full_name}`,
           order_id: orderData.id,
           handler: async function (response: any) {
-            // 3. Confirm Booking
-            await bookingApi.create({ slot_id: selectedSlot });
+            // 3. Confirm Booking with signature
+            await bookingApi.create({ 
+              slot_id: selectedSlot,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            } as any);
             setSuccess(true);
             setTimeout(() => window.location.href = '/dashboard', 2000);
           },
@@ -172,6 +177,22 @@ export default function MentorProfilePage({
             </div>
             <h3>Bio</h3>
             <p className={styles.bio}>{profile.bio || "This mentor hasn't provided a bio yet, but they're ready to help you excel!"}</p>
+
+            {profile.mentor_profiles?.tutorial_video_url && (
+              <section style={{ marginTop: '40px' }}>
+                <h3 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.5rem' }}>📺</span> Featured Video Tutorial
+                </h3>
+                <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', borderRadius: '24px', background: '#000' }}>
+                  <iframe
+                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+                    src={profile.mentor_profiles.tutorial_video_url.replace('watch?v=', 'embed/')}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </section>
+            )}
           </section>
         </main>
 

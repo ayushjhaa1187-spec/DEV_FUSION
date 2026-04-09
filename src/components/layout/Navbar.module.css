@@ -143,40 +143,53 @@
 
 .notifDropdown {
   position: absolute;
-  top: calc(100% + var(--space-4));
-  right: 0;
-  width: 380px;
-  max-height: 500px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  top: calc(100% + 12px);
+  right: -20px;
+  width: 400px;
+  background: #1e1e2e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
   overflow: hidden;
   z-index: 10000;
-  animation: slideUp 200ms ease;
 }
 
 .notifHeader {
-  padding: var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--color-border);
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: rgba(255, 255, 255, 0.02);
 }
 
-.notifHeader span {
-  font-weight: 700;
-  font-size: 0.9rem;
+.notifHeader h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0;
 }
 
-.notifHeader button {
-  background: none;
+.notifHeader p {
+  font-size: 0.7rem;
+  color: #6366f1;
+  font-weight: 700;
+  margin: 2px 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.markReadBtn {
+  background: transparent;
   border: none;
-  color: var(--color-primary);
+  color: #a78bfa;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.markReadBtn:hover {
+  opacity: 0.8;
 }
 
 .notifList {
@@ -185,11 +198,14 @@
 }
 
 .notifItem {
-  padding: var(--space-4) var(--space-6);
+  padding: 16px 24px;
   display: flex;
-  gap: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  gap: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   transition: background 0.2s;
+  text-decoration: none;
+  color: white;
+  position: relative;
 }
 
 .notifItem:hover {
@@ -197,38 +213,85 @@
 }
 
 .notifItem.unread {
-  border-left: 3px solid var(--color-primary);
-  background: rgba(108, 99, 255, 0.03);
+  background: rgba(99, 102, 241, 0.03);
+}
+
+.unreadDot {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: #6366f1;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #6366f1;
 }
 
 .notifIcon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-2);
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary);
   flex-shrink: 0;
 }
 
-.notifContent p {
+.notifIcon.answer { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+.notifIcon.badge { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+.notifIcon.test { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+.notifIcon.booking_confirmed { color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+
+.notifMessage {
   font-size: 0.85rem;
-  margin-bottom: 4px;
-  line-height: 1.4;
+  margin: 0 0 4px;
+  line-height: 1.5;
+  font-weight: 500;
+  padding-right: 20px;
 }
 
-.notifContent time {
+.notifTime {
   font-size: 0.75rem;
-  color: var(--color-text-faint);
+  color: #6b7280;
+  font-weight: 600;
 }
 
 .emptyNotif {
-  padding: var(--space-12);
+  padding: 60px 40px;
   text-align: center;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+  opacity: 0.2;
+}
+
+.emptyNotif p {
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.emptyNotif span {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.notifFooter {
+  padding: 16px 24px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.notifFooter a {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #6366f1;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .dashboardBtn {
@@ -311,43 +374,61 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Mobile Drawer */
+.activeNav, .active {
+  color: var(--color-primary) !important;
+}
+
 .mobileDrawer {
   position: fixed;
   top: 72px;
   left: 0;
-  right: 0;
-  background: var(--color-surface);
-  padding: var(--space-8) var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  border-bottom: 1px solid var(--color-border);
-  animation: slideDown 250ms ease;
+  width: 100vw;
+  height: calc(100vh - 72px);
+  background: rgba(13, 13, 26, 0.95);
+  backdrop-filter: blur(20px);
   z-index: 9998;
 }
 
-@keyframes slideDown {
-  from { transform: translateY(-100%); }
-  to { transform: translateY(0); }
+.mobileDrawerContent {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
-.mobileDrawer a {
-  font-size: 1.1rem;
-  font-weight: 600;
+.mobileDrawerContent a {
+  font-size: 1.5rem;
+  font-weight: 800;
   text-decoration: none;
-  color: var(--color-text);
+  color: var(--color-text-muted);
+  transition: color 0.2s;
+}
+
+.mobileDrawerContent a:hover, .mobileDrawerContent a.active {
+  color: white;
+}
+
+.mobileAuthBtn {
+  margin-top: 20px;
+  background: var(--color-primary);
+  color: white !important;
+  padding: 16px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.mobileLogoutBtn {
+  background: none;
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: auto;
 }
 
 @media (max-width: 992px) {
-  .navLinks { display: none; }
+  .navLinks, .authActions, .dashboardBtn, .logoutBtn { display: none; }
   .mobileToggle { display: block; }
-  .dashboardBtn, .logoutBtn, .btnSecondary, .btnPrimary {
-    font-size: 0.8rem;
-    padding: var(--space-2) var(--space-4);
-  }
-}
-
-@media (max-width: 480px) {
-  .dashboardBtn { display: none; }
 }

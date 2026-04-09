@@ -63,7 +63,12 @@ export const mentorApi = {
 };
 
 export const bookingApi = {
-  create: (data: { slot_id: string }) =>
+  create: (data: { 
+    slot_id: string; 
+    razorpay_order_id?: string; 
+    razorpay_payment_id?: string; 
+    razorpay_signature?: string; 
+  }) =>
     apiFetch('/api/mentor-bookings', { method: 'POST', body: JSON.stringify(data) }),
 };
 

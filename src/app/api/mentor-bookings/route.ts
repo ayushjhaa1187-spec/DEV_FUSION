@@ -60,7 +60,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: bookingError.message }, { status: 500 });
     }
 
-    // 4. Mark slot as booked
+    // 4. Record in transactions table for billing history
+    const { data: mentor } = await supabase.from('mentor_profiles').select('price_per_session').eq('id', slot.mentor_id).single();
+    await supabase.from('transactions').insert({
+      user_id: user.id,
+      amount: (mentor?.price_per_session || 0) * 100,
+      status: 'completed',
+      type: 'session',
+      razorpay_order_id: razorpay_order_id,
+      razorpay_payment_id: razorpay_payment_id,
+      entity_id: slot_id
+    });
+
+    // 5. Mark slot as booked
     await supabase
       .from('mentor_slots')
       .update({ is_booked: true })

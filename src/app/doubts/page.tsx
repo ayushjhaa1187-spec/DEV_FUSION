@@ -7,6 +7,7 @@ import ReputationBadge from '@/components/user/ReputationBadge';
 import { DoubtCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useRouter } from 'next/navigation';
+import AskDoubtModal from '@/components/doubts/AskDoubtModal';
 import styles from './doubts.module.css';
 
 export default function DoubtsPage() {
@@ -93,6 +94,8 @@ export default function DoubtsPage() {
       setIsAiSolving(false);
     }
   };
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className="sb-page">
@@ -202,9 +205,13 @@ export default function DoubtsPage() {
             )}
           </div>
 
-          <Link href="/doubts/ask" className="sb-btnPrimary" style={{ whiteSpace: 'nowrap', border: 'none' }}>
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="sb-btnPrimary" 
+            style={{ whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}
+          >
             Ask Community
-          </Link>
+          </button>
         </div>
 
         {loading ? (
@@ -256,10 +263,16 @@ export default function DoubtsPage() {
             title="No doubts yet" 
             description="Be the first to ask a question!" 
             actionLabel="Ask a Doubt" 
-            onAction={() => router.push('/doubts/ask')} 
+            onAction={() => setIsModalOpen(true)} 
           />
         )}
       </main>
+
+      <AskDoubtModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onPublished={() => setRefreshKey(prev => prev + 1)}
+      />
     </div>
   );
 }
