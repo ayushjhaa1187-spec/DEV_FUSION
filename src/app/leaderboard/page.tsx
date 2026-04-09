@@ -107,11 +107,11 @@ export default function LeaderboardPage() {
         {!loading && leaders.length >= 3 && timeframe === 'all' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 items-end">
             {/* 2nd Place */}
-            <PodiumCard leader={leaders[1]} rank={2} />
+            <PodiumCard leader={leaders[1]} rank={2} timeframe={timeframe} />
             {/* 1st Place */}
-            <PodiumCard leader={leaders[0]} rank={1} isMain />
+            <PodiumCard leader={leaders[0]} rank={1} timeframe={timeframe} isMain />
             {/* 3rd Place */}
-            <PodiumCard leader={leaders[2]} rank={3} />
+            <PodiumCard leader={leaders[2]} rank={3} timeframe={timeframe} />
           </div>
         )}
 

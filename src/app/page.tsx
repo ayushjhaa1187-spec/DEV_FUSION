@@ -104,7 +104,9 @@ const ParticleBackground = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let W: number, H: number, particles: Particle[] = [];
+    let W: number = window.innerWidth;
+    let H: number = window.innerHeight;
+    let particles: Particle[] = [];
     const resize = () => {
       W = canvas.width = window.innerWidth;
       H = canvas.height = window.innerHeight;

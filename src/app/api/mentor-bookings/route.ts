@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
-
 import crypto from 'crypto';
 
 export async function POST(req: NextRequest) {
@@ -12,24 +11,10 @@ export async function POST(req: NextRequest) {
   try {
     const { slot_id, razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
 
-    // 1. Verify Razorpay Signature (Security first)
-    if (razorpay_signature) {
-      const secret = process.env.RAZORPAY_KEY_SECRET || '';
-      const body = razorpay_order_id + '|' + razorpay_payment_id;
-      const expectedSignature = crypto
-        .createHmac('sha256', secret)
-        .update(body.toString())
-        .digest('hex');
-
-      if (expectedSignature !== razorpay_signature) {
-        return NextResponse.json({ error: 'Payment verification failed' }, { status: 400 });
-      }
-    }
-
-    // 2. Verify slot is available
+    // 1. Verify slot is available and get mentor pricing
     const { data: slot, error: slotError } = await supabase
       .from('mentor_slots')
-      .select('mentor_id, is_booked, start_time')
+      .select('mentor_id, is_booked, start_time, mentor_profiles(hourly_rate)')
       .eq('id', slot_id)
       .single();
 
@@ -41,8 +26,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Slot already booked' }, { status: 400 });
     }
 
+    const mentorProfile = slot.mentor_profiles as any;
+    const hourlyRate = mentorProfile?.hourly_rate || 0;
+
+    // 2. Enforce Razorpay Signature for paid sessions
+    if (hourlyRate > 0) {
+      if (!razorpay_signature || !razorpay_order_id || !razorpay_payment_id) {
+        return NextResponse.json({ error: 'Payment verification details missing' }, { status: 402 });
+      }
+
+      const secret = process.env.RAZORPAY_KEY_SECRET || '';
+      const body = razorpay_order_id + '|' + razorpay_payment_id;
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(body.toString())
+        .digest('hex');
+
+      if (expectedSignature !== razorpay_signature) {
+        return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
+      }
+    }
+
     // 3. Create confirmed booking with Jitsi link
-    const meetingRoomId = `skillbridge-${slot_id}-${Math.random().toString(36).substring(7)}`;
+    const meetingRoomId = `sb-${slot_id}-${Math.random().toString(36).substring(7)}`;
     const { data: booking, error: bookingError } = await supabase
       .from('mentor_bookings')
       .insert({
@@ -51,7 +57,8 @@ export async function POST(req: NextRequest) {
         slot_id: slot_id,
         status: 'confirmed', 
         meeting_link: `https://meet.jit.si/${meetingRoomId}`,
-        payment_id: razorpay_payment_id // Tracking payment
+        payment_id: razorpay_payment_id || null,
+        amount_paid: hourlyRate
       })
       .select()
       .single();
@@ -60,15 +67,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: bookingError.message }, { status: 500 });
     }
 
-    // 4. Record in transactions table for billing history
-    const { data: mentor } = await supabase.from('mentor_profiles').select('price_per_session').eq('id', slot.mentor_id).single();
+    // 4. Record in transactions table
     await supabase.from('transactions').insert({
       user_id: user.id,
-      amount: (mentor?.price_per_session || 0) * 100,
+      amount: hourlyRate * 100, // stored in paise
       status: 'completed',
       type: 'session',
-      razorpay_order_id: razorpay_order_id,
-      razorpay_payment_id: razorpay_payment_id,
+      razorpay_order_id: razorpay_order_id || null,
+      razorpay_payment_id: razorpay_payment_id || null,
       entity_id: slot_id
     });
 
@@ -78,11 +84,11 @@ export async function POST(req: NextRequest) {
       .update({ is_booked: true })
       .eq('id', slot_id);
 
-    // 5. Notify mentor
+    // 6. Notify mentor
     await supabase.from('notifications').insert({
       user_id: slot.mentor_id,
-      title: 'New Session Booked!',
-      message: `A student has booked a 30-minute session for ${new Date(slot.start_time).toLocaleString()}.`,
+      title: 'Session Successfully Booked!',
+      message: `A student secured a session for ${new Date(slot.start_time).toLocaleString()}. View your dashboard for details.`,
       type: 'booking_confirmed',
       link: '/dashboard/sessions'
     });
@@ -90,6 +96,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, booking });
   } catch (error) {
     console.error('Booking Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to process booking' }, { status: 500 });
   }
 }

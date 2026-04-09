@@ -22,10 +22,12 @@ export default function Navbar() {
   const mainLinks = [
     { name: 'Doubts', href: '/doubts' },
     { name: 'Mentors', href: '/mentors' },
+    { name: 'Courses', href: '/courses' },
+    { name: 'Community', href: '/community' },
     { name: 'Practice', href: '/tests' },
-    { name: 'Resources', href: '/resources' },
     { name: 'Leaderboard', href: '/leaderboard' },
   ];
+
 
   useEffect(() => {
     if (!user) return;
