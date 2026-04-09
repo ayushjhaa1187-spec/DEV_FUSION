@@ -672,40 +672,6 @@ npm run dev
 
 ---
 
-## ⚙️ Environment Variables
-
-Create `.env.local` in the project root:
-
-```env
-# ─── Supabase ───────────────────────────────────────────────────────
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key   # Server-side only
-
-# ─── Google Gemini AI ───────────────────────────────────────────────
-GEMINI_API_KEY=your_gemini_api_key
-
-# ─── Google OAuth ───────────────────────────────────────────────────
-GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# ─── Razorpay (Test Mode) ───────────────────────────────────────────
-NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_your_key_id
-RAZORPAY_KEY_SECRET=your_razorpay_key_secret
-
-# ─── Email via Resend ───────────────────────────────────────────────
-RESEND_API_KEY=re_your_resend_api_key
-
-# ─── Application ────────────────────────────────────────────────────
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NODE_ENV=development
-```
-
-> ⚠️ **Never commit `.env.local` to version control.**
-> The `.env.example` file contains all keys with placeholder values for safe reference.
-
----
-
 ## 📁 Project Structure
 
 ```
@@ -840,8 +806,8 @@ git push origin feature/your-feature-name
 | Member | Role |
 |---|---|
 
-| **Jahnvi Chauhan** | Frontend UI/UX, Framer Motion Animations, Backend API Design |
-| **Ayush Kumar Jha** | Full-Stack Lead, AI Integration, DB Architecture, Supabase RLS |
+| **Jahnvi Chauhan** | Frontend UI/UX, Framer Motion Animations|
+| **Ayush Kumar Jha** | Full-Stack Lead, AI Integration|
 
 Built with ❤️ for the **DEV_FUSION Hackathon** — Problem Statement 2.
 
