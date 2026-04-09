@@ -41,11 +41,35 @@ export async function POST(
         author_id: user.id,
         content
       })
-
       .select()
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Award +5 reputation for posting an answer
+    await supabase.rpc('increment_reputation', { user_id_param: user.id, points_param: 5 });
+
+    // Notify the doubt author
+    const { data: doubt } = await supabase
+      .from('doubts')
+      .select('author_id, title')
+      .eq('id', id)
+      .single();
+
+    if (doubt && doubt.author_id !== user.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .single();
+
+      await supabase.from('notifications').insert({
+        user_id: doubt.author_id,
+        type: 'new_answer',
+        message: `${profile?.username ?? 'Someone'} answered your doubt: "${doubt.title?.slice(0, 60)}"`,
+        link: `/doubts/${id}`
+      });
+    }
 
     // Manually increment answer_count as a fallback for the trigger
     await supabase.rpc('increment_answer_count', { doubt_id_param: id });
