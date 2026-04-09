@@ -3,6 +3,7 @@ import "./globals.css";
 import ConditionalNavbar from '@/components/layout/ConditionalNavbar';
 import { AuthProvider } from '@/components/auth/auth-provider';
 import AIFloatingAssistant from '@/components/AIFloatingAssistant';
+import { ToastProvider } from '@/components/ui/Toast';
 
 export const metadata: Metadata = {
   title: "SkillBridge — Learn. Earn. Grow.",
@@ -10,15 +11,13 @@ export const metadata: Metadata = {
   keywords: ["education", "mentorship", "doubt resolution", "college", "student learning"],
 };
 
-import { ToastProvider } from '@/components/ui/Toast';
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -28,10 +27,8 @@ export default function RootLayout({
         <AuthProvider>
           <ToastProvider>
             <ConditionalNavbar />
+            {children}
             <AIFloatingAssistant />
-            <main>
-              {children}
-            </main>
           </ToastProvider>
         </AuthProvider>
       </body>
