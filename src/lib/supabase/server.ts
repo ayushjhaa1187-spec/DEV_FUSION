@@ -15,15 +15,15 @@ export async function createSupabaseServer() {
         set(name: string, value: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value, ...options });
-          } catch (error) {
-            // Handle error (e.g., if set() is called from a component)
+          } catch (e) {
+            console.warn('[Supabase SSR] Cookie set error:', e);
           }
         },
         remove(name: string, options: CookieOptions) {
           try {
             cookieStore.set({ name, value: '', ...options });
-          } catch (error) {
-            // Handle error
+          } catch (e) {
+            console.warn('[Supabase SSR] Cookie remove error:', e);
           }
         },
       },
