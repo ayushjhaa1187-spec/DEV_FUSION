@@ -36,7 +36,7 @@ export default function Footer() {
             <h4>Community</h4>
             <Link href="/about">Our Vision</Link>
             <Link href="/blog">Success Stories</Link>
-            <Link href="/reputation">Leaderboard</Link>
+            <Link href="/leaderboard">Leaderboard</Link>
           </div>
           <div className="sb-linkGroup">
             <h4>Legal</h4>

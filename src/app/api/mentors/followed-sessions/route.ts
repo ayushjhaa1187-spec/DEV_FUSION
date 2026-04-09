@@ -1,51 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 
-export async function GET(req: NextRequest) {
-  const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+export async function GET() {
   try {
-    // 1. Get followed mentor IDs
-    const { data: follows } = await supabase
-      .from('follows')
-      .select('followed_id')
-      .eq('follower_id', user.id);
+    const supabase = await createSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const followedIds = follows?.map(f => f.followed_id) || [];
+    if (!user) {
+      return NextResponse.json([]);
+    }
 
-    if (followedIds.length === 0) return NextResponse.json([]);
-
-    // 2. Get upcoming slots for these mentors
-    const { data: slots, error } = await supabase
-      .from('mentor_slots')
+    // Fetch live/upcoming sessions from mentors the user has booked or follows
+    const { data: bookings, error } = await supabase
+      .from('mentor_bookings')
       .select(`
-        *,
-        mentor_profiles(*),
-        profiles(username, avatar_url)
+        id,
+        scheduled_at,
+        meeting_link,
+        status,
+        mentors:mentor_id (
+          id,
+          specialty,
+          profiles:user_id ( username, full_name, avatar_url )
+        )
       `)
-      .in('mentor_id', followedIds)
-      .gt('start_time', new Date().toISOString())
-      .order('start_time', { ascending: true });
+      .eq('student_id', user.id)
+      .eq('status', 'confirmed')
+      .gte('scheduled_at', new Date(Date.now() - 3600000).toISOString()) // sessions in the last 1h or upcoming
+      .order('scheduled_at', { ascending: true })
+      .limit(10);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Followed sessions error:', error.message);
+      return NextResponse.json([]);
+    }
 
-    // 3. Mark as "live" if within current window (simple mock for now: actual live status can be time-based)
-    const now = new Date();
-    const processedSlots = slots.map(slot => {
-        const start = new Date(slot.start_time);
-        const end = new Date(slot.end_time);
-        return {
-            ...slot,
-            is_live: now >= start && now <= end
-        };
-    });
+    // Map to a simpler session shape
+    const sessions = (bookings || []).map((b: any) => ({
+      id: b.id,
+      start_time: b.scheduled_at,
+      meeting_link: b.meeting_link,
+      is_live: new Date(b.scheduled_at) <= new Date() && new Date(b.scheduled_at) >= new Date(Date.now() - 3600000),
+      mentor_profiles: b.mentors ? { specialty: b.mentors.specialty } : null,
+      profiles: b.mentors?.profiles ?? null,
+    }));
 
-    return NextResponse.json(processedSlots);
-  } catch (error: any) {
-    console.error('Followed Sessions Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(sessions);
+  } catch (err) {
+    console.error('Followed sessions route error:', err);
+    return NextResponse.json([]);
   }
 }

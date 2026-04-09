@@ -119,8 +119,43 @@ export default function Navbar() {
     <nav className={styles.navbar}>
       <div className={styles.navContent}>
         <Link href="/" className={styles.logo}>
-          <span className={styles.logoText}>SKILL</span>
-          <span className={styles.logoHighlight}>BRIDGE</span>
+          <svg
+            className={styles.logoIcon}
+            viewBox="0 0 40 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-label="SkillBridge logo"
+          >
+            <defs>
+              <linearGradient id="sbLogoGradNav" x1="0" y1="0" x2="40" y2="40">
+                <stop offset="0%" stopColor="#7c3aed" />
+                <stop offset="100%" stopColor="#06d6a0" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M4 28 Q20 8 36 28"
+              stroke="url(#sbLogoGradNav)"
+              strokeWidth="3"
+              fill="none"
+              strokeLinecap="round"
+            />
+            <line
+              x1="4"
+              y1="28"
+              x2="36"
+              y2="28"
+              stroke="url(#sbLogoGradNav)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+            <line x1="13" y1="20" x2="13" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+            <line x1="27" y1="20" x2="27" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="20" cy="10.5" r="3" fill="#06d6a0" opacity=".95" />
+            <circle cx="20" cy="10.5" r="6" fill="#06d6a0" opacity=".18" />
+          </svg>
+          <span className={styles.logoText}>
+            Skill<span>Bridge</span>
+          </span>
         </Link>
 
         {/* Desktop Links */}

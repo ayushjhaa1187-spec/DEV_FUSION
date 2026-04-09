@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Footer from '@/components/layout/Footer';
 import './landing.css';
@@ -279,22 +279,34 @@ export default function HomePage() {
             { tag: 'Data Structures', q: 'What is the complexity of binary search?', a: 'O(log n), because the search space halves at every step.', color: 'purple' },
             { tag: 'Operating Systems', q: 'Process vs thread?', a: 'A process owns memory; threads share a process memory space.', color: 'green' },
             { tag: 'Machine Learning', q: 'What does learning rate control?', a: 'It controls how large each optimization step is during training.', color: 'gold' }
-          ].map((card, i) => (
-            <article 
-              key={i} 
-              className={`sb-flash ${card.color}`}
-              onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
-                e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
-              }}
-            >
-              <div className="sb-flashAura" />
-              <span>{card.tag}</span>
-              <h4>{card.q}</h4>
-              <p>{card.a}</p>
-            </article>
-          ))}
+          ].map((card, i) => {
+            const [flipped, setFlipped] = useState(false);
+            return (
+              <article 
+                key={i} 
+                className={`sb-flash-card ${card.color} ${flipped ? 'is-flipped' : ''}`}
+                onClick={() => setFlipped(!flipped)}
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                  e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+                }}
+              >
+                <div className="sb-flash-inner">
+                  <div className="sb-flash-front">
+                    <div className="sb-flashAura" />
+                    <span>{card.tag}</span>
+                    <h4>{card.q}</h4>
+                    <div className="sb-flash-hint">Click to reveal answer</div>
+                  </div>
+                  <div className="sb-flash-back">
+                    <p>{card.a}</p>
+                    <div className="sb-flash-hint">Click to flip back</div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 

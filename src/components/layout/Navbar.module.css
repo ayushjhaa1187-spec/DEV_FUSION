@@ -25,16 +25,30 @@
 }
 
 .logo {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   text-decoration: none;
-  letter-spacing: -0.01em;
   flex-shrink: 0;
 }
 
-.logoText { color: var(--color-text); }
-.logoHighlight { color: var(--color-primary); }
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+
+.logoText { 
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.logoText span { 
+  color: var(--color-primary); 
+}
 
 .navLinks {
   display: flex;

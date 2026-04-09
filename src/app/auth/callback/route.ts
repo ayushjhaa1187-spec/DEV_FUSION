@@ -5,7 +5,11 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/';
+  // 'next' can be used for deep-linking, default to /dashboard
+  let next = searchParams.get('next') ?? '/dashboard';
+  
+  // If next is just '/', force it to '/dashboard' for a better post-login experience
+  if (next === '/') next = '/dashboard';
 
   if (code) {
     const cookieStore = await cookies();
@@ -24,8 +28,7 @@ export async function GET(request: Request) {
               );
             } catch {
               // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing
-              // user sessions.
+              // This can be ignored if you have middleware refreshing user sessions.
             }
           },
         },
@@ -33,10 +36,12 @@ export async function GET(request: Request) {
     );
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // Always redirect to dashboard (or deep-link target) after successful OAuth
+      const redirectTo = next.startsWith('/') ? `${origin}${next}` : `${origin}/dashboard`;
+      return NextResponse.redirect(redirectTo);
     }
   }
 
-  // Error case
+  // Error case — send back to auth page with error param
   return NextResponse.redirect(`${origin}/auth?error=auth-failed`);
 }
