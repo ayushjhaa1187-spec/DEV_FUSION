@@ -1,74 +1,82 @@
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@700,500,300,400&f[]=cabinet-grotesk@800,700,500&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root {
-  /* Brand Colors - High Vibe */
-  --color-primary: #7c3aed; /* Vibrant Violet */
+  /* Core Palette */
+  --bg: #09090f;
+  --surface: #0f0f1a;
+  --surface2: #14141f;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8e8f0;
+  --muted: #7a7a9a;
+  --faint: #3a3a5a;
+
+  /* Brand */
+  --color-primary: #7c3aed;
   --color-primary-hover: #6d28d9;
-  --color-accent: #06d6a0; /* Signature Emerald */
+  --primary-glow: rgba(124,58,237,0.35);
+  --color-accent: #06d6a0;
+  --accent-glow: rgba(6,214,160,0.3);
+  --gold: #f59e0b;
+  --gold-glow: rgba(245,158,11,0.3);
+
+  /* Aliases for backward compat */
+  --color-bg: #09090f;
+  --color-surface: #0f0f1a;
+  --color-surface-lighter: #14141f;
+  --color-border: rgba(255,255,255,0.07);
+  --color-text: #e8e8f0;
+  --color-text-muted: #7a7a9a;
+  --color-text-faint: #3a3a5a;
   --color-accent-soft: rgba(6, 214, 160, 0.1);
-  --color-bg: #0d0d1a;
-  --color-surface: #13132b;
-  --color-surface-lighter: #1a1a35;
-  --color-border: rgba(255, 255, 255, 0.08);
   --color-border-hover: rgba(124, 58, 237, 0.2);
-  
-  /* Text Tokens */
-  --color-text: #ffffff;
-  --color-text-muted: #94a3b8;
-  --color-text-faint: #475569;
-  
-  /* Spacing - Phase 2.5 Strictness */
+
+  /* Typography */
+  --font-display: 'Instrument Serif', serif;
+  --font-body: 'Space Grotesk', sans-serif;
+  --font-heading: 'Instrument Serif', serif;
+
+  /* Spacing */
   --gap-4: 1rem;
   --gap-6: 1.5rem;
   --gap-8: 2rem;
   --gap-12: 3rem;
 
-  /* Typography - Phase 2.5 */
-  --font-body: 'Satoshi', sans-serif;
-  --font-heading: 'Cabinet Grotesk', sans-serif;
-
   /* Shadows & Glass */
-  --glass-bg: rgba(19, 19, 43, 0.8);
+  --glass-bg: rgba(15, 15, 26, 0.8);
   --glass-blur: blur(20px);
   --shadow-premium: 0 20px 40px rgba(0, 0, 0, 0.4);
-  
   --radius-2xl: 24px;
   --radius-3xl: 32px;
   --radius-full: 9999px;
-  
   --transition-smooth: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth }
 
 body {
-  background: 
-    radial-gradient(circle at 20% 20%, rgba(108, 99, 255, 0.15), transparent 28%),
-    radial-gradient(circle at 80% 0%, rgba(0, 212, 170, 0.1), transparent 26%),
-    radial-gradient(circle at 50% 100%, rgba(245, 158, 11, 0.08), transparent 30%),
-    var(--color-bg);
-  color: var(--color-text);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-body);
   overflow-x: hidden;
   line-height: 1.6;
 }
 
 h1, h2, h3, .font-display {
-  font-family: var(--font-heading);
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.1;
 }
 
-/* Ticker Animation for Phase 2.1 */
+/* ── Canvas BG ── */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── Marquee / Ticker ── */
 @keyframes marquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -95,7 +103,7 @@ h1, h2, h3, .font-display {
 
 .marquee-item {
   color: var(--color-text-muted);
-  font-family: var(--font-heading);
+  font-family: var(--font-body);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -103,7 +111,7 @@ h1, h2, h3, .font-display {
   white-space: nowrap;
 }
 
-/* Glass Enhancement */
+/* ── Glass ── */
 .glass {
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -117,25 +125,17 @@ h1, h2, h3, .font-display {
   min-height: 100vh;
 }
 
-#bg-canvas {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.45;
-  z-index: 0;
-}
-
-/* Button Base Styles (Aligned with Phase 5.3 partially) */
+/* ── Buttons ── */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  border-radius: var(--radius-md);
+  gap: 0.5rem;
+  border-radius: 12px;
   font-weight: 500;
-  transition: all var(--transition);
+  transition: var(--transition-smooth);
   cursor: pointer;
   border: none;
-  font-size: var(--text-sm);
+  font-size: 0.9rem;
   text-decoration: none;
   font-family: inherit;
 }
@@ -143,15 +143,16 @@ h1, h2, h3, .font-display {
 .btn-primary {
   background: var(--color-primary);
   color: white;
-  box-shadow: 0 0 20px rgba(108, 99, 255, 0.2);
+  box-shadow: 0 0 20px var(--primary-glow);
 }
 
 .btn-primary:hover {
   background: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 0 35px var(--primary-glow);
 }
 
+/* ── Skeleton ── */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -159,15 +160,15 @@ h1, h2, h3, .font-display {
 
 .skeleton {
   background: linear-gradient(90deg,
-    var(--color-surface) 25%,
-    var(--color-surface-2) 50%,
-    var(--color-surface) 75%
+    var(--surface) 25%,
+    var(--surface2) 50%,
+    var(--surface) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* Premium Motion Utilities */
+/* ── Motion Utilities ── */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -184,9 +185,9 @@ h1, h2, h3, .font-display {
 }
 
 @keyframes pulseGlow {
-  0% { box-shadow: 0 0 0 0 rgba(108, 99, 255, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(108, 99, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(108, 99, 255, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(124, 58, 237, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
 }
 
 .animate-fade-in { animation: fadeIn 0.8s ease forwards; }
@@ -199,3 +200,14 @@ h1, h2, h3, .font-display {
 .delay-2 { animation-delay: 200ms; }
 .delay-3 { animation-delay: 400ms; }
 .delay-4 { animation-delay: 600ms; }
+
+/* ── Scroll Reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

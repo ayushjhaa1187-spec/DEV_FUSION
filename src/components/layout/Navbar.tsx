@@ -70,14 +70,13 @@ export default function Navbar() {
 
   const openNotifications = async () => {
     setIsNotifOpen(!isNotifOpen);
-    setIsProfileOpen(false); // Close profile dropdown if open
+    setIsProfileOpen(false);
     if (!isNotifOpen && user) {
       setNotifLoading(true);
       try {
         const res = await fetch('/api/notifications?limit=10');
         const data = await res.json();
         setNotifications(Array.isArray(data) ? data : []);
-        // Mark all as read
         await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markAllRead: true }) });
         setUnreadCount(0);
       } finally {
@@ -92,18 +91,34 @@ export default function Navbar() {
     return () => { document.body.style.overflow = 'unset'; };
   }, [isMobileMenuOpen]);
 
+  // Hide Navbar on landing page (it has its own nav via the page layout)
+  if (pathname === '/') return null;
+
   return (
     <header className={styles.navbar}>
       <div className={styles.navContainer}>
         <Link href="/" className={styles.logo}>
-          <svg className={styles.logoIcon} viewBox="0 0 40 40" fill="none">
-            <path d="M4 28 Q20 8 36 28" stroke="url(#sbLogoGradNav)" strokeWidth="3" fill="none" strokeLinecap="round" />
-            <line x1="4" y1="28" x2="36" y2="28" stroke="url(#sbLogoGradNav)" strokeWidth="2.5" />
+          <svg className={styles.logoIcon} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <linearGradient id="sbLogoGradNav" x1="0" y1="0" x2="40" y2="40">
-                <stop offset="0%" stopColor="#7c3aed" /><stop offset="100%" stopColor="#06d6a0" />
+              <linearGradient id="navLogoGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#7c3aed" />
+                <stop offset="100%" stopColor="#06d6a0" />
               </linearGradient>
+              <filter id="navGlow">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
             </defs>
+            {/* Bridge arch */}
+            <path d="M4 28 Q20 8 36 28" stroke="url(#navLogoGrad)" strokeWidth="3" fill="none" strokeLinecap="round" filter="url(#navGlow)" />
+            {/* Bridge deck */}
+            <line x1="4" y1="28" x2="36" y2="28" stroke="url(#navLogoGrad)" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Pillars */}
+            <line x1="13" y1="20" x2="13" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+            <line x1="27" y1="20" x2="27" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+            {/* Glow dot at apex */}
+            <circle cx="20" cy="10.5" r="3" fill="#06d6a0" opacity="0.9" />
+            <circle cx="20" cy="10.5" r="5.5" fill="#06d6a0" opacity="0.2" />
           </svg>
           <span className={styles.logoText}>Skill<span>Bridge</span></span>
         </Link>
@@ -277,15 +292,15 @@ export default function Navbar() {
               </div>
 
               <div className="mt-auto pt-8 border-t border-white/5 space-y-4">
-                  <Link href="/profile" className="block w-full text-center py-4 bg-white/5 rounded-2xl font-bold" onClick={() => setIsMobileMenuOpen(false)}>
-                    My Profile
-                  </Link>
-                  <Link href="/dashboard" className="block w-full text-center py-4 bg-white/5 rounded-2xl font-bold" onClick={() => setIsMobileMenuOpen(false)}>
-                    Dashboard
-                  </Link>
-                 <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="w-full text-center py-4 text-red-400 font-bold border border-red-400/20 rounded-2xl">
-                   Logout
-                 </button>
+                <Link href="/profile" className="block w-full text-center py-4 bg-white/5 rounded-2xl font-bold" onClick={() => setIsMobileMenuOpen(false)}>
+                  My Profile
+                </Link>
+                <Link href="/dashboard" className="block w-full text-center py-4 bg-white/5 rounded-2xl font-bold" onClick={() => setIsMobileMenuOpen(false)}>
+                  Dashboard
+                </Link>
+                <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="w-full text-center py-4 text-red-400 font-bold border border-red-400/20 rounded-2xl">
+                  Logout
+                </button>
               </div>
             </div>
           </motion.div>

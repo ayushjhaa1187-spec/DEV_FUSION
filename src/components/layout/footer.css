@@ -2,7 +2,7 @@
   position: relative;
   z-index: 1;
   background: rgba(9, 9, 15, 0.95);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--border);
   padding: 80px 40px 40px;
   margin-top: 80px;
 }
@@ -21,9 +21,33 @@
   max-width: 380px;
 }
 
+.sb-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
+.sb-logoIcon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.sb-logoText {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.sb-logoText span {
+  color: var(--color-accent);
+}
+
 .sb-footerDesc {
   margin-top: 24px;
-  color: var(--color-text-muted);
+  color: var(--muted);
   font-size: 1.05rem;
   line-height: 1.6;
 }
@@ -40,11 +64,12 @@
   text-transform: uppercase;
   letter-spacing: 0.15em;
   color: var(--color-primary);
+  font-family: var(--font-body);
 }
 
 .sb-linkGroup a {
   display: block;
-  color: var(--color-text-muted);
+  color: var(--muted);
   text-decoration: none;
   margin-bottom: 12px;
   transition: color 0.25s ease;
@@ -58,11 +83,11 @@
   max-width: 1200px;
   margin: 0 auto;
   padding-top: 40px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--color-text-muted);
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
@@ -72,7 +97,7 @@
 }
 
 .sb-socials a {
-  color: var(--color-text-muted);
+  color: var(--muted);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.25s ease;
