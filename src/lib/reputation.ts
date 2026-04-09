@@ -28,6 +28,13 @@ export const BADGE_THRESHOLDS = [
   { min: 5000, badge: 'Legend' },
 ];
 
+export const ALL_BADGES = [
+  { id: 'rising-star', name: 'Rising Star', icon: '✨', description: 'Begin your journey as a recognized contributor.', requirement_points: 100 },
+  { id: 'problem-solver', name: 'Problem Solver', icon: '🛠️', description: 'Help others by providing verified solutions.', requirement_points: 500 },
+  { id: 'knowledge-guru', name: 'Knowledge Guru', icon: '🧠', description: 'Become a pillar of the learning community.', requirement_points: 1000 },
+  { id: 'legend', name: 'Legend', icon: '👑', description: 'Reach the pinnacle of academic mastery.', requirement_points: 5000 },
+];
+
 export function getRank(points: number) {
   if (points >= 5000) return 'Legend';
   if (points >= 1000) return 'Knowledge Guru';
@@ -37,18 +44,5 @@ export function getRank(points: number) {
 }
 
 export function getUnlockedBadges(points: number) {
-  const icons: Record<string, string> = {
-    'Rising Star': '✨',
-    'Problem Solver': '🛠️',
-    'Knowledge Guru': '🧠',
-    'Legend': '👑'
-  };
-
-  return BADGE_THRESHOLDS
-    .filter(t => points >= t.min)
-    .map(t => ({
-      id: t.badge.toLowerCase().replace(/\s+/g, '-'),
-      name: t.badge,
-      icon: icons[t.badge] || '🏆'
-    }));
+  return ALL_BADGES.filter(b => points >= b.requirement_points);
 }

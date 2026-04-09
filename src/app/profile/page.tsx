@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { authApi } from '@/lib/api';
+import BadgeGrid from '@/components/user/BadgeGrid';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
@@ -68,6 +69,11 @@ export default function ProfilePage() {
           <div className={styles.statValue}>{stats?.accepted}</div>
           {stats?.accepted >= 5 && <div className={styles.badgeLabel}>Expert Resolver 🌟</div>}
         </div>
+      </section>
+
+      <section className={styles.badgeSection}>
+        <h2 className={styles.sectionTitle}>Achievement Badges</h2>
+        <BadgeGrid points={profile?.reputation_points || 0} />
       </section>
 
       <section className={styles.historySection}>

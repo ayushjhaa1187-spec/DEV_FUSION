@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { authApi } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import { authApi, subjectApi } from '@/lib/api';
+import { Check, Plus, X } from 'lucide-react';
 
 interface ProfileEditFormProps {
   initialProfile: any;
@@ -22,13 +23,46 @@ export default function ProfileEditForm({ initialProfile, onSuccess }: ProfileEd
     website_url: initialProfile?.website_url || ''
   });
 
+  const [allSubjects, setAllSubjects] = useState<any[]>([]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [isSubjectsLoading, setIsSubjectsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadSubjects() {
+      try {
+        const [all, mine] = await Promise.all([
+          subjectApi.getSubjects(),
+          authApi.getMySubjects()
+        ]);
+        setAllSubjects(all || []);
+        setSelectedSubjects(mine?.map((s: any) => s.subject_id) || []);
+      } catch (err) {
+        console.error('Failed to load subjects', err);
+      } finally {
+        setIsSubjectsLoading(false);
+      }
+    }
+    loadSubjects();
+  }, []);
+
+  const toggleSubject = (id: string) => {
+    if (selectedSubjects.includes(id)) {
+      setSelectedSubjects(selectedSubjects.filter(sid => sid !== id));
+    } else {
+      setSelectedSubjects([...selectedSubjects, id]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      await authApi.updateProfile(formData);
+      await Promise.all([
+        authApi.updateProfile(formData),
+        authApi.updateSubjects(selectedSubjects)
+      ]);
       onSuccess();
     } catch (err: any) {
       setError(err.message || 'Failed to update profile');
@@ -98,6 +132,47 @@ export default function ProfileEditForm({ initialProfile, onSuccess }: ProfileEd
           onChange={(e) => setFormData({...formData, bio: e.target.value})}
           placeholder="Tell other students about your skills and interests..."
         />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+        <label style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>Enroll in Subjects</label>
+        {isSubjectsLoading ? (
+          <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Loading curriculum data...</div>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {allSubjects.map(s => {
+              const isActive = selectedSubjects.includes(s.id);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => toggleSubject(s.id)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '99px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    border: '1px solid',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s',
+                    background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                    borderColor: isActive ? '#8b5cf6' : 'rgba(255, 255, 255, 0.1)',
+                    color: isActive ? 'white' : '#94a3b8'
+                  }}
+                >
+                  {isActive ? <Check size={14} /> : <Plus size={14} />}
+                  {s.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>
+          Select subjects to personalize your doubt feed and practice tests.
+        </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
