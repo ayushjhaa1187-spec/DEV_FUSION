@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ConditionalNavbar from '@/components/layout/ConditionalNavbar';
-import { AuthProvider } from '@/components/auth/auth-provider';
-import AIFloatingAssistant from '@/components/AIFloatingAssistant';
-import { ToastProvider } from '@/components/ui/Toast';
+import Providers from '@/components/providers';
+import dynamic from 'next/dynamic';
+
+const AIFloatingAssistant = dynamic(
+  () => import('@/components/AIFloatingAssistant'),
+  { ssr: false, loading: () => null }
+);
 
 export const metadata: Metadata = {
   title: "SkillBridge — Learn. Earn. Grow.",
@@ -24,13 +28,11 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <AuthProvider>
-          <ToastProvider>
-            <ConditionalNavbar />
-            {children}
-            <AIFloatingAssistant />
-          </ToastProvider>
-        </AuthProvider>
+        <Providers>
+          <ConditionalNavbar />
+          {children}
+          <AIFloatingAssistant />
+        </Providers>
       </body>
     </html>
   );

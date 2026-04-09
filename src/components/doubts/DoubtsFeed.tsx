@@ -36,7 +36,13 @@ export default function DoubtsFeed({ limit = 5, authorId, subjectId }: DoubtsFee
 
   if (loading) return <SkeletonCard count={limit} />;
   if (error) return <p className="text-red-400 text-sm">{error}</p>;
-  if (doubts.length === 0) return <EmptyState />;
+  if (doubts.length === 0) return (
+    <EmptyState 
+      icon="🍃" 
+      title="All quiet here" 
+      description="No doubts have been posted matching these criteria yet."
+    />
+  );
 
   return (
     <div className="flex flex-col gap-3">

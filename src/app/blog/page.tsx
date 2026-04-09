@@ -1,6 +1,17 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import '../landing.css';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Blog | DEV_FUSION',
+  description: 'Insights, student success stories, and platform updates from the SkillBridge community.',
+  openGraph: {
+    title: 'Blog | DEV_FUSION',
+    description: 'Insights, student success stories, and platform updates from the SkillBridge community.',
+    type: 'website'
+  }
+};
 
 export default function BlogPage() {
   const stories = [

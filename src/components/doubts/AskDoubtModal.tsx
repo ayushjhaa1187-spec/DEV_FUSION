@@ -163,6 +163,7 @@ export default function AskDoubtModal({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <label style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>DETAILED CONTENT</label>
                   <RichTextEditor
+                    content={formData.content}
                     onChange={(json) => setFormData({ ...formData, content: json })}
                     placeholder="Use code snippets or images for faster peer resolution..."
                   />

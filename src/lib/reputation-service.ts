@@ -99,3 +99,22 @@ export function getRank(points: number) {
 export function getUnlockedBadges(points: number) {
   return ALL_BADGES.filter(b => points >= b.requirement_points);
 }
+
+export interface ReputationEvent {
+  type: string;
+  count?: number;
+}
+
+export function calculateReputation(events: ReputationEvent[]): number {
+  return events.reduce((total, event) => {
+    const weight = REPUTATION_WEIGHTS[event.type] ?? 0;
+    return total + weight * (event.count ?? 1);
+  }, 0);
+}
+
+export const BADGE_THRESHOLDS = [
+  { min: 100, badge: 'Rising Star' },
+  { min: 500, badge: 'Problem Solver' },
+  { min: 1000, badge: 'Knowledge Guru' },
+  { min: 5000, badge: 'Legend' },
+];

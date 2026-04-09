@@ -7,19 +7,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/auth-provider';
 import { Bell, Menu, X, MessageSquare, Trophy, AtSign, FileText, ChevronRight, Check, User } from 'lucide-react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
+import { NotificationBell } from './NotificationBell';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
   const { user, profile, signOut } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [notifLoading, setNotifLoading] = useState(false);
-  const notifDropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const mainLinks = [
@@ -31,35 +27,9 @@ export default function Navbar() {
     { name: 'Leaderboard', href: '/leaderboard' },
   ];
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchUnread = async () => {
-      const res = await fetch('/api/notifications/unread');
-      const data = await res.json();
-      setUnreadCount(data.count || 0);
-    };
-    fetchUnread();
 
-    const supabase = createSupabaseBrowser();
-    const channel = supabase
-      .channel('notifications')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${user.id}`
-      }, () => setUnreadCount(prev => prev + 1))
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
-
-  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (notifDropdownRef.current && !notifDropdownRef.current.contains(e.target as Node)) {
-        setIsNotifOpen(false);
-      }
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target as Node)) {
         setIsProfileOpen(false);
       }
@@ -68,22 +38,6 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const openNotifications = async () => {
-    setIsNotifOpen(!isNotifOpen);
-    setIsProfileOpen(false);
-    if (!isNotifOpen && user) {
-      setNotifLoading(true);
-      try {
-        const res = await fetch('/api/notifications?limit=10');
-        const data = await res.json();
-        setNotifications(Array.isArray(data) ? data : []);
-        await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markAllRead: true }) });
-        setUnreadCount(0);
-      } finally {
-        setNotifLoading(false);
-      }
-    }
-  };
 
   useEffect(() => {
     if (isMobileMenuOpen) document.body.style.overflow = 'hidden';
@@ -139,65 +93,11 @@ export default function Navbar() {
           {user ? (
             <div className="flex items-center gap-4">
               {/* Notification Bell */}
-              <div className={styles.notifWrapper} ref={notifDropdownRef}>
-                <button className={styles.iconBtn} onClick={openNotifications} aria-label="Notifications">
-                  <Bell size={20} />
-                  {unreadCount > 0 && <span className={styles.badge}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
-                </button>
-                
-                <AnimatePresence>
-                  {isNotifOpen && (
-                    <motion.div
-                      className={styles.notifDropdown}
-                      initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <div className={styles.notifHeader}>
-                        <span>Notifications</span>
-                        <button
-                          className={styles.markReadBtn}
-                          onClick={async () => {
-                            await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ markAllRead: true }) });
-                            setUnreadCount(0);
-                            setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-                          }}
-                        >
-                          <Check size={12} /> Mark all read
-                        </button>
-                      </div>
-                      <div className={styles.notifList}>
-                        {notifLoading ? (
-                          <div className={styles.notifEmpty}>Loading...</div>
-                        ) : notifications.length === 0 ? (
-                          <div className={styles.notifEmpty}>No notifications yet</div>
-                        ) : (
-                          notifications.map(notif => (
-                            <Link
-                              key={notif.id}
-                              href={notif.link || '/doubts'}
-                              className={`${styles.notifItem} ${!notif.is_read ? styles.notifUnread : ''}`}
-                              onClick={() => setIsNotifOpen(false)}
-                            >
-                              <div className={styles.notifDot} />
-                              <p className={styles.notifMsg}>{notif.message}</p>
-                              <span className={styles.notifTime}>{new Date(notif.created_at).toLocaleDateString()}</span>
-                            </Link>
-                          ))
-                        )}
-                      </div>
-                      <Link href="/notifications" className={styles.notifFooter} onClick={() => setIsNotifOpen(false)}>
-                        View all notifications
-                      </Link>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <NotificationBell userId={user.id} />
 
               {/* Profile Dropdown */}
               <div className={styles.profileWrapper} ref={profileDropdownRef}>
-                <button className={styles.avatarBtn} onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotifOpen(false); }}>
+                <button className={styles.avatarBtn} onClick={() => { setIsProfileOpen(!isProfileOpen); }}>
                   <div className={styles.avatar}>
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt="" />

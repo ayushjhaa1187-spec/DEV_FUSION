@@ -1,6 +1,17 @@
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import '../landing.css';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'About Us | DEV_FUSION',
+  description: 'SkillBridge is bridging the gap between knowledge and mastery through peer-to-peer learning and AI assistance.',
+  openGraph: {
+    title: 'About Us | DEV_FUSION',
+    description: 'SkillBridge is bridging the gap between knowledge and mastery through peer-to-peer learning and AI assistance.',
+    type: 'website'
+  }
+};
 
 export default function AboutPage() {
   return (
