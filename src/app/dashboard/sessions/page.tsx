@@ -26,41 +26,66 @@ export default function LiveSessionsPage() {
     if (user) fetchSessions();
   }, [user]);
 
-  if (loading) return <div className="sb-page sessions-container"><div className="sb-loading">Finding live sessions...</div></div>;
+    const [joinedSessions, setJoinedSessions] = useState<Record<string, boolean>>({});
 
-  return (
-    <div className="sb-page sessions-container">
-      <header className="sessions-header sb-stagger-1">
-        <h1 className="sb-title">Live <span>Doubt Sessions</span></h1>
-        <p className="sb-subtitle">Join live interactive sessions from the mentors you follow and get instant clarification.</p>
-      </header>
+    if (loading) return <div className="sb-page sessions-container"><div className="sb-loading">Finding live sessions...</div></div>;
 
-      <div className="sessions-grid sb-stagger-2">
-        {sessions.length > 0 ? sessions.map((session, i) => (
-          <div key={i} className="session-card glass">
-            <div className="session-top">
-              <span className={`status-tag ${session.is_live ? 'live' : 'upcoming'}`}>
-                {session.is_live ? '● Live Now' : 'Upcoming'}
-              </span>
-              <span className="session-time">{new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+    return (
+      <div className="sb-page sessions-container">
+        <header className="sessions-header sb-stagger-1">
+          <h1 className="sb-title">Live <span>Doubt Sessions</span></h1>
+          <p className="sb-subtitle">Join live interactive sessions from the mentors you follow and get instant clarification.</p>
+        </header>
+  
+        <div className="sessions-grid sb-stagger-2">
+          {sessions.length > 0 ? sessions.map((session, i) => (
+            <div key={i} className="session-card glass">
+              <div className="session-top">
+                <span className={`status-tag ${session.is_live ? 'live' : 'upcoming'}`}>
+                  {session.is_live ? '● Live Now' : 'Upcoming'}
+                </span>
+                <span className="session-time">{new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              <h3>{session.mentor_profiles?.specialty || 'Academic Session'}</h3>
+              <div className="mentor-mini">
+                <div className="mini-avatar" />
+                <span>{session.profiles?.username}</span>
+              </div>
+              
+              {session.is_live ? (
+                <>
+                  {joinedSessions[session.id] ? (
+                    <div className="jitsi-wrapper" style={{ marginTop: '20px' }}>
+                      <iframe
+                        src={`${session.meeting_link}#config.startWithVideoMuted=true`}
+                        allow="camera; microphone; display-capture"
+                        style={{ width: '100%', height: '400px', border: 'none', borderRadius: '16px' }}
+                      />
+                      <button 
+                        onClick={() => setJoinedSessions({...joinedSessions, [session.id]: false})}
+                        className="sb-btnGhost" 
+                        style={{ width: '100%', marginTop: '10px' }}
+                      >
+                        Minimize Session
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setJoinedSessions({...joinedSessions, [session.id]: true})}
+                      className="sb-btnPrimary" 
+                      style={{ width: '100%', marginTop: '20px', border: 'none' }}
+                    >
+                      Join Live Session
+                    </button>
+                  )}
+                </>
+              ) : (
+                <button className="sb-btnGhost" disabled style={{ width: '100%', marginTop: '20px' }}>
+                  Opens at {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </button>
+              )}
             </div>
-            <h3>{session.mentor_profiles?.specialty || 'Academic Session'}</h3>
-            <div className="mentor-mini">
-              <div className="mini-avatar" />
-              <span>{session.profiles?.username}</span>
-            </div>
-            
-            {session.is_live ? (
-              <a href={session.meeting_link} target="_blank" className="sb-btnPrimary" style={{ width: '100%', marginTop: '20px', border: 'none', textAlign: 'center' }}>
-                Join Live Session
-              </a>
-            ) : (
-              <button className="sb-btnGhost" disabled style={{ width: '100%', marginTop: '20px' }}>
-                Opens at {new Date(session.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </button>
-            )}
-          </div>
-        )) : (
+          )) : (
           <div className="empty-sessions glass">
             <p>You're not following any mentors with upcoming sessions.</p>
             <Link href="/mentors" className="sb-btnGhost" style={{ marginTop: '16px' }}>Explore Mentors</Link>
