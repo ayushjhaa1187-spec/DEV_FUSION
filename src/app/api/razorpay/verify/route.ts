@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { logAuditEvent } from '@/lib/audit';
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
@@ -11,9 +12,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { 
-      razorpay_order_id, 
-      razorpay_payment_id, 
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
       razorpay_signature,
       slot_id,
       amount
@@ -31,9 +32,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Success: Insert enrollment/booking
-    // Note: mentor_bookings table might already have a status 'pending' created during order generation
-    // or we create it here. Based on profile page code, it creates it after success.
-    
     // Check if slot is still available
     const { data: slot } = await supabase
       .from('mentor_slots')
@@ -59,6 +57,14 @@ export async function POST(req: NextRequest) {
 
     // Mark slot as booked
     await supabase.from('mentor_slots').update({ is_booked: true }).eq('id', slot_id);
+
+    // Audit log
+    await logAuditEvent(user.id, 'payment_verified', 'mentor_booking', slot_id, {
+      razorpay_order_id,
+      razorpay_payment_id,
+      mentor_id: slot.mentor_id,
+      amount_paid: amount,
+    });
 
     return NextResponse.json({ success: true, message: 'Session booked successfully' });
   } catch (error: any) {
