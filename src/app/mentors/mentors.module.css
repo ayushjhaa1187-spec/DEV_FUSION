@@ -226,3 +226,293 @@
   .header { flex-direction: column; align-items: flex-start; }
   .searchSection { flex-direction: column; align-items: stretch; }
 }
+
+
+/* Enhanced styles for new components */
+.headerStats {
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.statBadge {
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 12px;
+  padding: 12px 20px;
+  text-align: center;
+  min-width: 120px;
+}
+
+.statNumber {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.statLabel {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.resultsCount {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+  padding: 0 8px;
+}
+
+.repLine {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.repLabel {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.repValue {
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Profile page tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0;
+}
+
+.tab {
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.activeTab {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Skills grid */
+.skillsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skillTag {
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--color-primary);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Teaching style */
+.teachingStyle {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.styleItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.styleIcon {
+  font-size: 2rem;
+}
+
+.styleItem strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-text);
+}
+
+.styleItem p {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* Reviews */
+.reviewsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.reviewSummary {
+  background: rgba(124, 58, 237, 0.05);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+
+.avgRating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bigRating {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.stars {
+  color: #fbbf24;
+  font-size: 1.5rem;
+  letter-spacing: 4px;
+}
+
+.reviewCount {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.reviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reviewItem {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.reviewHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.reviewAvatar {
+  width: 40px;
+  height: 40px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+}
+
+.reviewStars {
+  color: #fbbf24;
+  font-size: 0.9rem;
+}
+
+.reviewDate {
+  margin-left: auto;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.reviewText {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Badges */
+.badgesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.badge {
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.badge:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+}
+
+.badgeIcon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.badgeName {
+  display: block;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.badgeDesc {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Booked slot */
+.booked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bookedTag {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* Avatar placeholder */
+.avatarPlaceholder {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #7c3aed, #06d6a0);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
