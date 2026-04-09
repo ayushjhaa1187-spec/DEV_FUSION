@@ -34,14 +34,16 @@ export async function GET(request: Request) {
         },
       }
     );
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || origin).replace(/\/$/, '');
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       // Always redirect to dashboard (or deep-link target) after successful OAuth
-      const redirectTo = next.startsWith('/') ? `${origin}${next}` : `${origin}/dashboard`;
-      return NextResponse.redirect(redirectTo);
+      const path = next.startsWith('/') ? next : '/dashboard';
+      return NextResponse.redirect(`${appUrl}${path}`);
     }
   }
 
   // Error case — send back to auth page with error param
-  return NextResponse.redirect(`${origin}/auth?error=auth-failed`);
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || origin).replace(/\/$/, '');
+  return NextResponse.redirect(`${appUrl}/auth?error=auth-failed`);
 }

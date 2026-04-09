@@ -29,6 +29,8 @@ function AuthForm() {
     setLoading(true);
     setError(null);
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin;
+
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -39,7 +41,7 @@ function AuthForm() {
           password,
           options: { 
             data: { full_name: name },
-            emailRedirectTo: `${window.location.origin}/auth/callback`
+            emailRedirectTo: `${appUrl}/auth/callback`
           },
         });
         if (error) throw error;
@@ -55,11 +57,12 @@ function AuthForm() {
   };
 
   const handleGoogle = async () => {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin;
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { 
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${appUrl}/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

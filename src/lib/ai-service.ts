@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-// Use gemini-2.0-flash for better availability and speed
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+// gemini-1.5-flash-latest is highly stable and widely available
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
 export interface AIDoubtResponse {
   explanation: string;
@@ -11,17 +11,26 @@ export interface AIDoubtResponse {
 }
 
 function extractJSON<T>(text: string, fallback: T): T {
-  // Strip markdown code fences if present
-  const stripped = text.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
-  // Try to find a JSON object or array in the text
-  const objMatch = stripped.match(/\{[\s\S]*\}/);
-  const arrMatch = stripped.match(/\[[\s\S]*\]/);
-  
   try {
-    if (objMatch) return JSON.parse(objMatch[0]) as T;
-    if (arrMatch) return JSON.parse(arrMatch[0]) as T;
-  } catch {
-    // JSON.parse failed, use fallback
+    // 1. Remove markdown backticks and 'json' identifiers
+    let cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    
+    // 2. Locate the first '{' or '[' and the last '}' or ']'
+    const startIdx = Math.min(
+      cleaned.indexOf('{') === -1 ? Infinity : cleaned.indexOf('{'),
+      cleaned.indexOf('[') === -1 ? Infinity : cleaned.indexOf('[')
+    );
+    const endIdx = Math.max(
+      cleaned.lastIndexOf('}'),
+      cleaned.lastIndexOf(']')
+    );
+
+    if (startIdx !== Infinity && endIdx !== -1) {
+      cleaned = cleaned.slice(startIdx, endIdx + 1);
+      return JSON.parse(cleaned) as T;
+    }
+  } catch (err) {
+    console.warn('JSON parsing failed, raw text:', text);
   }
   return fallback;
 }
@@ -38,21 +47,15 @@ export async function askAIDoubt(question: string, context?: string): Promise<AI
     return fallback;
   }
 
-  const prompt = `You are SkillBridge AI, a world-class academic tutor known for Socratic teaching and intuitive conceptual breakdowns. 
+  const prompt = `You are SkillBridge AI, a world-class academic tutor.
 A student has a doubt: "${question}"
 ${context ? `Extra context: ${context}` : ''}
 
-Your goal is to build conceptual clarity, not just give the answer.
-Please provide:
-1. A clear, encouraging "Intuition" section that explains the core 'Why' behind the concept.
-2. A logical, step-by-step breakdown using analogies where possible.
-3. 3-5 specific academic tags for categorization.
-
-Respond ONLY with valid JSON (no markdown, no code fences):
+Respond ONLY with valid JSON:
 {
   "explanation": "Brief intuitive overview...",
-  "steps": ["Step 1: The Foundation...", "Step 2: The Logic...", "Step 3: Edge Cases..."],
-  "suggested_tags": ["tag1", "tag2", "tag3"]
+  "steps": ["Step 1...", "Step 2..."],
+  "suggested_tags": ["tag1", "tag2"]
 }`;
 
   try {
