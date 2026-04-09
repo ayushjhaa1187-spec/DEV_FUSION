@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/auth-provider';
@@ -103,7 +103,7 @@ export default function DashboardPage() {
     { href: '/resources', label: 'Library', icon: BookOpen, color: 'bg-emerald-500/10 text-emerald-400' },
   ];
 
-  const fetchData = async () => {
+    const fetchData = useCallback(async () => {
     if (!user) return;
     try {
       const [profileData, questionsData, answersData] = await Promise.all([
@@ -125,7 +125,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+    }, [user]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -134,7 +134,7 @@ export default function DashboardPage() {
     if (user) {
       fetchData();
     }
-  }, [user, authLoading, router]);
+    }, [user, authLoading, router, fetchData]);
 
   if (authLoading || loading) {
     return (
