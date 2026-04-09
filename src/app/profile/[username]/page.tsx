@@ -1,198 +1,163 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { MapPin, Calendar, Trophy, MessageSquare, Star, BookOpen } from 'lucide-react';
-import ReputationBadge from '@/components/user/ReputationBadge';
+import { Edit2, BookOpen, MessageSquare, CalendarCheck, ClipboardList } from 'lucide-react';
 
-const TIERS = [
-  { name: 'Diamond', min: 1000, color: '#00f2ff', icon: '💎' },
-  { name: 'Platinum', min: 500, color: '#e5e4e2', icon: '💍' },
-  { name: 'Gold', min: 250, color: '#ffd700', icon: '🥇' },
-  { name: 'Silver', min: 100, color: '#c0c0c0', icon: '🥈' },
-  { name: 'Bronze', min: 0, color: '#cd7f32', icon: '🥉' },
-];
+const BADGE_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
+  Newcomer: { label: 'Newcomer', color: 'bg-gray-100 text-gray-700', emoji: '🌱' },
+  Helper: { label: 'Helper', color: 'bg-blue-100 text-blue-700', emoji: '💡' },
+  Expert: { label: 'Expert', color: 'bg-purple-100 text-purple-700', emoji: '🤓' },
+  Legend: { label: 'Legend', color: 'bg-yellow-100 text-yellow-700', emoji: '🏆' },
+};
 
-const getTier = (points: number) => TIERS.find(t => points >= t.min) || TIERS[TIERS.length - 1];
+type Profile = {
+  id: string;
+  username: string;
+  name: string;
+  college: string;
+  branch?: string;
+  year?: number;
+  bio?: string;
+  avatar?: string;
+  badge: string;
+  reputation: number;
+  doubts_asked: number;
+  answers_given: number;
+  tests_taken: number;
+  sessions_booked: number;
+  badges_earned: string[];
+  recent_activity: ReputationEvent[];
+  is_owner: boolean;
+};
 
-export default function PublicProfilePage() {
-  const params = useParams();
-  const username = params?.username as string;
-  const [profile, setProfile] = useState<any>(null);
-  const [doubts, setDoubts] = useState<any[]>([]);
-  const [answers, setAnswers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'doubts' | 'answers'>('doubts');
+type ReputationEvent = {
+  id: string;
+  type: string;
+  description: string;
+  points: number;
+  created_at: string;
+};
 
-  useEffect(() => {
-    if (!username) return;
-    async function fetchProfile() {
-      try {
-        const res = await fetch(`/api/profile/${username}`);
-        if (!res.ok) { setLoading(false); return; }
-        const data = await res.json();
-        setProfile(data.profile);
-        setDoubts(data.doubts || []);
-        setAnswers(data.answers || []);
-      } catch (err) {
-        console.error('Failed to load profile', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchProfile();
-  }, [username]);
+async function getProfile(username: string): Promise<Profile | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const res = await fetch(`${baseUrl}/api/profile/${username}`, { cache: 'no-store' });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Failed to fetch profile');
+  return res.json();
+}
 
-  if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', color: 'white' }}>
-      Loading...
-    </div>
-  );
+export default async function ProfilePage({ params }: { params: { username: string } }) {
+  const profile = await getProfile(params.username);
 
-  if (!profile) return (
-    <div style={{ textAlign: 'center', padding: '80px 24px', color: 'white' }}>
-      <h2>User not found</h2>
-      <Link href="/leaderboard" style={{ color: 'var(--color-primary)' }}>View Leaderboard</Link>
-    </div>
-  );
+  if (!profile) notFound();
 
-  const tier = getTier(profile.reputation_points || 0);
+  const badgeConf = BADGE_CONFIG[profile.badge] ?? { label: profile.badge, color: 'bg-gray-100 text-gray-600', emoji: '🎟️' };
 
   return (
-    <main style={{ minHeight: '100vh', background: '#0f0f1a', color: 'white', paddingTop: 80 }}>
-      {/* Profile Header */}
-      <div style={{ background: 'linear-gradient(to bottom, rgba(99,102,241,0.08), transparent)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '40px 0' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px' }}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            style={{ display: 'flex', gap: 32, alignItems: 'flex-start', flexWrap: 'wrap' }}
-          >
-            {/* Avatar */}
-            <div style={{ position: 'relative' }}>
-              <img
-                src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`}
-                alt={username}
-                style={{ width: 96, height: 96, borderRadius: 24, border: '3px solid rgba(99,102,241,0.5)', objectFit: 'cover' }}
-              />
-              <div style={{ position: 'absolute', bottom: -8, right: -8, background: '#1e1e2e', borderRadius: 12, padding: '2px 8px', fontSize: 12, fontWeight: 700, border: '1px solid rgba(255,255,255,0.08)', color: tier.color }}>
-                {tier.icon} {tier.name}
-              </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+
+        {/* Profile Header */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6 flex flex-col sm:flex-row gap-6 items-start">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
+              {profile.avatar
+                ? <Image src={profile.avatar} alt={profile.name} width={96} height={96} className="object-cover" />
+                : <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center text-3xl text-white font-bold">{profile.name[0]}</div>
+              }
             </div>
-
-            {/* Info */}
-            <div style={{ flex: 1 }}>
-              <h1 style={{ fontSize: '2rem', fontWeight: 900, margin: '0 0 4px' }}>{profile.full_name || username}</h1>
-              <p style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12 }}>@{username}</p>
-
-              {profile.bio && <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 16, maxWidth: 500 }}>{profile.bio}</p>}
-
-              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', color: 'rgba(255,255,255,0.45)', fontSize: '0.85rem' }}>
-                {profile.college && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <MapPin size={13} /> {profile.college}
-                  </span>
-                )}
-                {profile.branch && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <BookOpen size={13} /> {profile.branch}
-                  </span>
-                )}
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Calendar size={13} /> Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </span>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile.name}</h1>
+                <p className="text-gray-500 dark:text-gray-400">@{profile.username}</p>
               </div>
+              {profile.is_owner && (
+                <Link
+                  href="/settings"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit Profile
+                </Link>
+              )}
             </div>
-
-            {/* Stats */}
-            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: '16px 24px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--color-primary)' }}>{profile.reputation_points || 0}</div>
-                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Reputation</div>
-              </div>
-              <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: '16px 24px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 900 }}>{doubts.length}</div>
-                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Doubts</div>
-              </div>
-              <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: '16px 24px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: '1.8rem', fontWeight: 900 }}>{answers.length}</div>
-                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>Answers</div>
-              </div>
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
+              <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${badgeConf.color}`}>
+                {badgeConf.emoji} {badgeConf.label}
+              </span>
+              <span className="text-blue-600 dark:text-blue-400 font-semibold">{profile.reputation.toLocaleString()} reputation</span>
             </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Content Tabs */}
-      <div style={{ maxWidth: 900, margin: '32px auto 0', padding: '0 24px' }}>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          {(['doubts', 'answers'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                padding: '10px 24px',
-                borderRadius: 12,
-                border: 'none',
-                background: activeTab === tab ? 'var(--color-primary)' : 'rgba(255,255,255,0.06)',
-                color: 'white',
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                textTransform: 'capitalize',
-              }}
-            >
-              {tab === 'doubts' ? <><MessageSquare size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />{doubts.length} Doubts</> : <><Star size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />{answers.length} Answers</>}
-            </button>
-          ))}
+            <p className="text-gray-700 dark:text-gray-300 mt-2">{profile.college}</p>
+            {profile.branch && (
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{profile.branch}{profile.year ? ` · Year ${profile.year}` : ''}</p>
+            )}
+            {profile.bio && (
+              <p className="mt-3 text-gray-600 dark:text-gray-300 text-sm">{profile.bio}</p>
+            )}
+          </div>
         </div>
 
-        {/* Doubts Tab */}
-        {activeTab === 'doubts' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {doubts.length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: 48 }}>No doubts posted yet.</p>
-            ) : doubts.map(d => (
-              <Link key={d.id} href={`/doubts/${d.id}`} style={{ display: 'block', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: '16px 20px', textDecoration: 'none', transition: 'background 0.2s' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard icon={<BookOpen className="w-6 h-6 text-blue-500" />} label="Doubts Asked" value={profile.doubts_asked} />
+          <StatCard icon={<MessageSquare className="w-6 h-6 text-green-500" />} label="Answers Given" value={profile.answers_given} />
+          <StatCard icon={<ClipboardList className="w-6 h-6 text-orange-500" />} label="Tests Taken" value={profile.tests_taken} />
+          <StatCard icon={<CalendarCheck className="w-6 h-6 text-purple-500" />} label="Sessions Booked" value={profile.sessions_booked} />
+        </div>
+
+        {/* Badges Earned */}
+        {profile.badges_earned.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Badges Earned</h2>
+            <div className="flex flex-wrap gap-3">
+              {profile.badges_earned.map((badge) => {
+                const bc = BADGE_CONFIG[badge] ?? { label: badge, color: 'bg-gray-100 text-gray-600', emoji: '🎟️' };
+                return (
+                  <span key={badge} className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium ${bc.color}`}>
+                    {bc.emoji} {bc.label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Activity */}
+        {profile.recent_activity.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h2>
+            <div className="space-y-3">
+              {profile.recent_activity.map((event) => (
+                <div key={event.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
                   <div>
-                    {d.status === 'resolved' && <span style={{ fontSize: '0.72rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', borderRadius: 6, padding: '2px 8px', marginBottom: 6, display: 'inline-block' }}>Resolved</span>}
-                    <h3 style={{ color: 'white', fontWeight: 700, margin: '4px 0 6px', fontSize: '0.95rem' }}>{d.title}</h3>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', margin: 0 }}>{d.subjects?.name || 'General'} · {new Date(d.created_at).toLocaleDateString()}</p>
+                    <p className="text-gray-800 dark:text-gray-200 text-sm">{event.description}</p>
+                    <p className="text-gray-400 text-xs">{formatDate(event.created_at)}</p>
                   </div>
-                  <div style={{ display: 'flex', gap: 12, color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', flexShrink: 0 }}>
-                    <span>▲ {d.votes || 0}</span>
-                  </div>
+                  <span className={`font-semibold text-sm ${event.points >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {event.points >= 0 ? '+' : ''}{event.points}
+                  </span>
                 </div>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Answers Tab */}
-        {activeTab === 'answers' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {answers.length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: 48 }}>No answers posted yet.</p>
-            ) : answers.map(a => (
-              <Link key={a.id} href={`/doubts/${a.doubt_id}`} style={{ display: 'block', background: 'rgba(255,255,255,0.04)', border: `1px solid ${a.is_accepted ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.06)'}`, borderRadius: 16, padding: '16px 20px', textDecoration: 'none', transition: 'background 0.2s' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    {a.is_accepted && <span style={{ fontSize: '0.72rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', borderRadius: 6, padding: '2px 8px', marginBottom: 6, display: 'inline-block' }}>✓ Accepted</span>}
-                    <p style={{ color: 'rgba(255,255,255,0.75)', margin: '4px 0', fontSize: '0.9rem', lineHeight: 1.4 }}>{a.content?.slice(0, 160)}{a.content?.length > 160 ? '...' : ''}</p>
-                    <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.78rem', margin: '6px 0 0' }}>{new Date(a.created_at).toLocaleDateString()}</p>
-                  </div>
-                  <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', flexShrink: 0 }}>
-                    <span>▲ {a.votes || 0}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
+}
+
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 flex flex-col items-center text-center">
+      {icon}
+      <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{value}</p>
+      <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">{label}</p>
+    </div>
+  );
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
