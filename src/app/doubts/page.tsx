@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { doubtApi, aiApi, subjectApi, authApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
@@ -8,6 +8,7 @@ import { DoubtCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import AskDoubtModal from '@/components/doubts/AskDoubtModal';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
+import { Search, X } from 'lucide-react';
 import styles from './doubts.module.css';
 
 export default function DoubtsPage() {
@@ -24,6 +25,9 @@ export default function DoubtsPage() {
   const [isAiSolving, setIsAiSolving] = useState(false);
   const [aiResponse, setAiResponse] = useState<any>(null);
   const [aiQuestion, setAiQuestion] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const searchDebounce = useRef<any>(null);
 
   useEffect(() => {
     async function loadUserData() {
@@ -53,6 +57,8 @@ export default function DoubtsPage() {
         params.filter = 'my_subjects';
         params.user_subjects = userSubjects.join(',');
       }
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+
       const [doubtsData, subjectsData] = await Promise.all([
         doubtApi.getDoubts(Object.keys(params).length ? params : undefined),
         subjectApi.getSubjects()
@@ -64,9 +70,11 @@ export default function DoubtsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeSubject, filterType, userProfile, userSubjects]);
+  }, [activeSubject, filterType, userProfile, userSubjects, searchQuery]);
 
-  useEffect(() => { loadDoubts(true); }, [loadDoubts]);
+  useEffect(() => {
+    loadDoubts(true);
+  }, [loadDoubts]);
 
   // Supabase Realtime replaces 15s polling
   useEffect(() => {
@@ -78,6 +86,15 @@ export default function DoubtsPage() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [loadDoubts]);
+
+  // Debounced search
+  const handleSearchChange = (val: string) => {
+    setSearchInput(val);
+    if (searchDebounce.current) clearTimeout(searchDebounce.current);
+    searchDebounce.current = setTimeout(() => {
+      setSearchQuery(val);
+    }, 400);
+  };
 
   const handleAiSolve = async () => {
     if (!aiQuestion.trim()) return;
@@ -107,116 +124,125 @@ export default function DoubtsPage() {
 
   return (
     <>
-      <div style={{ padding: '16px 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', letterSpacing: '0.1em' }}>
-        24/7 Peer &amp; AI Support
-      </div>
-      <h1 className={styles.pageTitle}>Doubt Feed</h1>
-      <p className={styles.pageSubtitle}>
-        Get instant logical breakdowns from AI or connect with top-rated student peers for conceptual clarity.
-      </p>
-
-      {/* AI Solver Panel */}
-      <div className={styles.aiPanel}>
-        <span className={styles.aiBadge}>SKILLBRIDGE AI AGENT</span>
-        <h2 className={styles.aiTitle}>Instant Conceptual Guidance</h2>
-        <div className={styles.aiInputRow}>
-          <input
-            type="text"
-            placeholder="Explain the intuition behind 'P vs NP' or ask a specific doubt..."
-            value={aiQuestion}
-            onChange={(e) => setAiQuestion(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAiSolve()}
-            className={styles.aiInput}
-          />
-          <button onClick={handleAiSolve} disabled={isAiSolving} className={styles.aiBtn}>
-            {isAiSolving ? 'Synthesizing...' : 'Solve with AI'}
-          </button>
+      <div className={styles.page}>
+        <div className={styles.hero}>
+          <span className={styles.heroBadge}>24/7 Peer & AI Support</span>
+          <h1 className={styles.heroTitle}>Doubt Feed</h1>
+          <p className={styles.heroSub}>Get instant logical breakdowns from AI or connect with top-rated student peers for conceptual clarity.</p>
         </div>
-        {aiResponse && (
-          <div className={styles.aiResult}>
-            <h3 className={styles.aiResultTitle}>Logical Breakdown</h3>
-            <p className={styles.aiExplanation}>{aiResponse.explanation}</p>
-            {aiResponse.steps?.length > 0 && (
-              <ol className={styles.aiSteps}>
-                {aiResponse.steps.map((step: string, i: number) => (
-                  <li key={i}><span className={styles.stepNum}>{i + 1}</span> {step}</li>
-                ))}
-              </ol>
-            )}
-            <div className={styles.aiEscalate}>
-              <span className={styles.aiEscalateText}>Not satisfied? Let the community help.</span>
-              <button onClick={handlePostToCommunity} className={styles.escalateBtn}>
-                Post to Community
-              </button>
-            </div>
+
+        {/* AI Solver Panel */}
+        <div className={styles.aiPanel}>
+          <div className={styles.aiPanelHeader}>
+            <span className={styles.aiBadge}>SKILLBRIDGE AI AGENT</span>
+            <h2 className={styles.aiPanelTitle}>Instant Conceptual Guidance</h2>
           </div>
+          <div className={styles.aiInputRow}>
+            <input
+              type="text"
+              placeholder="Explain the intuition behind 'P vs NP' or ask a specific doubt..."
+              value={aiQuestion}
+              onChange={(e) => setAiQuestion(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAiSolve()}
+              className={styles.aiInput}
+            />
+            <button onClick={handleAiSolve} disabled={isAiSolving} className={styles.aiSolveBtn}>
+              {isAiSolving ? 'Synthesizing...' : 'Solve with AI'}
+            </button>
+          </div>
+          {aiResponse && (
+            <div className={styles.aiResult}>
+              <h3>Logical Breakdown</h3>
+              <p>{aiResponse.explanation}</p>
+              {aiResponse.steps?.length > 0 && (
+                <ol className={styles.aiSteps}>
+                  {aiResponse.steps.map((step: string, i: number) => (
+                    <li key={i}><span className={styles.stepNum}>{i + 1}</span> {step}</li>
+                  ))}
+                </ol>
+              )}
+              <div className={styles.aiFooter}>
+                <span>Not satisfied? Let the community help.</span>
+                <button onClick={handlePostToCommunity} className={styles.postCommunityBtn}>Post to Community</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Search Bar */}
+        <div className={styles.searchRow}>
+          <div className={styles.searchWrapper}>
+            <Search size={16} className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search doubts by title or content..."
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className={styles.searchInput}
+            />
+            {searchInput && (
+              <button className={styles.searchClear} onClick={() => { setSearchInput(''); setSearchQuery(''); }}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filters Row */}
+        <div className={styles.filters}>
+          <div className={styles.subjectPills}>
+            <button onClick={() => setActiveSubject(null)} className={`${styles.subjectBtn} ${!activeSubject ? styles.active : ''}`}>All Subjects</button>
+            {subjects.map(s => (
+              <button key={s.id} onClick={() => setActiveSubject(s.id)} className={`${styles.subjectBtn} ${activeSubject === s.id ? styles.active : ''}`}>{s.name}</button>
+            ))}
+          </div>
+          <div className={styles.filterToggle}>
+            {filterButtons.map(({ key, label }) => (
+              <button key={key} onClick={() => setFilterType(key)} className={`${styles.toggleBtn} ${filterType === key ? styles.active : ''}`}>{label}</button>
+            ))}
+            <button onClick={() => setIsModalOpen(true)} className="sb-btnPrimary" style={{ whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}>Ask Community</button>
+          </div>
+        </div>
+
+        {/* Doubts Grid */}
+        {loading ? (
+          <div className={styles.grid}>{[1,2,3,4,5,6].map(i => <DoubtCardSkeleton key={i} />)}</div>
+        ) : error ? (
+          <div className={styles.errorState}>
+            <p>{error}</p>
+            <button onClick={() => loadDoubts(true)} className="sb-btnPrimary" style={{ marginTop: 16 }}>Retry</button>
+          </div>
+        ) : doubts.length > 0 ? (
+          <div className={styles.grid}>
+            {doubts.map((doubt) => (
+              <Link key={doubt.id} href={`/doubts/${doubt.id}`} className={styles.doubtCard}>
+                <div className={styles.cardHeader}>
+                  <span className={styles.subjectLabel}>{doubt.subjects?.name || 'General'}</span>
+                  {doubt.status === 'resolved' && <span className={styles.solvedBadge}>Solved</span>}
+                  <span className={styles.voteBadge}>{doubt.votes ?? 0} votes</span>
+                </div>
+                <h3 className={styles.doubtTitle}>{doubt.title}</h3>
+                <p className={styles.doubtPreview}>{doubt.content?.substring(0, 150)}...</p>
+                <div className={styles.cardFooter}>
+                  {doubt.profiles?.avatar_url
+                    ? <img src={doubt.profiles.avatar_url} alt="" className={styles.authorAvatar} />
+                    : <div className={styles.authorInitial}>{doubt.profiles?.username?.[0] || 'L'}</div>
+                  }
+                  <span className={styles.authorName}>{doubt.profiles?.username || 'Learner'}</span>
+                  <span className={styles.cardDate}>{new Date(doubt.created_at).toLocaleDateString()}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon="💬"
+            title={searchQuery ? `No results for "${searchQuery}"` : 'No doubts yet'}
+            description={searchQuery ? 'Try different keywords or clear the search.' : 'Be the first to ask!'}
+            onAction={() => setIsModalOpen(true)}
+          />
         )}
       </div>
-
-      {/* Filters Row */}
-      <div className={styles.filtersRow}>
-        <div className={styles.subjectFilters}>
-          <button onClick={() => setActiveSubject(null)} className={`${styles.subjectBtn} ${!activeSubject ? styles.active : ''}`}>
-            All Subjects
-          </button>
-          {subjects.map(s => (
-            <button key={s.id} onClick={() => setActiveSubject(s.id)} className={`${styles.subjectBtn} ${activeSubject === s.id ? styles.active : ''}`}>
-              {s.name}
-            </button>
-          ))}
-        </div>
-        <div className={styles.toggleGroup}>
-          {filterButtons.map(({ key, label }) => (
-            <button key={key} onClick={() => setFilterType(key)}
-              className={`${styles.toggleBtn} ${filterType === key ? styles.active : ''}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-        <button onClick={() => setIsModalOpen(true)} className="sb-btnPrimary"
-          style={{ whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}>
-          Ask Community
-        </button>
-      </div>
-
-      {/* Doubts Grid */}
-      {loading ? (
-        <div className={styles.doubtGrid}>
-          {[1,2,3,4,5,6].map(i => <DoubtCardSkeleton key={i} />)}
-        </div>
-      ) : error ? (
-        <div className={styles.errorState}>
-          <p>{error}</p>
-          <button onClick={() => loadDoubts(true)} className="sb-btnPrimary" style={{ marginTop: 16 }}>Retry</button>
-        </div>
-      ) : doubts.length > 0 ? (
-        <div className={styles.doubtGrid}>
-          {doubts.map((doubt) => (
-            <Link key={doubt.id} href={`/doubts/${doubt.id}`} className={styles.doubtCard}>
-              <div className={styles.cardHeader}>
-                <span className={styles.subjectTag}>{doubt.subjects?.name || 'General'}</span>
-                {doubt.status === 'resolved' && <span className={styles.solvedBadge}>Solved</span>}
-                <span className={styles.answerCount}>
-                  {doubt.votes ?? 0} <span className={styles.answerCountLabel}>votes</span>
-                </span>
-              </div>
-              <h3 className={styles.cardTitle}>{doubt.title}</h3>
-              <p className={styles.cardPreview}>{doubt.content?.substring(0, 150)}...</p>
-              <div className={styles.cardFooter}>
-                {doubt.profiles?.avatar_url
-                  ? <img src={doubt.profiles.avatar_url} alt="" className={styles.avatar} />
-                  : <span className={styles.avatarFallback}>{doubt.profiles?.username?.[0] || 'L'}</span>
-                }
-                <span className={styles.username}>{doubt.profiles?.username || 'Learner'}</span>
-                <ReputationBadge points={doubt.profiles?.reputation_points || 0} />
-                <span className={styles.date}>{new Date(doubt.created_at).toLocaleDateString()}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <EmptyState onAsk={() => setIsModalOpen(true)} />
-      )}
 
       <AskDoubtModal
         isOpen={isModalOpen}
