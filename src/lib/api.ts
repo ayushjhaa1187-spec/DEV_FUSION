@@ -17,6 +17,7 @@ export const authApi = {
   getMySubjects: () => apiFetch('/api/profile/subjects'),
   updateSubjects: (ids: string[]) =>
     apiFetch('/api/profile/subjects', { method: 'POST', body: JSON.stringify({ subject_ids: ids }) }),
+  getMyAnswers: () => apiFetch('/api/profile/answers'),
 };
 
 export const reputationApi = {

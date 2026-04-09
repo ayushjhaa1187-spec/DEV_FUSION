@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-// gemini-1.5-flash-latest is highly stable and widely available
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+// gemini-1.5-flash is highly stable and widely available
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 export interface AIDoubtResponse {
   explanation: string;

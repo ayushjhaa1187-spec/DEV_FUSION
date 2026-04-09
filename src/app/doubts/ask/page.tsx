@@ -26,7 +26,7 @@ export default function AskDoubtPage() {
     subjectApi.getSubjects().then(setSubjects).catch(console.error);
   }, []);
 
-  const handleAnalize = async (e: React.FormEvent) => {
+  const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.content || !formData.subject_id) {
       setError('Please fill title, content and subject.');
@@ -35,9 +35,11 @@ export default function AskDoubtPage() {
     setIsLoading(true);
     setError(null);
     try {
+      const textContent = typeof formData.content === 'string' ? formData.content : JSON.stringify(formData.content);
+      
       // Use the solving endpoint but for pre-post analysis
       const analysis = await aiApi.solveDoubt({ 
-        question: `${formData.title}\n\n${formData.content}` 
+        question: `${formData.title}\n\n${textContent}` 
       });
       setAiAnalysis(analysis);
       setStep(2);
@@ -90,7 +92,7 @@ export default function AskDoubtPage() {
       </div>
 
       {step === 1 ? (
-        <form onSubmit={handleAnalize} className="ask-form glass sb-stagger-2">
+        <form onSubmit={handleAnalyze} className="ask-form glass sb-stagger-2">
           <div className="form-group">
             <label>Headline</label>
             <input 

@@ -18,11 +18,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Question is required' }, { status: 400 });
     }
 
-    // Check usage limits (AI Interviews)
-    const { allowed, remaining } = await checkAndIncrementUsage(user.id, 'interview');
+    // Check usage limits (Questions)
+    const { allowed, remaining } = await checkAndIncrementUsage(user.id, 'question');
     if (!allowed) {
       return NextResponse.json({ 
-        error: 'Free tier limit reached (5 AI interviews/month). Upgrade to Pro for unlimited access!',
+        error: 'Free tier limit reached (10 questions/day). Upgrade to Pro for unlimited access!',
         limitReached: true 
       }, { status: 403 });
     }

@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
   const subjectId    = searchParams.get('subject_id');
+  const authorId     = searchParams.get('author_id');
   const status       = searchParams.get('status');
   const sort         = searchParams.get('sort');
   const filter       = searchParams.get('filter');
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
       .select('*, profiles!author_id(username, avatar_url, reputation_points, branch), subjects(name)');
 
     if (subjectId) query = query.eq('subject_id', subjectId);
+    if (authorId)  query = query.eq('author_id', authorId);
     if (status)    query = query.eq('status', status);
     if (branch)    query = query.eq('academic_context_snapshot->>branch', branch);
 
