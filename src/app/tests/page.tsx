@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/auth-provider';
@@ -33,6 +33,21 @@ export default function PracticeTestsPage() {
     }
   }, [user]);
 
+  // Stable reference — depends on test/result/isSubmitting/answers so wrap in useCallback
+  const handleSubmitTest = useCallback(async () => {
+    if (!test || result || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const data = await testApi.submit(test.id, answers);
+      setResult(data);
+      testApi.getHistory().then(setHistory).catch(console.error);
+    } catch (err) {
+      alert('Failed to submit test');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [test, result, isSubmitting, answers]);
+
   useEffect(() => {
     let timer: any;
     if (test && !result && timeLeft > 0) {
@@ -41,7 +56,7 @@ export default function PracticeTestsPage() {
       handleSubmitTest();
     }
     return () => clearInterval(timer);
-  }, [test, result, timeLeft]);
+  }, [test, result, timeLeft, handleSubmitTest]);
 
   const handleGenerateTest = async () => {
     if (!selectedSubject || !topic) return;
@@ -57,20 +72,6 @@ export default function PracticeTestsPage() {
       alert('Failed to generate test.');
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleSubmitTest = async () => {
-    if (!test || result || isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      const data = await testApi.submit(test.id, answers);
-      setResult(data);
-      testApi.getHistory().then(setHistory).catch(console.error);
-    } catch (err) {
-      alert('Failed to submit test');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
