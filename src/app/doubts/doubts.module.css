@@ -330,3 +330,62 @@
   .filtersRow { flex-direction: column; align-items: stretch; }
   .pageTitle { font-size: 2rem; }
 }
+
+
+/* ========== SEARCH BAR ========== */
+.searchRow {
+  max-width: 900px;
+  margin: 0 auto 24px;
+  padding: 0 24px;
+}
+
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  color: rgba(255,255,255,0.35);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 40px 12px 44px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  color: white;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.searchInput::placeholder {
+  color: rgba(255,255,255,0.3);
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary);
+}
+
+.searchClear {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.searchClear:hover {
+  color: white;
+  background: rgba(255,255,255,0.08);
+}
