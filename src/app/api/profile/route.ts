@@ -8,12 +8,12 @@ export async function GET(req: NextRequest) {
 
   try {
     const [
-      { data: profile,  error: profileError },
-      { count: answers  },
+      { data: profile, error: profileError },
+      { count: answers },
       { count: accepted },
-      { count: doubts   },
-      { data: history   },
-      { data: badges    }
+      { count: doubts },
+      { data: history },
+      { data: badges }
     ] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
       supabase.from('answers').select('*', { count: 'exact', head: true })
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         .eq('author_id', user.id).eq('is_accepted', true),
       supabase.from('doubts').select('*', { count: 'exact', head: true })
         .eq('author_id', user.id),
-      supabase.from('reputation_events').select('*')
+      supabase.from('reputation_ledger').select('event_type, points_delta, entity_type, entity_id, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20),
@@ -35,12 +35,13 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       profile,
-      stats:   { answers: answers || 0, accepted: accepted || 0, doubts: doubts || 0 },
-      history: history  || [],
-      badges:  (badges  || []).map((ub: any) => ({
-        ...ub.badges,
-        earned_at: ub.created_at
-      }))
+      stats: {
+        answers: answers || 0,
+        accepted: accepted || 0,
+        doubts: doubts || 0
+      },
+      history: history || [],
+      badges: (badges || []).map((ub: any) => ({ ...ub.badges, earned_at: ub.unlocked_at }))
     });
   } catch (error) {
     console.error('Profile GET error:', error);
@@ -56,11 +57,11 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Whitelist updatable fields (security fix: never allow id, reputation_points, etc.)
-    const allowed: Record<string, any> = {};
+    // Whitelist updatable fields (never allow id, reputation_points, etc.)
+    const allowed: Record<string, unknown> = {};
     const updatableFields = [
-      'full_name', 'bio', 'college', 'branch',
-      'semester', 'github_url', 'linkedin_url', 'website_url', 'avatar_url'
+      'full_name', 'bio', 'college', 'branch', 'semester',
+      'github_url', 'linkedin_url', 'website_url', 'avatar_url'
     ];
     for (const field of updatableFields) {
       if (field in body) allowed[field] = body[field];
@@ -71,7 +72,7 @@ export async function PATCH(req: NextRequest) {
     if (allowed.semester !== undefined) {
       const sem = Number(allowed.semester);
       if (isNaN(sem) || sem < 1 || sem > 8) {
-        return NextResponse.json({ error: 'semester must be 1–8' }, { status: 400 });
+        return NextResponse.json({ error: 'semester must be 1-8' }, { status: 400 });
       }
       allowed.semester = sem;
     }
