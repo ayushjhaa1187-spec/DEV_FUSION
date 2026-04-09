@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { searchParams } = new URL(req.url);
-
-  const subjectId    = searchParams.get('subject_id');
-  const authorId     = searchParams.get('author_id');
-  const status       = searchParams.get('status');
-  const sort         = searchParams.get('sort');
-  const filter       = searchParams.get('filter');
-  const branch       = searchParams.get('branch');
-  const search       = searchParams.get('search');
+  const subjectId = searchParams.get('subject_id');
+  const authorId = searchParams.get('author_id');
+  const status = searchParams.get('status');
+  const sort = searchParams.get('sort');
+  const filter = searchParams.get('filter');
+  const branch = searchParams.get('branch');
+  const search = searchParams.get('search');
   const userSubjects = searchParams.get('user_subjects')?.split(',').filter(Boolean) || [];
-
   try {
     // Use a safe select — only columns guaranteed to exist in the base schema
     let query = supabase
@@ -21,10 +20,9 @@ export async function GET(req: NextRequest) {
       .select('*, profiles!author_id(username, avatar_url, reputation_points, branch), subjects(name)');
 
     if (subjectId) query = query.eq('subject_id', subjectId);
-    if (authorId)  query = query.eq('author_id', authorId);
-    if (status)    query = query.eq('status', status);
-    if (branch)    query = query.eq('academic_context_snapshot->>branch', branch);
-
+    if (authorId) query = query.eq('author_id', authorId);
+    if (status) query = query.eq('status', status);
+    if (branch) query = query.eq('academic_context_snapshot->>branch', branch);
     if (userSubjects.length > 0 && filter === 'my_subjects') {
       query = query.in('subject_id', userSubjects);
     }
@@ -41,18 +39,18 @@ export async function GET(req: NextRequest) {
 
     // Safe sort — only use created_at and votes (always present); skip trending_score
     const safeSortMap: Record<string, { column: string; ascending: boolean }> = {
-      newest:   { column: 'created_at', ascending: false },
-      oldest:   { column: 'created_at', ascending: true  },
-      votes:    { column: 'votes',      ascending: false },
+      newest: { column: 'created_at', ascending: false },
+      oldest: { column: 'created_at', ascending: true },
+      votes: { column: 'votes', ascending: false },
       trending: { column: 'created_at', ascending: false }, // fallback until trending_score column exists
     };
     const selectedSort = (sort && safeSortMap[sort]) ? safeSortMap[sort] : safeSortMap.newest;
     query = query.order(selectedSort.column, { ascending: selectedSort.ascending });
 
     // Pagination
-    const page  = parseInt(searchParams.get('page')  || '1');
+    const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const from  = (page - 1) * limit;
+    const from = (page - 1) * limit;
     query = query.range(from, from + limit - 1);
 
     const { data, error } = await query;
@@ -71,14 +69,28 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Sliding-window rate limit check (10 doubt posts / hour)
+  const rateCheck = await checkRateLimit(user.id, 'doubt_post');
+  if (!rateCheck.allowed) {
+    const retryAfterSecs = Math.ceil((rateCheck.resetAt.getTime() - Date.now()) / 1000);
+    return NextResponse.json(
+      {
+        error: 'Rate limit exceeded. You can post at most 10 doubts per hour.',
+        resetAt: rateCheck.resetAt.toISOString(),
+      },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(retryAfterSecs) },
+      }
+    );
+  }
+
   try {
     const { title, content, subject_id, branch, semester } = await req.json();
-
     if (!title?.trim() || !content?.trim()) {
       return NextResponse.json({ error: 'Title and content are required' }, { status: 400 });
     }
@@ -119,7 +131,7 @@ export async function POST(req: NextRequest) {
       if (repErr) console.warn('Reputation award failed (non-fatal):', repErr.message);
     });
 
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json({ ...data, rateLimitRemaining: rateCheck.remaining }, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Invalid payload';
     return NextResponse.json({ error: message }, { status: 400 });
