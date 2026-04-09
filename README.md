@@ -1,5 +1,3 @@
-
-```markdown
 <!--
   SKILLBRIDGE — DEV_FUSION HACKATHON
   Problem Statement 2: Peer Learning & Doubt Resolution Platform
