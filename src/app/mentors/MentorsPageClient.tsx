@@ -80,42 +80,42 @@ export default function MentorsPageClient() {
       );
     } else if (sortBy === 'sessions') {
       filtered = [...filtered].sort(
-        (a, b) => (b.mentor_profiles?.sessions_completed || 0) - (a.mentor_profiles?.sessions_completed || 0)
+        (a, b) =>
+          (b.mentor_profiles?.sessions_completed || 0) -
+          (a.mentor_profiles?.sessions_completed || 0)
       );
     } else if (sortBy === 'price') {
       filtered = [...filtered].sort(
-        (a, b) => (a.mentor_profiles?.hourly_rate || 0) - (b.mentor_profiles?.hourly_rate || 0)
+        (a, b) =>
+          (a.mentor_profiles?.hourly_rate || 0) - (b.mentor_profiles?.hourly_rate || 0)
       );
     }
     setFilteredMentors(filtered);
   }, [mentors, searchQuery, subjectFilter, priceFilter, sortBy]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a1a] px-4 py-10">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold text-white mb-3">Expert Mentors</h1>
-          <p className="text-gray-400 text-lg mb-4">Book 1-on-1 sessions with senior students and experts in your field.</p>
-          <Link
-            href="/mentors/apply"
-            className="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
-          >
-            Become a Mentor →
-          </Link>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Expert Mentors</h1>
+          <p className={styles.subtitle}>Book 1-on-1 sessions with senior students and experts in your field.</p>
         </div>
+        <Link href="/mentors/apply" className={styles.applyBtn}>Become a Mentor</Link>
+      </div>
 
-        {/* Search & Filters */}
-        <div className="flex flex-col md:flex-row gap-3 mb-8">
+      <div className={styles.searchSection}>
+        <div className={styles.searchBar}>
           <input
             type="text"
             placeholder="Search by name, skill, or subject..."
-            className="flex-1 bg-white/5 border border-white/10 text-white py-3 px-6 rounded-xl outline-none focus:border-indigo-500/50 transition font-medium placeholder:text-gray-500"
+            className={styles.searchInput}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+        </div>
+        <div className={styles.filters}>
           <select
-            className="bg-white/5 border border-white/10 text-white py-3 px-4 rounded-xl outline-none font-bold text-sm"
+            className={styles.select}
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
           >
@@ -126,7 +126,7 @@ export default function MentorsPageClient() {
             <option value="engineering">Engineering</option>
           </select>
           <select
-            className="bg-white/5 border border-white/10 text-white py-3 px-4 rounded-xl outline-none font-bold text-sm"
+            className={styles.select}
             value={priceFilter}
             onChange={(e) => setPriceFilter(e.target.value)}
           >
@@ -135,7 +135,7 @@ export default function MentorsPageClient() {
             <option value="paid">Paid Only</option>
           </select>
           <select
-            className="bg-white/5 border border-white/10 text-white py-3 px-4 rounded-xl outline-none font-bold text-sm"
+            className={styles.select}
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
           >
@@ -144,78 +144,78 @@ export default function MentorsPageClient() {
             <option value="price">Sort by Price</option>
           </select>
         </div>
+      </div>
 
-        {/* Mentor Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="h-64 rounded-2xl" />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
-            {error}
-          </div>
-        ) : filteredMentors.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMentors.map((mentor) => (
-              <div
-                key={mentor.id}
-                className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 hover:border-indigo-500/30 transition-all group"
-              >
-                <div className="flex items-center gap-4 mb-4">
+      {loading ? (
+        <div className={styles.mentorGrid}>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className={styles.mentorCard}>
+              <Skeleton className="h-64" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-accent)' }}>
+          {error}
+        </div>
+      ) : filteredMentors.length > 0 ? (
+        <div className={styles.mentorGrid}>
+          {filteredMentors.map((mentor) => (
+            <div key={mentor.id} className={styles.mentorCard}>
+              <div className={styles.cardHeader}>
+                <div className={styles.avatarContainer}>
                   {mentor.profiles?.avatar_url ? (
                     <Image
                       src={mentor.profiles.avatar_url}
-                      alt={mentor.profiles?.username || 'Mentor'}
-                      width={56}
-                      height={56}
-                      className="rounded-full object-cover w-14 h-14"
+                      alt={mentor.profiles?.username || ''}
+                      width={72}
+                      height={72}
+                      className={styles.avatar}
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xl font-bold">
+                    <div className={styles.avatarPlaceholder}>
                       {(mentor.profiles?.username || 'M')[0].toUpperCase()}
                     </div>
                   )}
-                  <div className="flex-1">
-                    <h3 className="text-white font-semibold text-lg">
-                      {mentor.profiles?.full_name || mentor.profiles?.username || 'Expert Mentor'}
-                    </h3>
-                    <p className="text-gray-400 text-sm">{mentor.mentor_profiles?.specialty || 'General Academic'}</p>
-                  </div>
+                  <span className={styles.ratingBadge}>★ {mentor.mentor_profiles?.rating || '5.0'}</span>
                 </div>
-
-                <div className="flex items-center justify-between text-sm mb-4">
-                  <div className="flex items-center gap-1 text-yellow-400">
-                    <span>★</span>
-                    <span className="font-medium">{mentor.mentor_profiles?.rating || '5.0'}</span>
-                  </div>
-                  <div className="text-gray-400">
-                    <span className="font-medium text-white">{mentor.mentor_profiles?.sessions_completed || 0}+</span> Sessions
-                  </div>
-                  <div className="font-semibold text-indigo-400">
+                <div>
+                  <h3 className={styles.name}>
+                    {mentor.profiles?.full_name || mentor.profiles?.username || 'Expert Mentor'}
+                  </h3>
+                  <p className={styles.specialty}>
+                    {mentor.mentor_profiles?.specialty || 'General Academic'}
+                  </p>
+                </div>
+              </div>
+              <div className={styles.cardBody}>
+                <div className={styles.statLine}>
+                  <span className={styles.statLabel}>Sessions</span>
+                  <span className={styles.statValue}>{mentor.mentor_profiles?.sessions_completed || 0}+</span>
+                </div>
+                <div className={styles.statLine}>
+                  <span className={styles.statLabel}>Rate</span>
+                  <span className={`${styles.statValue} ${mentor.mentor_profiles?.hourly_rate === 0 ? styles.freeValue : ''}`}>
                     {mentor.mentor_profiles?.hourly_rate === 0
                       ? 'Free'
                       : `₹${mentor.mentor_profiles?.hourly_rate}/30min`}
-                  </div>
+                  </span>
                 </div>
-
-                <Link
-                  href={`/mentors/${mentor.id}`}
-                  className="block w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-xl transition-colors"
-                >
-                  View Profile
-                </Link>
               </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="No mentors found"
-            description="Try adjusting your search or filters."
-          />
-        )}
-      </div>
+              <div className={styles.cardFooter}>
+                <Link href={`/mentors/${mentor.id}`} className={styles.viewProfileBtn}>Profile</Link>
+                <Link href={`/mentors/${mentor.id}?book=1`} className={styles.bookBtn}>Book Session</Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon="🎓"
+          title="No mentors found"
+          description="Try adjusting your search or filters."
+        />
+      )}
     </div>
   );
 }
