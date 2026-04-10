@@ -23,22 +23,22 @@ export async function GET(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
   } else {
-    // Time-based query using reputation_ledger table
+    // Time-based query using reputation_history table (combined_migration schema)
     const days = timeframe === 'weekly' ? 7 : 30;
     const since = new Date();
     since.setDate(since.getDate() - days);
 
     const { data: events, error: eventError } = await supabase
-      .from('reputation_ledger')
-      .select('user_id, points_delta')
+      .from('reputation_history')
+      .select('user_id, points')
       .gte('created_at', since.toISOString());
 
     if (eventError) return NextResponse.json({ error: eventError.message }, { status: 500 });
 
     // Aggregate points by user
     const userPoints: Record<string, number> = {};
-    (events || []).forEach((e: { user_id: string; points_delta: number }) => {
-      userPoints[e.user_id] = (userPoints[e.user_id] || 0) + e.points_delta;
+    (events || []).forEach((e: { user_id: string; points: number }) => {
+      userPoints[e.user_id] = (userPoints[e.user_id] || 0) + e.points;
     });
 
     // Get profiles for these users
