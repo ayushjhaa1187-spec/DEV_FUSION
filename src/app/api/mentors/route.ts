@@ -10,16 +10,17 @@ export async function GET(req: NextRequest) {
   const minRating = searchParams.get('min_rating');
 
   try {
+    // In combined_migration schema, mentor_profiles.id IS the FK to profiles(id)
     let query = supabase
       .from('mentor_profiles')
-      .select('*, profiles!user_id(username, avatar_url, full_name, branch, college)')
-      .eq('verification_status', 'approved');
+      .select('*, profiles!id(username, avatar_url, full_name, branch, college)');
 
     if (specialty) query = query.ilike('specialty', `%${specialty}%`);
+    if (branch) query = query.eq('profiles.branch', branch);
     if (isFree === 'true') query = query.eq('is_free_session_available', true);
-    if (minRating) query = query.gte('rating_avg', parseFloat(minRating));
+    if (minRating) query = query.gte('rating', parseFloat(minRating));
 
-    query = query.order('rating_avg', { ascending: false });
+    query = query.order('rating', { ascending: false });
 
     const { data, error } = await query;
 
@@ -41,13 +42,13 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { headline, bio, specialty, subjects, hourly_rate, is_free_session_available } = await req.json();
+    const { specialty, price_per_session } = await req.json();
 
     // Check if mentor profile already exists
     const { data: existing } = await supabase
       .from('mentor_profiles')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     if (existing) {
@@ -57,15 +58,11 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from('mentor_profiles')
       .insert({
-        user_id: user.id,
-        headline,
-        bio,
+        id: user.id, // id IS the FK to profiles(id)
         specialty,
-        subjects: subjects || [],
-        hourly_rate: hourly_rate || 0,
-        is_free_session_available: is_free_session_available || false,
+        price_per_session: price_per_session || 0,
       })
-      .select('*, profiles!user_id(username, avatar_url, full_name)')
+      .select('*, profiles!id(username, avatar_url, full_name)')
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
