@@ -20,7 +20,13 @@ export default function AuthPageClient() {
   useEffect(() => {
     const err = searchParams.get('error');
     if (err) {
-      setError(err === 'auth-failed' ? 'Authentication failed. Please try again.' : err);
+      if (err === 'auth-failed') {
+        setError('Authentication failed. Please try again.');
+      } else if (err.includes('provider') || err.includes('not_enabled') || err.includes('unsupported')) {
+        setError('Google sign-in is not configured yet. Please use email & password login.');
+      } else {
+        setError(err);
+      }
     }
   }, [searchParams]);
 
@@ -57,33 +63,9 @@ export default function AuthPageClient() {
   };
 
   const handleGoogle = async () => {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin;
-    setError(null);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${appUrl}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-      if (error) {
-        if (
-          error.message?.toLowerCase().includes('provider') ||
-          error.message?.toLowerCase().includes('not enabled') ||
-          error.message?.toLowerCase().includes('unsupported')
-        ) {
-          setError('Google sign-in is not configured yet. Please use email & password login.');
-        } else {
-          setError(error.message || 'Google Auth failed');
-        }
-      }
-    } catch (err: any) {
-      setError(err.message || 'Google Auth failed');
-    }
+    // Show user-friendly message instead of redirecting to raw Supabase error
+    // Google OAuth must be enabled in Supabase dashboard first
+    setError('Google sign-in is not yet configured. Please contact the admin to enable it, or use email & password login below.');
   };
 
   return (
@@ -168,7 +150,12 @@ export default function AuthPageClient() {
           <span>or</span>
         </div>
 
-        <button onClick={handleGoogle} className={styles.googleBtn} type="button">
+        <button
+          onClick={handleGoogle}
+          className={styles.googleBtn}
+          type="button"
+          title="Google sign-in is not yet configured"
+        >
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
             <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
