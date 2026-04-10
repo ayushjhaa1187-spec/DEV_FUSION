@@ -1,26 +1,26 @@
 .profileWrapper {
-  background: #f8fafc; /* Light background for the profile page */
+  background: var(--bg, #09090f);
   min-height: 100vh;
-  color: #111827;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  --white: #ffffff;
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
-  --primary-blue: #2563eb;
-  --primary-green: #22c55e;
+  color: var(--text, #e8e8f0);
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --white: #0f0f1a;
+  --gray-50: rgba(255,255,255,0.03);
+  --gray-100: rgba(255,255,255,0.05);
+  --gray-200: rgba(255,255,255,0.07);
+  --gray-300: rgba(255,255,255,0.12);
+  --gray-400: #7a7a9a;
+  --gray-500: #7a7a9a;
+  --gray-600: #9a9ab0;
+  --gray-700: #c0c0d8;
+  --gray-800: #d8d8ee;
+  --gray-900: #e8e8f0;
+  --primary-blue: #7c3aed;
+  --primary-green: #06d6a0;
   --radius: 16px;
   --radius-sm: 10px;
   --radius-full: 9999px;
-  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 10px 40px rgba(0,0,0,0.4);
+  --shadow-sm: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 .profileContainer {
@@ -62,7 +62,7 @@
   font-size: 38px;
   font-weight: 800;
   flex-shrink: 0;
-  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.35);
 }
 
 .profileHeaderInfo {
@@ -91,7 +91,7 @@
   align-items: center;
   gap: 10px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(34, 197, 94, 0.08));
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(6, 214, 160, 0.08));
   border-radius: var(--radius-full);
   font-size: 16px;
   font-weight: 700;
@@ -109,22 +109,22 @@
   align-items: center;
   gap: 10px;
   padding: 12px 24px;
-  background: var(--white);
-  border: 1px solid var(--gray-200);
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.3);
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 600;
-  color: var(--gray-700);
+  color: #a78bfa;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 
 .btnEditProfile:hover {
-  background: var(--gray-50);
-  border-color: var(--gray-300);
+  background: rgba(124, 58, 237, 0.2);
+  border-color: rgba(124, 58, 237, 0.5);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
 }
 
 .btnEditProfile svg {
@@ -449,11 +449,12 @@
 }
 
 .modal {
-  background: var(--white);
+  background: var(--surface, #0f0f1a);
+  border: 1px solid rgba(255,255,255,0.08);
   width: 100%;
   max-width: 500px;
   border-radius: var(--radius);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
   overflow: hidden;
   transform: translateY(20px);
   transition: transform 0.3s ease;
@@ -513,13 +514,15 @@
   border: 1px solid var(--gray-200);
   border-radius: 8px;
   font-size: 15px;
+  background: var(--bg, #09090f);
+  color: var(--text, #e8e8f0);
   transition: all 0.2s ease;
 }
 
 .formInput:focus {
   outline: none;
   border-color: var(--primary-blue);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
 }
 
 .modalFooter {
@@ -533,8 +536,8 @@
 .btnSecondary {
   padding: 10px 20px;
   border-radius: 8px;
-  background: var(--white);
-  border: 1px solid var(--gray-300);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
   font-size: 14px;
   font-weight: 600;
   color: var(--gray-700);
@@ -548,7 +551,7 @@
   border: none;
   font-size: 14px;
   font-weight: 600;
-  color: var(--white);
+  color: #ffffff;
   cursor: pointer;
 }
 

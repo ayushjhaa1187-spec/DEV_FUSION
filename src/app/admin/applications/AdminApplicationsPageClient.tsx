@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 
 export default function AdminApplicationsPageClient() {
   const [apps, setApps] = useState<any[]>([]);
@@ -72,7 +70,6 @@ export default function AdminApplicationsPageClient() {
 
   return (
     <main className="min-h-screen bg-[#0d0d1a] text-white">
-      <Navbar />
       <div className="max-w-6xl mx-auto px-6 py-24">
         <header className="mb-12">
           <h1 className="text-4xl font-black font-heading tracking-tighter mb-4">Mentor <span>Vetting</span></h1>
@@ -115,7 +112,6 @@ export default function AdminApplicationsPageClient() {
           </div>
         )}
       </div>
-      <Footer />
     </main>
   );
 }

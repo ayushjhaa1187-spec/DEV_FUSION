@@ -37,13 +37,22 @@ export default function AIFloatingAssistant() {
       });
       const data = await res.json();
       
-      const aiContent = data.explanation 
-        ? `${data.explanation}\n\n${(data.steps || []).join('\n')}`
-        : data.error || 'The neural network encountered a slight latency. Please retry.';
+      let aiContent: string;
+      if (res.status === 401) {
+        aiContent = '🔒 **Sign in required.** Please [sign in](/auth) to use the AI tutor. Your question will be waiting!';
+      } else if (res.status === 429) {
+        aiContent = '⏱️ **Slow down!** You\'ve hit the rate limit (30 questions/hour). Please wait a moment and try again.';
+      } else if (res.status === 403) {
+        aiContent = '🚀 **Free tier limit reached.** You\'ve used your 10 daily questions. [Upgrade to Pro](/pricing) for unlimited AI assistance!';
+      } else if (data.explanation) {
+        aiContent = `${data.explanation}${data.steps?.length ? '\n\n**Steps:**\n' + data.steps.map((s: string, i: number) => `${i+1}. ${s}`).join('\n') : ''}`;
+      } else {
+        aiContent = data.error || 'The neural network encountered a slight latency. Please retry.';
+      }
         
       setMessages(prev => [...prev, { role: 'ai', content: aiContent }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'ai', content: 'Connection fragmented. Please re-engage.' }]);
+      setMessages(prev => [...prev, { role: 'ai', content: '📡 Connection issue. Please check your internet and retry.' }]);
     } finally {
       setLoading(false);
     }

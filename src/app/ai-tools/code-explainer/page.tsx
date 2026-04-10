@@ -1,8 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { Code2, Sparkles, Copy, Check, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -41,7 +39,6 @@ export default function CodeExplainerPage() {
 
   return (
     <main className="min-h-screen bg-[#0f0f1a] text-white">
-      <Navbar />
       
       <div className="max-w-6xl mx-auto px-6 py-20">
         <header className="mb-12">
@@ -151,7 +148,6 @@ export default function CodeExplainerPage() {
           </div>
         </div>
       </div>
-      <Footer />
     </main>
   );
 }

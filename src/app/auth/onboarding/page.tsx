@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useAuth } from '@/components/auth/auth-provider';
-import Navbar from '@/components/layout/Navbar';
 import { motion } from 'framer-motion';
 
 export default function OnboardingPage() {
@@ -50,7 +49,6 @@ export default function OnboardingPage() {
 
   return (
     <main className="min-h-screen bg-[#0d0d1a] text-white">
-      <Navbar />
       <div className="max-w-3xl mx-auto px-6 py-24">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}

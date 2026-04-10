@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef, use } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import Navbar from '@/components/layout/Navbar';
 import { Send, Hash, Users, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { LoadingPage } from '@/components/ui/Loading';
@@ -83,7 +82,6 @@ export default function GroupChatPage({ params }: { params: Promise<{ id: string
 
   return (
     <main className="h-screen bg-[#0f0f1a] flex flex-col pt-[72px]">
-      <Navbar />
       
       <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar */}

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Navbar from '@/components/layout/Navbar';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import { LoadingPage } from '@/components/ui/Loading';
 import { Link as LinkIcon, ExternalLink, Globe, Award, TrendingUp, Calendar } from 'lucide-react';
@@ -60,7 +59,6 @@ export default function PublicProfilePageClient({ username }: { username: string
 
   return (
     <main className="min-h-screen bg-[#0d0d1a] text-white">
-      <Navbar />
       
       <div className="max-w-6xl mx-auto px-6 py-24">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

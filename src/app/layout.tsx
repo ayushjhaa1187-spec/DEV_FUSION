@@ -1,13 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import ConditionalNavbar from '@/components/layout/ConditionalNavbar';
+import ConditionalNavbar, { ConditionalFooter } from '@/components/layout/ConditionalNavbar';
 import Providers from '@/components/providers';
-import dynamic from 'next/dynamic';
-
-const AIFloatingAssistant = dynamic(
-  () => import('@/components/AIFloatingAssistant'),
-  { ssr: false, loading: () => null }
-);
+import ClientAIAssistant from '@/components/ClientAIAssistant';
 
 export const metadata: Metadata = {
   title: "SkillBridge — Learn. Earn. Grow.",
@@ -30,8 +25,11 @@ export default function RootLayout({
       <body>
         <Providers>
           <ConditionalNavbar />
-          {children}
-          <AIFloatingAssistant />
+          <main className="app-main">
+            {children}
+          </main>
+          <ConditionalFooter />
+          <ClientAIAssistant />
         </Providers>
       </body>
     </html>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Navbar from '@/components/layout/Navbar';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Clock, Star, Users, CheckCircle, ArrowLeft, Lock } from 'lucide-react';
@@ -26,7 +25,6 @@ export default function CourseDetailClient({ course }: CourseDetailClientProps) 
 
   return (
     <main className="min-h-screen bg-[#0d0d1a] text-white">
-      <Navbar />
 
       {/* Hero */}
       <div className="relative h-[50vh] overflow-hidden">

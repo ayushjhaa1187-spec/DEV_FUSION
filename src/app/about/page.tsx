@@ -1,5 +1,3 @@
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import '../landing.css';
 import { Metadata } from 'next';
 
@@ -16,7 +14,6 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <main className="sb-page">
-      <Navbar />
       
       <section className="sb-hero" style={{ paddingTop: '160px' }}>
         <div className="sb-heroBadge">
@@ -68,8 +65,6 @@ export default function AboutPage() {
           </p>
         </div>
       </section>
-
-      <Footer />
     </main>
   );
 }

@@ -2,8 +2,6 @@
 
 import { useEffect, useState, use } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { Shield, Users, Clock, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -29,7 +27,6 @@ export default function SessionLivePage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="min-h-screen bg-[#070712] text-white">
-      <Navbar />
       
       <div className="pt-24 pb-12 px-6 max-w-7xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
@@ -102,7 +99,6 @@ export default function SessionLivePage({ params }: { params: Promise<{ id: stri
            </aside>
         </div>
       </div>
-      <Footer />
     </main>
   );
 }

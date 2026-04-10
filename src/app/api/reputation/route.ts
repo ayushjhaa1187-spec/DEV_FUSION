@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest) {
 
   if (eventError) return NextResponse.json({ error: eventError.message }, { status: 500 });
 
-  const { calculateReputation } = await import('@/lib/reputation-service');
+  const { calculateReputation } = await import('@/lib/reputation-utils');
   const totalPoints = calculateReputation(events || []);
 
   const { error: updateError } = await supabase

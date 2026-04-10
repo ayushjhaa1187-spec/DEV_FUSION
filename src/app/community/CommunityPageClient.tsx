@@ -1,10 +1,9 @@
 'use client';
 
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Users, MessageSquare, Hash, Flame, ArrowRight } from 'lucide-react';
+
 
 const topicCircles = [
   { name: 'DSA & CP', members: '2.4k', color: 'indigo', emoji: '🧠', href: '/community/groups' },
@@ -24,10 +23,9 @@ const activities = [
 
 export default function CommunityPageClient() {
   return (
-    <main className="min-h-screen bg-[#0d0d1a] text-white">
-      <Navbar />
+    <main className="min-h-screen">
 
-      <div className="max-w-6xl mx-auto px-6 pt-32 pb-24">
+      <div className="max-w-6xl mx-auto px-6 pt-8 pb-24">
         
         {/* Hero */}
         <header className="text-center mb-24">
@@ -139,8 +137,6 @@ export default function CommunityPageClient() {
 
         </section>
       </div>
-
-      <Footer />
     </main>
   );
 }

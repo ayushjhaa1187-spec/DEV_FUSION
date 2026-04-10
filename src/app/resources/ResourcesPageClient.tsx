@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { FileText, Download, Play, Search, BookOpen, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -45,7 +43,6 @@ export default function ResourcesPageClient() {
 
   return (
     <main className="min-h-screen bg-[#0d0d1a] text-white">
-      <Navbar />
       
       <div className="max-w-7xl mx-auto px-6 py-24">
         <header className="mb-16">
@@ -159,7 +156,6 @@ export default function ResourcesPageClient() {
            )}
         </AnimatePresence>
       </div>
-      <Footer />
     </main>
   );
 }

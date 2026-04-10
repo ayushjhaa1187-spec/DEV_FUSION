@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { Users, MessageSquare, Video, Star, BarChart3, ShieldCheck, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingPage } from '@/components/ui/Loading';
@@ -60,7 +58,6 @@ export default function AdminAnalyticsPageClient() {
 
   return (
     <main className="min-h-screen bg-[#0d0d1a] text-white">
-      <Navbar />
       
       <div className="max-w-7xl mx-auto px-6 py-24">
         <header className="mb-16">
@@ -190,7 +187,6 @@ export default function AdminAnalyticsPageClient() {
           </div>
         </section>
       </div>
-      <Footer />
     </main>
   );
 }

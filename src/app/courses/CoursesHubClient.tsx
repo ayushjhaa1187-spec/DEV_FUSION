@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { motion } from 'framer-motion';
 import { Play, Clock, BookOpen, Star, Search, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -44,7 +42,6 @@ export default function CoursesHubClient() {
 
   return (
     <main className="min-h-screen bg-[#0d0d1a] text-white">
-      <Navbar />
       
       <div className="max-w-7xl mx-auto px-6 py-32">
         <header className="mb-20">
@@ -131,8 +128,6 @@ export default function CoursesHubClient() {
            <button className="sb-btnSecondary" style={{ pointerEvents: 'none', opacity: 0.5 }}>Educator Dashboard Coming Soon</button>
         </div>
       </div>
-
-      <Footer />
     </main>
   );
 }

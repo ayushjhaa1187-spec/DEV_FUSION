@@ -1,8 +1,6 @@
 'use client';
 
 import React from 'react';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { motion } from 'framer-motion';
 import { Sparkles, Code, FileText, Mic, Brain, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -43,7 +41,6 @@ const tools = [
 export default function AIToolsHubClient() {
   return (
     <main className="min-h-screen bg-[#0d0d1a] text-white">
-      <Navbar />
       
       <div className="max-w-6xl mx-auto px-6 py-32">
         <header className="mb-20 text-center">
@@ -99,8 +96,6 @@ export default function AIToolsHubClient() {
            ))}
         </div>
       </div>
-
-      <Footer />
     </main>
   );
 }

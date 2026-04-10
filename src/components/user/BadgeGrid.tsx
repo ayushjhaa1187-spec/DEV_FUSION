@@ -1,5 +1,5 @@
 'use client';
-import { ALL_BADGES } from '@/lib/reputation-service';
+import { ALL_BADGES } from '@/lib/reputation-utils';
 import styles from './BadgeGrid.module.css';
 import { Lock, Award, CheckCircle2 } from 'lucide-react';
 

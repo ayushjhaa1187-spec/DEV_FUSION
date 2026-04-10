@@ -150,6 +150,36 @@ export default function HomePageClient() {
     <div style={{ background: 'var(--bg)' }}>
       <ParticleBackground />
 
+      {/* ── LANDING NAVBAR ── */}
+      <nav className="landing-nav">
+        <Link href="/" className="landing-nav-logo">
+          <svg className="landing-nav-logoIcon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="landingNavGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="#7c3aed" />
+                <stop offset="100%" stopColor="#06d6a0" />
+              </linearGradient>
+            </defs>
+            <path d="M4 28 Q20 8 36 28" stroke="url(#landingNavGrad)" strokeWidth="3" fill="none" strokeLinecap="round" />
+            <line x1="4" y1="28" x2="36" y2="28" stroke="url(#landingNavGrad)" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="13" y1="20" x2="13" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+            <line x1="27" y1="20" x2="27" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="20" cy="10.5" r="3" fill="#06d6a0" opacity="0.9" />
+            <circle cx="20" cy="10.5" r="5.5" fill="#06d6a0" opacity="0.2" />
+          </svg>
+          <span className="landing-nav-logoText">Skill<span>Bridge</span></span>
+        </Link>
+        <div className="landing-nav-links">
+          <a href="#features" className="landing-nav-link">Features</a>
+          <a href="#flashcards" className="landing-nav-link">Practice</a>
+          <a href="#mentors" className="landing-nav-link">Mentors</a>
+        </div>
+        <div className="landing-nav-actions">
+          <Link href="/auth" className="landing-nav-signin">Sign In</Link>
+          <Link href="/auth" className="landing-nav-cta">Get Started →</Link>
+        </div>
+      </nav>
+
       {/* ── HERO ── */}
       <section className="hero">
         <div>

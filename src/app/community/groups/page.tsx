@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useAuth } from '@/components/auth/auth-provider';
 import { Users, Plus, MessageSquare, Shield, Globe, Lock } from 'lucide-react';
@@ -50,7 +48,6 @@ export default function StudyGroupsPage() {
 
   return (
     <main className="min-h-screen bg-[#0f0f1a] text-white">
-      <Navbar />
       
       <div className="max-w-7xl mx-auto px-6 py-20">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
@@ -141,7 +138,6 @@ export default function StudyGroupsPage() {
           </div>
         )}
       </div>
-      <Footer />
     </main>
   );
 }
