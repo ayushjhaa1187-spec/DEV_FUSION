@@ -1,0 +1,335 @@
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.headerIcon {
+  color: var(--gold);
+  font-size: 2rem;
+}
+
+.title {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  color: var(--text);
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+  gap: 0;
+}
+
+.tab {
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.activeTab {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skeletonPodium {
+  height: 160px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 24px;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeletonRow {
+  height: 56px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+.podiumWrapper {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.podiumCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.podiumMedal {
+  font-size: 1.8rem;
+}
+
+.podiumAvatar {
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  object-fit: cover;
+}
+
+.podiumAvatarPlaceholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+}
+
+.podiumName {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.podiumPoints {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.podiumBase {
+  width: 80px;
+  border-radius: 8px 8px 0 0;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.podiumRank {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.tableContainer {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.tableHead {
+  background: rgba(255,255,255,0.03);
+}
+
+.tableHead th {
+  padding: 12px 16px;
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.tableHead th:last-child,
+.tableHead th:nth-last-child(2) {
+  text-align: right;
+}
+
+.tableRow {
+  border-top: 1px solid var(--border);
+  transition: background 0.15s ease;
+}
+
+.tableRow:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.tableRowHighlight {
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.tableRow td {
+  padding: 12px 16px;
+}
+
+.rankCell {
+  color: var(--muted);
+  font-weight: 500;
+  width: 48px;
+}
+
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.userAvatar {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.userName {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.userYou {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  margin-left: 4px;
+}
+
+.userHandle {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.collegeCell {
+  color: var(--muted);
+}
+
+.pointsCell {
+  text-align: right;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.changeCell {
+  text-align: right;
+}
+
+.changeUp {
+  color: #4ade80;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.changeDown {
+  color: #f87171;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.changeNeutral {
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badgeNewcomer {
+  background: rgba(255,255,255,0.08);
+  color: var(--muted);
+}
+
+.badgeHelper {
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+}
+
+.badgeExpert {
+  background: rgba(168, 85, 247, 0.12);
+  color: #c4b5fd;
+}
+
+.badgeLegend {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+.emptyText {
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.currentUserBanner {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  background: rgba(124, 58, 237, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.currentUserRank {
+  color: var(--color-primary);
+  font-weight: 700;
+  width: 32px;
+  text-align: center;
+}
+
+.currentUserName {
+  flex: 1;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.currentUserPoints {
+  color: var(--color-primary);
+  font-weight: 700;
+}
