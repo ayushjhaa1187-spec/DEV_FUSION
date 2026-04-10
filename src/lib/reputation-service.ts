@@ -29,11 +29,11 @@ export async function addReputationEvent(
   const supabase = await createSupabaseServer();
   const pointsDelta = REPUTATION_POINTS[eventType];
   const { error: ledgerError } = await supabase
-    .from('reputation_ledger')
+    .from('reputation_history')
     .insert({
       user_id: userId,
       event_type: eventType,
-      points_delta: pointsDelta,
+      points: pointsDelta,
       entity_type: entityType,
       entity_id: entityId,
       metadata

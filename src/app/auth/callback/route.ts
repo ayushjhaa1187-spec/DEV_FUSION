@@ -34,8 +34,13 @@ export async function GET(request: Request) {
         },
       }
     );
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || origin).replace(/\/$/, '');
-    const { data: { session } } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
+    
+    if (error) {
+      console.error("Auth callback error:", error);
+      return NextResponse.redirect(`${origin}/auth?error=${encodeURIComponent(error.message)}`);
+    }
+
     if (session) {
       // Check if profile is complete
       const { data: profile } = await supabase
@@ -44,18 +49,15 @@ export async function GET(request: Request) {
         .eq('id', session.user.id)
         .single();
       
-      const appUrl = (process.env.NEXT_PUBLIC_APP_URL || origin).replace(/\/$/, '');
-      
       if (!profile || !profile.college) {
-        return NextResponse.redirect(`${appUrl}/auth/onboarding`);
+        return NextResponse.redirect(`${origin}/auth/onboarding`);
       }
 
       const path = next.startsWith('/') ? next : '/dashboard';
-      return NextResponse.redirect(`${appUrl}${path}`);
+      return NextResponse.redirect(`${origin}${path}`);
     }
   }
 
   // Error case — send back to auth page with error param
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || origin).replace(/\/$/, '');
-  return NextResponse.redirect(`${appUrl}/auth?error=auth-failed`);
+  return NextResponse.redirect(`${origin}/auth?error=auth-failed`);
 }

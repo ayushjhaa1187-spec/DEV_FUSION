@@ -65,10 +65,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
-    router.push('/');
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      // Hard redirect to home to clear all states and ensure cookies are picked up by middleware
+      window.location.href = '/';
+    } catch (err) {
+      console.error('Error signing out:', err);
+      // Fallback redirect
+      window.location.href = '/';
+    }
   };
 
   return (

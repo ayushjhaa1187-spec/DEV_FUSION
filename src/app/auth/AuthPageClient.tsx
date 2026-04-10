@@ -35,8 +35,6 @@ export default function AuthPageClient() {
     setLoading(true);
     setError(null);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin;
-
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -47,7 +45,7 @@ export default function AuthPageClient() {
           password,
           options: {
             data: { full_name: name },
-            emailRedirectTo: `${appUrl}/auth/callback`
+            emailRedirectTo: `${window.location.origin}/auth/callback`
           },
         });
         if (error) throw error;
@@ -63,9 +61,24 @@ export default function AuthPageClient() {
   };
 
   const handleGoogle = async () => {
-    // Show user-friendly message instead of redirecting to raw Supabase error
-    // Google OAuth must be enabled in Supabase dashboard first
-    setError('Google sign-in is not yet configured. Please contact the admin to enable it, or use email & password login below.');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { 
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      console.error('Google Auth Error:', err);
+      setError(err.message === 'provider_not_enabled' 
+        ? 'Google sign-in is not enabled in Supabase dashboard. Please enable it in Authentication > Providers.' 
+        : (err.message || 'Google Auth failed'));
+    }
   };
 
   return (

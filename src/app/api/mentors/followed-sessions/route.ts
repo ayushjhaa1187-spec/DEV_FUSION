@@ -21,7 +21,7 @@ export async function GET() {
         mentors:mentor_id (
           id,
           specialty,
-          profiles:user_id ( username, full_name, avatar_url )
+          profiles!id ( username, full_name, avatar_url )
         )
       `)
       .eq('student_id', user.id)

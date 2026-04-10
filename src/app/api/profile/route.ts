@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         .eq('author_id', user.id).eq('is_accepted', true),
       supabase.from('doubts').select('*', { count: 'exact', head: true })
         .eq('author_id', user.id),
-      supabase.from('reputation_ledger').select('event_type, points_delta, entity_type, entity_id, created_at')
+      supabase.from('reputation_history').select('event_type, points, entity_type, entity_id, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20),
