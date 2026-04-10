@@ -49,23 +49,24 @@ export default function LeaderboardPageClient() {
   const currentUserInTop20 = entries.some((e) => e.is_current_user);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0d0d1a] p-6 text-white">
+    <div className="min-h-screen bg-[#0a0a1a] px-4 py-10">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white flex items-center gap-2">
-          <Trophy className="w-8 h-8 text-yellow-500" />
-          Leaderboard
-        </h1>
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <Trophy className="w-8 h-8 text-yellow-400" />
+          <h1 className="text-4xl font-bold text-white">Leaderboard</h1>
+        </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-8 border-b border-gray-200 dark:border-white/10">
+        <div className="flex border-b border-white/10 mb-8">
           {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 font-medium transition border-b-2 -mb-px ${
+              className={`px-5 py-3 font-medium transition border-b-2 -mb-px ${
                 activeTab === tab
-                  ? 'border-indigo-600 text-indigo-400'
-                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'border-indigo-500 text-indigo-400'
+                  : 'border-transparent text-gray-500 hover:text-white'
               }`}
             >
               {tab}
@@ -76,62 +77,70 @@ export default function LeaderboardPageClient() {
         {/* Skeleton */}
         {isLoading && (
           <div className="space-y-4">
-            <div className="flex justify-center gap-6 mb-8">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="animate-pulse flex flex-col items-center gap-2">
-                  <div className="w-16 h-16 bg-gray-200 dark:bg-white/5 rounded-full" />
-                  <div className="h-4 w-20 bg-gray-200 dark:bg-white/5 rounded" />
-                </div>
-              ))}
-            </div>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse" />
+            ))}
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="h-14 bg-gray-200 dark:bg-white/5 rounded-lg animate-pulse" />
+              <div key={i} className="h-14 rounded-xl bg-white/5 animate-pulse" />
             ))}
           </div>
         )}
 
         {!isLoading && (
           <>
+            {/* Podium */}
             {top3.length > 0 && (
               <div className="flex items-end justify-center gap-4 mb-10">
-                {top3[1] && <PodiumCard entry={top3[1]} position={2} delay={200} />}
+                {top3[1] && <PodiumCard entry={top3[1]} position={2} delay={100} />}
                 {top3[0] && <PodiumCard entry={top3[0]} position={1} delay={0} />}
-                {top3[2] && <PodiumCard entry={top3[2]} position={3} delay={400} />}
+                {top3[2] && <PodiumCard entry={top3[2]} position={3} delay={200} />}
               </div>
             )}
 
-            <div className="bg-white dark:bg-[#13132b] rounded-xl shadow overflow-hidden border border-white/5">
-              <table className="w-full">
-                <thead className="bg-gray-100 dark:bg-white/5">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-400">Rank</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-400">User</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-400 hidden sm:table-cell">College</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-400">Badge</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-400">Points</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-400">Change</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                  {rest.map((entry) => <LeaderboardRow key={entry.user_id} entry={entry} />)}
-                </tbody>
-              </table>
-            </div>
+            {/* Table */}
+            {rest.length > 0 && (
+              <div className="rounded-2xl border border-white/10 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-white/5">
+                    <tr className="text-gray-400 text-left">
+                      <th className="px-4 py-3 font-medium">Rank</th>
+                      <th className="px-4 py-3 font-medium">User</th>
+                      <th className="px-4 py-3 font-medium hidden md:table-cell">College</th>
+                      <th className="px-4 py-3 font-medium">Badge</th>
+                      <th className="px-4 py-3 font-medium text-right">Points</th>
+                      <th className="px-4 py-3 font-medium text-right">Change</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {rest.map((entry) => <LeaderboardRow key={entry.user_id} entry={entry} />)}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
+            {/* Empty state */}
+            {entries.length === 0 && (
+              <div className="text-center py-20">
+                <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">No leaderboard data yet.</p>
+                <p className="text-gray-600 text-sm mt-2">Be the first to earn reputation points!</p>
+              </div>
+            )}
+
+            {/* Current user sticky */}
             {currentUser && !currentUserInTop20 && (
-              <div className="mt-4 bg-indigo-500/10 rounded-xl p-4 flex items-center gap-4 border-2 border-indigo-400/50">
-                <span className="font-bold text-indigo-400 w-10">{currentUser.rank}</span>
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-9 h-9 rounded-full bg-gray-300 overflow-hidden">
-                    {currentUser.avatar && <Image src={currentUser.avatar} alt={currentUser.name} width={36} height={36} />}
+              <div className="mt-4 p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10">
+                <div className="flex items-center gap-3">
+                  <span className="text-indigo-400 font-bold w-8 text-center">{currentUser.rank}</span>
+                  {currentUser.avatar && (
+                    <Image src={currentUser.avatar} alt={currentUser.name} width={36} height={36} className="rounded-full" />
+                  )}
+                  <div className="flex-1">
+                    <span className="text-white font-medium">{currentUser.name}</span>
+                    <span className="text-indigo-400 text-xs ml-2">(You)</span>
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{currentUser.name} <span className="text-indigo-400">(You)</span></p>
-                    <p className="text-xs text-gray-500">{currentUser.college}</p>
-                  </div>
+                  <span className="text-indigo-400 font-bold">{currentUser.points.toLocaleString()} pts</span>
                 </div>
-                <BadgeChip badge={currentUser.badge} />
-                <span className="font-bold text-gray-900 dark:text-white ml-auto">{currentUser.points.toLocaleString()}</span>
               </div>
             )}
           </>
@@ -145,50 +154,51 @@ function PodiumCard({ entry, position, delay }: { entry: LeaderboardEntry; posit
   const heights: Record<number, string> = { 1: 'h-32', 2: 'h-24', 3: 'h-20' };
   const medals: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
   return (
-    <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: `${delay}ms` }}>
-      <div className="text-3xl">{medals[position]}</div>
-      <div className="w-16 h-16 rounded-full bg-gray-300 overflow-hidden">
-        {entry.avatar && <Image src={entry.avatar} alt={entry.name} width={64} height={64} />}
+    <div className="flex flex-col items-center gap-2">
+      <div className="text-2xl">{medals[position]}</div>
+      {entry.avatar && (
+        <Image src={entry.avatar} alt={entry.name} width={48} height={48} className="rounded-full border-2 border-white/20" />
+      )}
+      <div className="text-center">
+        <p className="text-white font-semibold text-sm">{entry.name}</p>
+        <p className="text-indigo-400 font-bold text-sm">{entry.points.toLocaleString()} pts</p>
       </div>
-      <p className="font-semibold text-gray-900 dark:text-white text-sm text-center">{entry.name}</p>
-      <p className="text-xs text-gray-500">{entry.points.toLocaleString()} pts</p>
-      <div className={`w-20 ${heights[position]} ${
-        position === 1 ? 'bg-yellow-400' : position === 2 ? 'bg-gray-400' : 'bg-orange-400'
-      } rounded-t-md`} />
+      <div className={`w-20 ${heights[position]} bg-white/10 rounded-t-xl border border-white/10 flex items-center justify-center`}>
+        <span className="text-gray-400 font-bold text-lg">#{position}</span>
+      </div>
     </div>
   );
 }
 
 function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
   return (
-    <tr className={`${
-      entry.is_current_user ? 'bg-indigo-500/10 font-semibold' : 'hover:bg-gray-50 dark:hover:bg-white/5'
-    } transition`}>
-      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{entry.rank}</td>
+    <tr className={`hover:bg-white/5 transition-colors ${entry.is_current_user ? 'bg-indigo-500/10' : ''}`}>
+      <td className="px-4 py-3 text-gray-400 font-medium w-12">{entry.rank}</td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
-            {entry.avatar && <Image src={entry.avatar} alt={entry.name} width={32} height={32} />}
+          {entry.avatar && <Image src={entry.avatar} alt={entry.name} width={32} height={32} className="rounded-full" />}
+          <div>
+            <span className="text-white font-medium">{entry.name}</span>
+            {entry.is_current_user && <span className="text-indigo-400 text-xs ml-1">(You)</span>}
+            <p className="text-gray-500 text-xs">@{entry.username}</p>
           </div>
-          <span className="text-gray-900 dark:text-white">{entry.name}</span>
-          {entry.is_current_user && <span className="text-indigo-400 text-xs">(You)</span>}
         </div>
       </td>
-      <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{entry.college}</td>
+      <td className="px-4 py-3 text-gray-400 hidden md:table-cell">{entry.college}</td>
       <td className="px-4 py-3"><BadgeChip badge={entry.badge} /></td>
-      <td className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">{entry.points.toLocaleString()}</td>
-      <td className="px-4 py-3 text-center"><ChangeIndicator change={entry.change} /></td>
+      <td className="px-4 py-3 text-right text-white font-bold">{entry.points.toLocaleString()}</td>
+      <td className="px-4 py-3 text-right"><ChangeIndicator change={entry.change} /></td>
     </tr>
   );
 }
 
 function BadgeChip({ badge }: { badge: string }) {
   const config = BADGE_CONFIG[badge] ?? { label: badge, color: 'bg-gray-100 text-gray-600' };
-  return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${config.color}`}>{config.label}</span>;
+  return <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>{config.label}</span>;
 }
 
 function ChangeIndicator({ change }: { change: number }) {
-  if (change > 0) return <span className="text-green-500 flex items-center justify-center gap-1"><TrendingUp className="w-4 h-4" /> +{change}</span>;
-  if (change < 0) return <span className="text-red-500 flex items-center justify-center gap-1"><TrendingDown className="w-4 h-4" /> {change}</span>;
-  return <span className="text-gray-400 flex items-center justify-center"><Minus className="w-4 h-4" /></span>;
+  if (change > 0) return <span className="flex items-center justify-end gap-1 text-green-400 text-xs"><TrendingUp className="w-3 h-3" />+{change}</span>;
+  if (change < 0) return <span className="flex items-center justify-end gap-1 text-red-400 text-xs"><TrendingDown className="w-3 h-3" />{change}</span>;
+  return <span className="flex items-center justify-end gap-1 text-gray-500 text-xs"><Minus className="w-3 h-3" /></span>;
 }
