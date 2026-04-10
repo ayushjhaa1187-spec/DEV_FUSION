@@ -80,15 +80,16 @@ export async function generatePracticeQuiz(subject: string, topic: string) {
     console.error('GEMINI_API_KEY is not set');
     return [];
   }
-  const prompt = `Generate 20 high-quality, conceptual multiple-choice questions for college students studying "${subject}" on the topic "${topic}".\nEnsure clear distinctions between answer options and provide a logical step-by-step explanation for the correct answer.\nRespond ONLY with a JSON array of 20 objects like this:\n[\n  {\n    "question_text": "...",\n    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],\n    "correct_answer_index": 0,\n    "explanation": "..."\n  }\n]`;
+  const prompt = `Generate 10 high-quality, conceptual multiple-choice questions for college students studying "${subject}" on the topic "${topic}".\nEnsure clear distinctions between answer options and provide a logical step-by-step explanation for the correct answer.\nRespond ONLY with a JSON array of 10 objects like this:\n[\n  {\n    "question_text": "...",\n    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],\n    "correct_answer_index": 0,\n    "explanation": "..."\n  }\n]`;
   try {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
-    const questions = extractJSON<unknown[]>(text, []);
+    const questions = extractJSON<any[]>(text, []);
     if (!Array.isArray(questions) || questions.length === 0) {
       throw new Error('AI returned invalid quiz structure');
     }
-    return questions;
+    // Safeguard — take only up to 10 if AI over-generates
+    return questions.slice(0, 10);
   } catch (error) {
     console.error('Quiz Generation Error:', error);
     return [];

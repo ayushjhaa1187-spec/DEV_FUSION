@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form';
 import { Save, AlertTriangle, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
+import { useAuth } from '@/components/auth/auth-provider';
 
 type ProfileFormData = {
   name: string;
@@ -21,6 +23,8 @@ type PasswordFormData = {
 };
 
 export default function SettingsPageClient() {
+  const { user } = useAuth();
+  const supabase = createSupabaseBrowser();
   const router = useRouter();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -33,28 +37,39 @@ export default function SettingsPageClient() {
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
     setUploading(true);
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
-
     try {
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: formData }
-      );
-      const data = await res.json();
-      setAvatarUrl(data.secure_url);
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}-${Math.random()}.${fileExt}`;
 
-      await fetch('/api/user/avatar', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ avatar: data.secure_url }),
-      });
-    } catch (err) {
-      alert('Failed to upload avatar');
+      // 1. Upload to Supabase Storage
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+
+      // 3. Update Profile Table
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+      
+      alert('Avatar updated successfully!');
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      alert(`Upload failed: ${err.message || 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
