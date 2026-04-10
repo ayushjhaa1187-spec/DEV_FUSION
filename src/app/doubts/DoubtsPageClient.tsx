@@ -96,6 +96,7 @@ export default function DoubtsPageClient() {
 
   const handleAiSolve = async () => {
     if (!aiQuestion.trim()) return;
+      if (!userProfile) { setError('Please sign in to use the AI Solver.'); return; }
     setIsAiSolving(true);
     setAiResponse(null);
     try {
