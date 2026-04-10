@@ -3,8 +3,9 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = await createSupabaseServer();
   const { data: { user: admin } } = await supabase.auth.getUser();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -27,7 +28,7 @@ export async function PATCH(
     const { data: application, error: fetchError } = await supabase
       .from('mentor_applications')
       .select('user_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (fetchError || !application) {
@@ -47,7 +48,7 @@ export async function PATCH(
           reviewed_by: admin.id,
           reviewed_at: new Date().toISOString()
         })
-        .eq('id', params.id)
+        .eq('id', id)
         .then(r => r),
       
       // Notify the user

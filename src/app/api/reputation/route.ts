@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest) {
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
-  const { BADGE_THRESHOLDS } = await import('@/lib/reputation-service');
+  const { BADGE_THRESHOLDS } = await import('@/lib/reputation-utils');
   for (const t of BADGE_THRESHOLDS) {
     if (totalPoints >= t.min) {
       const { data: badge } = await supabase.from('badges').select('id').eq('name', t.badge).single();

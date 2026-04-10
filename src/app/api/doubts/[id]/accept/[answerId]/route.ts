@@ -5,8 +5,9 @@ import { awardReputation } from '@/lib/reputation/ledger';
 
 export async function PATCH(
   _req: NextRequest,
-  { params }: { params: { id: string; answerId: string } }
+  { params }: { params: Promise<{ id: string; answerId: string }> }
 ) {
+  const { id, answerId } = await params;
   const supabase = await createSupabaseServer();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -18,7 +19,7 @@ export async function PATCH(
   const { data: doubt, error: doubtError } = await supabase
     .from('doubts')
     .select('user_id, is_resolved')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (doubtError || !doubt) {
@@ -37,8 +38,8 @@ export async function PATCH(
   const { data: answer, error: answerError } = await supabase
     .from('answers')
     .select('user_id')
-    .eq('id', params.answerId)
-    .eq('doubt_id', params.id)
+    .eq('id', answerId)
+    .eq('doubt_id', id)
     .single();
 
   if (answerError || !answer) {
@@ -49,12 +50,12 @@ export async function PATCH(
   const { error: updateAnswerError } = await supabase
     .from('answers')
     .update({ is_accepted: true })
-    .eq('id', params.answerId);
+    .eq('id', answerId);
 
   const { error: updateDoubtError } = await supabase
     .from('doubts')
-    .update({ is_resolved: true, accepted_answer_id: params.answerId })
-    .eq('id', params.id);
+    .update({ is_resolved: true, accepted_answer_id: answerId })
+    .eq('id', id);
 
   if (updateAnswerError || updateDoubtError) {
     return NextResponse.json({ error: 'Failed to mark answer as accepted' }, { status: 500 });
@@ -62,7 +63,7 @@ export async function PATCH(
 
   // Award reputation to answer author
   try {
-    const result = await awardReputation(answer.user_id, 'answer_accepted', params.answerId);
+    const result = await awardReputation(answer.user_id, 'answer_accepted', answerId);
     return NextResponse.json({ success: true, reputation: result });
   } catch (repError) {
     console.error('Reputation award failed:', repError);
