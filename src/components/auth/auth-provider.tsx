@@ -66,14 +66,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      // Clear data immediately for better UI feel
       setUser(null);
       setProfile(null);
-      // Hard redirect to home to clear all states and ensure cookies are picked up by middleware
+      
+      // Perform sign out. Using local scope ensures we don't hang on global session issues.
+      await supabase.auth.signOut({ scope: 'local' });
+      
+      // Hard redirect to clear any cached states/cookies
       window.location.href = '/';
     } catch (err) {
       console.error('Error signing out:', err);
-      // Fallback redirect
       window.location.href = '/';
     }
   };

@@ -200,6 +200,9 @@ CREATE TABLE public.audit_logs (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public Read: profiles" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Private Write: profiles" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Public Create: profiles" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Public Create: profiles" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Public Create: profiles" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 ALTER TABLE public.doubts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public Read: doubts" ON public.doubts FOR SELECT USING (true);

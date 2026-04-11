@@ -113,13 +113,13 @@ export default function SettingsPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0d0d1a] p-6 text-white">
+    <div className="min-h-screen bg-transparent p-6 text-white">
       <div className="max-w-3xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Settings</h1>
+        <h1 className="text-4xl font-black text-white mb-8 font-heading tracking-tight">Settings</h1>
 
         {/* Profile Settings */}
-        <div className="bg-white dark:bg-[#13132b] rounded-xl shadow p-6 border border-white/5">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Profile Settings</h2>
+        <div className="bg-white/5 dark:bg-[#13132b] rounded-3xl shadow-2xl p-8 border border-white/5 backdrop-blur-xl">
+          <h2 className="text-xl font-bold text-white mb-6 font-heading">Profile Settings</h2>
           <form onSubmit={onProfileSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">Avatar</label>
@@ -171,8 +171,8 @@ export default function SettingsPageClient() {
         </div>
 
         {/* Password */}
-        <div className="bg-white dark:bg-[#13132b] rounded-xl shadow p-6 border border-white/5">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Change Password</h2>
+        <div className="bg-white/5 dark:bg-[#13132b] rounded-3xl shadow-2xl p-8 border border-white/5 backdrop-blur-xl">
+          <h2 className="text-xl font-bold text-white mb-6 font-heading">Change Password</h2>
           <form onSubmit={onPasswordSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Current Password</label>
@@ -193,8 +193,8 @@ export default function SettingsPageClient() {
         </div>
 
         {/* Notifications */}
-        <div className="bg-white dark:bg-[#13132b] rounded-xl shadow p-6 border border-white/5">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Notifications</h2>
+        <div className="bg-white/5 dark:bg-[#13132b] rounded-3xl shadow-2xl p-8 border border-white/5 backdrop-blur-xl">
+          <h2 className="text-xl font-bold text-white mb-6 font-heading">Notifications</h2>
           <div className="space-y-4">
             <label className="flex items-center justify-between cursor-pointer group">
               <span className="text-gray-700 dark:text-gray-400 group-hover:text-white transition-colors">Email Notifications</span>
@@ -208,8 +208,8 @@ export default function SettingsPageClient() {
         </div>
 
         {/* Danger Zone */}
-        <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-500/20 rounded-xl p-6">
-          <h2 className="text-xl font-semibold text-red-700 dark:text-red-400 mb-4 flex items-center gap-2">
+        <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-8 shadow-2xl shadow-red-500/5">
+          <h2 className="text-xl font-bold text-red-500 mb-6 flex items-center gap-2 font-heading">
             <AlertTriangle className="w-5 h-5" /> Danger Zone
           </h2>
           <p className="text-red-600 dark:text-red-300 text-sm mb-4">Once you delete your account, there is no going back. Please be certain.</p>

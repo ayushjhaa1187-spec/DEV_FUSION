@@ -75,9 +75,11 @@ export default function AuthPageClient() {
       if (error) throw error;
     } catch (err: any) {
       console.error('Google Auth Error:', err);
-      setError(err.message === 'provider_not_enabled' 
-        ? 'Google sign-in is not enabled in Supabase dashboard. Please enable it in Authentication > Providers.' 
-        : (err.message || 'Google Auth failed'));
+      if (err.message?.includes('provider') || err.message?.includes('not enabled') || err.message?.includes('unsupported')) {
+        setError('Google sign-in is not enabled in your Supabase Dashboard. 🔧 Go to Authentication > Providers > Google to enable it.');
+      } else {
+        setError(err.message || 'Google Auth failed');
+      }
     }
   };
 

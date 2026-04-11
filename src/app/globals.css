@@ -53,6 +53,19 @@
   --radius-3xl: 32px;
   --radius-full: 9999px;
   --transition-smooth: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+
+  /* Missing Variables defined in modules */
+  --violet-light: rgba(124, 58, 237, 0.1);
+  --blue-light: rgba(59, 130, 246, 0.1);
+  --violet-primary: var(--color-primary);
+  --gradient-primary: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  --font-outfit: 'Outfit', var(--font-body);
+  --primary: var(--color-primary);
+  --accent: var(--color-accent);
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-muted);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-hover: rgba(255, 255, 255, 0.2);
 }
 
 html { scroll-behavior: smooth }

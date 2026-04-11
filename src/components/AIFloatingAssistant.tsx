@@ -100,10 +100,10 @@ export default function AIFloatingAssistant() {
             className="ai-panel glass"
             style={{
               width: '440px', height: '680px', maxHeight: '85vh',
-              background: 'rgba(9, 9, 15, 0.9)', backdropFilter: 'blur(40px)',
-              border: '1px solid rgba(255,255,255,0.1)', borderRadius: '32px',
+              background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)',
+              border: '1px solid var(--border)', borderRadius: '32px',
               display: 'flex', flexDirection: 'column', overflow: 'hidden',
-              boxShadow: '-20px 20px 80px rgba(0,0,0,0.8)',
+              boxShadow: 'var(--shadow-premium)',
               position: 'absolute', bottom: '0', right: '0'
             }}
           >
@@ -203,7 +203,7 @@ export default function AIFloatingAssistant() {
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && sendMessage()}
                   placeholder="Inquire with SkillBridge AI..."
-                  style={{ width: '100%', padding: '18px 52px 18px 24px', background: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '20px', color: 'white', outline: 'none', fontStyle: 'body', fontSize: '0.9rem' }}
+                  style={{ width: '100%', padding: '18px 52px 18px 24px', background: '#000', border: '1px solid var(--border)', borderRadius: '20px', color: 'white', outline: 'none', fontFamily: 'var(--font-body)', fontSize: '0.9rem' }}
                 />
                 <button 
                   onClick={() => sendMessage()}
@@ -214,7 +214,7 @@ export default function AIFloatingAssistant() {
                     width: '42px', height: '42px', borderRadius: '14px', display: 'flex',
                     alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                     opacity: !input.trim() || loading ? 0.5 : 1,
-                    boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
+                    boxShadow: '0 4px 12px var(--primary-glow)'
                   }}
                 >
                   <Send size={20} />
