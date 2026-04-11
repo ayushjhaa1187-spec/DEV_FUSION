@@ -51,8 +51,20 @@ export async function POST(req: NextRequest) {
       remaining,
       rateLimitRemaining: rateCheck.remaining,
     });
-  } catch (error) {
-    console.error('API Error:', error);
+  } catch (error: any) {
+    console.error(' [AI Solve API Error]:', {
+      message: error.message,
+      stack: error.stack,
+      user: user?.id
+    });
+    
+    // Check for common DB errors to provide more specific feedback
+    if (error.message?.includes('rate_limit_windows') || error.message?.includes('user_usage')) {
+      return NextResponse.json({ 
+        error: 'Database table missing. Please apply Migration 004 to your Supabase project.' 
+      }, { status: 500 });
+    }
+
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
