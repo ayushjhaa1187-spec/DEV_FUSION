@@ -1,15 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-// gemini-1.5-flash is highly stable, ultra-fast, and ideal for instant doubt resolution
-const model = genAI.getGenerativeModel({ 
-  model: 'gemini-1.5-flash',
-  generationConfig: {
-    temperature: 0.7,
-    topP: 0.8,
-    topK: 40,
-  }
-});
+
+// We will try these models in order of performance to ensure something ALWAYS works
+const MODELS_TO_TRY = [
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-pro'
+];
 
 export interface AIDoubtResponse {
   explanation: string;
@@ -53,6 +51,7 @@ function extractJSON<T>(text: string, fallback: T): T {
 
 /**
  * World-class academic tutor prompt designed for instant conceptual clarity.
+ * Implements an automatic model fallback system to bypass regional availability issues.
  */
 export async function askAIDoubt(question: string, context?: string): Promise<AIDoubtResponse> {
   const fallback: AIDoubtResponse = {
@@ -83,30 +82,44 @@ CRITICAL INSTRUCTIONS:
   "suggested_tags": ["Computer Science", "Algorithms", "Logic"]
 }`;
 
-  try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    return extractJSON<AIDoubtResponse>(text, fallback);
-  } catch (error: any) {
-    console.error(' [AI Service Error Details]:', error);
-    
-    let errorMessage = "I'm having a bit of trouble right now. Please check your API key and quota.";
-    
-    if (error.message?.includes('API_KEY_INVALID')) {
-      errorMessage = "AI Configuration Error: Invalid API Key found in Vercel.";
-    } else if (error.message?.includes('quota') || error.status === 429) {
-      errorMessage = "AI Quota Error: Monthly limits reached for this API key.";
-    } else if (error.message?.includes('safety')) {
-      errorMessage = "AI Safety Error: This query was filtered for academic safety.";
-    } else if (error.message?.includes('not found')) {
-      errorMessage = "AI Model Error: The selected Gemini model is not available in your region.";
+  // Try each model until one works
+  for (const modelName of MODELS_TO_TRY) {
+    try {
+      console.log(`[AI Interaction] Attempting doubt resolution with model: ${modelName}`);
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      
+      const parsed = extractJSON<AIDoubtResponse>(text, fallback);
+      if (parsed !== fallback) {
+        console.log(`[AI Interaction] Success with model: ${modelName}`);
+        return parsed;
+      }
+    } catch (error: any) {
+      console.error(`[AI Interaction] Model ${modelName} failed:`, error.message);
+      
+      // If the error is regional or support-related, continue to next model
+      if (
+        error.message?.includes('not found') || 
+        error.message?.includes('not supported') || 
+        error.message?.includes('location') ||
+        error.status === 404
+      ) {
+        console.warn(`[AI Interaction] Regional/Support error for ${modelName}. Retrying with fallback...`);
+        continue;
+      }
+      
+      // For other critical errors (like invalid key), we stop and report
+      if (error.message?.includes('API_KEY_INVALID')) {
+        return {
+          ...fallback,
+          explanation: "AI Configuration Error: Invalid API Key found in Vercel."
+        };
+      }
     }
-
-    return {
-      ...fallback,
-      explanation: errorMessage
-    };
   }
+
+  return fallback;
 }
 
 export async function generatePracticeQuiz(subject: string, topic: string) {
