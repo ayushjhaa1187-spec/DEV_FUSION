@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // gemini-1.5-flash is highly stable, ultra-fast, and ideal for instant doubt resolution
 const model = genAI.getGenerativeModel({ 
-  model: 'gemini-1.5-flash',
+  model: 'gemini-1.5-flash-latest',
   generationConfig: {
     temperature: 0.7,
     topP: 0.8,
@@ -88,18 +88,18 @@ CRITICAL INSTRUCTIONS:
     const text = result.response.text();
     return extractJSON<AIDoubtResponse>(text, fallback);
   } catch (error: any) {
-    console.error(' [AI Service Error]:', error);
+    console.error(' [AI Service Error Details]:', error);
     
-    // Provide a more descriptive fallback during troubleshooting
-    let errorMessage = "I'm having a bit of trouble connecting to my brain.";
+    let errorMessage = "I'm having a bit of trouble right now. Please check your API key and quota.";
+    
     if (error.message?.includes('API_KEY_INVALID')) {
-      errorMessage = "AI Error: Your GEMINI_API_KEY is invalid. Please check your Vercel settings.";
+      errorMessage = "AI Configuration Error: Invalid API Key found in Vercel.";
     } else if (error.message?.includes('quota') || error.status === 429) {
-      errorMessage = "AI Error: Quota exceeded. Please check your Gemini API usage limits.";
+      errorMessage = "AI Quota Error: Monthly limits reached for this API key.";
     } else if (error.message?.includes('safety')) {
-      errorMessage = "AI Error: This question was blocked by safety filters.";
-    } else if (error.message) {
-      errorMessage = `AI Error: ${error.message.split('\n')[0]}`;
+      errorMessage = "AI Safety Error: This query was filtered for academic safety.";
+    } else if (error.message?.includes('not found')) {
+      errorMessage = "AI Model Error: The selected Gemini model is not available in your region.";
     }
 
     return {
