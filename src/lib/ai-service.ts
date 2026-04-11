@@ -87,9 +87,25 @@ CRITICAL INSTRUCTIONS:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     return extractJSON<AIDoubtResponse>(text, fallback);
-  } catch (error) {
-    console.error('AI Service Error:', error);
-    return fallback;
+  } catch (error: any) {
+    console.error(' [AI Service Error]:', error);
+    
+    // Provide a more descriptive fallback during troubleshooting
+    let errorMessage = "I'm having a bit of trouble connecting to my brain.";
+    if (error.message?.includes('API_KEY_INVALID')) {
+      errorMessage = "AI Error: Your GEMINI_API_KEY is invalid. Please check your Vercel settings.";
+    } else if (error.message?.includes('quota') || error.status === 429) {
+      errorMessage = "AI Error: Quota exceeded. Please check your Gemini API usage limits.";
+    } else if (error.message?.includes('safety')) {
+      errorMessage = "AI Error: This question was blocked by safety filters.";
+    } else if (error.message) {
+      errorMessage = `AI Error: ${error.message.split('\n')[0]}`;
+    }
+
+    return {
+      ...fallback,
+      explanation: errorMessage
+    };
   }
 }
 
