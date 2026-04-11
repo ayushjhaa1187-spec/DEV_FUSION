@@ -2,12 +2,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// We will try these models in order of performance to ensure something ALWAYS works
-const MODELS_TO_TRY = [
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
-  'gemini-pro'
-];
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+
+// Direct and stable model selection
+const MODEL_NAME = 'gemini-1.5-flash';
 
 export interface AIDoubtResponse {
   explanation: string;
@@ -51,7 +49,6 @@ function extractJSON<T>(text: string, fallback: T): T {
 
 /**
  * World-class academic tutor prompt designed for instant conceptual clarity.
- * Implements an automatic model fallback system to bypass regional availability issues.
  */
 export async function askAIDoubt(question: string, context?: string): Promise<AIDoubtResponse> {
   const fallback: AIDoubtResponse = {
@@ -65,61 +62,39 @@ export async function askAIDoubt(question: string, context?: string): Promise<AI
     return fallback;
   }
 
-  const prompt = `You are SkillBridge AI, a world-class academic tutor specializing in student doubt resolution.
-Your goal is to provide INSTANT conceptual clarity so students don't need to wait for community answers.
+  const prompt = `You are SkillBridge AI. Solve this academic doubt instantly.
+Question: "${question}"
+${context ? `Context: ${context}` : ''}
 
-Student Doubt: "${question}"
-${context ? `Additional Context: ${context}` : ''}
-
-CRITICAL INSTRUCTIONS:
-1. Be concise but deep. Use metaphors to explain complex logic.
-2. Provide a logical, step-by-step breakdown.
-3. Suggest 3 relevant academic tags.
-4. Respond ONLY with valid JSON in this exact format:
+Response format (valid JSON ONLY):
 {
-  "explanation": "A high-impact, intuitive explanation that solves the core doubt instantly.",
-  "steps": ["Step 1: Focus on X...", "Step 2: Apply Y...", "Step 3: Conclude with Z..."],
-  "suggested_tags": ["Computer Science", "Algorithms", "Logic"]
+  "explanation": "Brief, ultra-clear conceptual explanation.",
+  "steps": ["Step 1", "Step 2", "Step 3"],
+  "suggested_tags": ["Tag1", "Tag2"]
 }`;
 
-  // Try each model until one works
-  for (const modelName of MODELS_TO_TRY) {
+  try {
+    const model = genAI.getGenerativeModel({ 
+      model: MODEL_NAME,
+      generationConfig: { temperature: 0.4, topP: 0.8, topK: 40 } 
+    });
+    
+    // Performance optimization: fast generation
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    return extractJSON<AIDoubtResponse>(text, fallback);
+  } catch (error: any) {
+    console.error(`[AI Interaction] Error:`, error.message);
+    
+    // Attempt one ultra-stable fallback if flash fails
     try {
-      console.log(`[AI Interaction] Attempting doubt resolution with model: ${modelName}`);
-      const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
-      
-      const parsed = extractJSON<AIDoubtResponse>(text, fallback);
-      if (parsed !== fallback) {
-        console.log(`[AI Interaction] Success with model: ${modelName}`);
-        return parsed;
-      }
-    } catch (error: any) {
-      console.error(`[AI Interaction] Model ${modelName} failed:`, error.message);
-      
-      // If the error is regional or support-related, continue to next model
-      if (
-        error.message?.includes('not found') || 
-        error.message?.includes('not supported') || 
-        error.message?.includes('location') ||
-        error.status === 404
-      ) {
-        console.warn(`[AI Interaction] Regional/Support error for ${modelName}. Retrying with fallback...`);
-        continue;
-      }
-      
-      // For other critical errors (like invalid key), we stop and report
-      if (error.message?.includes('API_KEY_INVALID')) {
-        return {
-          ...fallback,
-          explanation: "AI Configuration Error: Invalid API Key found in Vercel."
-        };
-      }
-    }
+      const stableModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const stableResult = await stableModel.generateContent(prompt);
+      return extractJSON<AIDoubtResponse>(stableResult.response.text(), fallback);
+    } catch {}
+    
+    return fallback;
   }
-
-  return fallback;
 }
 
 export async function generatePracticeQuiz(subject: string, topic: string) {

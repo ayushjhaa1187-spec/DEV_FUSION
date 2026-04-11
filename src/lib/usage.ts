@@ -5,7 +5,7 @@ export type UsageType = 'interview' | 'question';
 const LIMITS = {
   free: {
     interview: 5, // per month
-    question: 10, // per day
+    question: 50, // per day (increased for testing)
   },
   pro: {
     interview: Infinity,
