@@ -1,73 +1,99 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServer } from '@/lib/supabase/server';
-
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const supabase = await createSupabaseServer();
+  const { id } = await params; // This is the attempt_id from the user perspective, but for compatibility with existing structure it might be test_id? 
+  // Wait, the folder is [id]/submit. In most of my code, [id] refers to the test_id. 
+  // But a submission should target an ATTEMPT. 
+  // Let's check body for attemptId if id is test_id.
 
+  const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { answers } = await req.json(); // Array of indices
+    const { attemptId } = await req.json();
+    const final_attempt_id = attemptId || id; // Fallback if user passed it in URL as attemptId
 
-    // 1. Fetch correct answers for the test
-    const { data: questions, error } = await supabase
-      .from('practice_questions')
-      .select('id, correct_answer_index')
-      .eq('test_id', id);
+    // 1. Fetch the attempt to verify it's active
+    const { data: attempt, error: attemptErr } = await supabase
+      .from('practice_attempts')
+      .select('*, practice_tests(id)')
+      .eq('id', final_attempt_id)
+      .eq('user_id', user.id)
+      .single();
 
-    if (error || !questions) {
-      return NextResponse.json({ error: 'Failed to fetch test questions' }, { status: 500 });
+    if (attemptErr || !attempt) {
+      return NextResponse.json({ error: 'Attempt not found' }, { status: 404 });
     }
 
-    // 2. Score the attempt
-    let score = 0;
-    // Expect answers to be an object: { [question_id]: selected_index }
-    questions.forEach((q) => {
-      if (answers[q.id] === q.correct_answer_index) {
-        score++;
-      }
+    if (attempt.status !== 'active') {
+       return NextResponse.json({ error: 'Already submitted' }, { status: 400 });
+    }
+
+    // 2. Aggregate results from practice_answers
+    const { data: answers, error: answerErr } = await supabase
+        .from('practice_answers')
+        .select('question_id, selected_index, is_correct')
+        .eq('attempt_id', final_attempt_id);
+
+    if (answerErr) throw answerErr;
+
+    // Create a snapshot for the legacy selected_answers column
+    const answers_snapshot: Record<string, number> = {};
+    answers?.forEach(a => {
+        if (a.selected_index !== null) answers_snapshot[a.question_id] = a.selected_index;
     });
 
-    const finalScore = Math.round((score / questions.length) * 100);
+    const { data: questions } = await supabase
+        .from('practice_questions')
+        .select('id')
+        .eq('test_id', attempt.test_id);
 
-    // 3. Record Attempt
-    const { data: attempt, error: attemptError } = await supabase
+    const total = questions?.length || 0;
+    const correct = answers?.filter(a => a.is_correct).length || 0;
+    const wrong = (answers?.length || 0) - correct;
+    const score = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+    // 3. Mark as completed and update score
+    const { data: updatedAttempt, error: updateErr } = await supabase
       .from('practice_attempts')
-      .insert({
-        user_id: user.id,
-        test_id: id,
-        score: finalScore,
-        selected_answers: answers, // Persisting for result analysis
+      .update({
+        score,
+        correct_count: correct,
+        wrong_count: wrong,
+        total_questions: total,
+        selected_answers: answers_snapshot,
+        status: 'completed',
         completed_at: new Date().toISOString()
       })
+      .eq('id', final_attempt_id)
       .select()
       .single();
 
-    if (attemptError) return NextResponse.json({ error: attemptError.message }, { status: 500 });
 
-    // 4. Award Reputation (Atomic point logic)
+    if (updateErr) throw updateErr;
+
+    // 4. Award Reputation for completion
     await supabase.rpc('award_points', {
       u_id: user.id,
-      p_count: 5,
+      p_count: 10,
       e_type: 'test_completed',
-      ent_id: id,
-      i_key: 'test_att_' + attempt.id
+      ent_id: attempt.test_id,
+      i_key: 'test_submit_' + updatedAttempt.id
     });
-
 
     return NextResponse.json({
-      score: finalScore,
-      pointsEarned: 5,
-      attemptId: attempt.id
+      score,
+      correct,
+      wrong,
+      total,
+      pointsEarned: 10
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Test Submission Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

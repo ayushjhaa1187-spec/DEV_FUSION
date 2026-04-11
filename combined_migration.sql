@@ -329,7 +329,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 3. Trigger for New Answer (+10 points)
 CREATE OR REPLACE FUNCTION handle_new_answer_points()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_doubt_author_id UUID;
 BEGIN
+  -- Award points to answerer
   PERFORM award_points(
     NEW.author_id,
     10,
@@ -338,9 +341,26 @@ BEGIN
     'ans_post_' || NEW.id::TEXT
   );
   PERFORM check_and_award_badges(NEW.author_id);
+
+  -- Get doubt author
+  SELECT author_id INTO v_doubt_author_id FROM public.doubts WHERE id = NEW.doubt_id;
+
+  -- Notify doubt author (if not the same person)
+  IF v_doubt_author_id != NEW.author_id THEN
+    INSERT INTO public.notifications (user_id, title, message, type, link)
+    VALUES (
+      v_doubt_author_id,
+      'New Answer!',
+      'Someone just posted an answer to your doubt.',
+      'answer_posted',
+      '/doubts/' || NEW.doubt_id::TEXT
+    );
+  END IF;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 DROP TRIGGER IF EXISTS on_answer_created ON public.answers;
 CREATE TRIGGER on_answer_created

@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
-type ToastType = 'success' | 'error' | 'info';
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface Toast {
   id: string;
@@ -47,20 +47,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               className="pointer-events-auto"
             >
               <div className={`
-                flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border min-w-[320px] relative overflow-hidden
-                ${toast.type === 'success' ? 'bg-[#062016] border-emerald-500/30 text-emerald-400' : 
-                  toast.type === 'error' ? 'bg-[#20060b] border-red-500/30 text-red-400' : 
-                  'bg-[#13132b] border-white/10 text-white'}
+                flex items-center gap-4 px-6 py-4 rounded-xl shadow-lg border min-w-[320px] relative overflow-hidden backdrop-blur-md
+                ${toast.type === 'success' ? 'bg-success/10 border-success/30 text-success' : 
+                  toast.type === 'error' ? 'bg-error/10 border-error/30 text-error' : 
+                  toast.type === 'warning' ? 'bg-warning/10 border-warning/30 text-warning' : 
+                  'bg-info/10 border-info/30 text-info'}
               `}>
                 <div className="flex-shrink-0">
                   {toast.type === 'success' && <CheckCircle size={20} />}
                   {toast.type === 'error' && <AlertCircle size={20} />}
+                  {toast.type === 'warning' && <AlertTriangle size={20} />}
                   {toast.type === 'info' && <Info size={20} />}
                 </div>
-                <p className="text-sm font-bold flex-grow">{toast.message}</p>
+                <p className="text-sm font-bold flex-grow text-text-primary">{toast.message}</p>
                 <button 
                   onClick={() => removeToast(toast.id)}
-                  className="opacity-50 hover:opacity-100 transition-opacity"
+                  className="opacity-50 hover:opacity-100 transition-opacity text-text-secondary hover:text-text-primary focus:outline-none"
                 >
                   <X size={16} />
                 </button>
@@ -71,9 +73,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   animate={{ width: 0 }}
                   transition={{ duration: 5, ease: 'linear' }}
                   className={`absolute bottom-0 left-0 h-[3px] ${
-                    toast.type === 'success' ? 'bg-emerald-500' : 
-                    toast.type === 'error' ? 'bg-red-500' : 
-                    'bg-indigo-500'
+                    toast.type === 'success' ? 'bg-success' : 
+                    toast.type === 'error' ? 'bg-error' : 
+                    toast.type === 'warning' ? 'bg-warning' : 
+                    'bg-info'
                   }`}
                 />
               </div>
@@ -90,3 +93,4 @@ export function useToast() {
   if (!context) throw new Error('useToast must be used within ToastProvider');
   return context;
 }
+

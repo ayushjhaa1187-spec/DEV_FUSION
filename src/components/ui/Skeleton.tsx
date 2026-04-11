@@ -1,39 +1,38 @@
 import React from 'react';
+import { cn } from './Button';
 
-interface SkeletonProps {
-  width?: string;
-  height?: string;
-  rounded?: boolean;
-  className?: string;
-}
+export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-export function Skeleton({ width = '100%', height = '1rem', rounded = false, className = '' }: SkeletonProps) {
+export const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(({
+  className,
+  ...props
+}, ref) => {
   return (
-    <div 
-      style={{ 
-        width, 
-        height, 
-        borderRadius: rounded ? '9999px' : 'var(--radius-sm)' 
-      }}
-      className={`skeleton ${className}`} 
+    <div
+      ref={ref}
+      className={cn(
+        'animate-pulse rounded-xl bg-bg-tertiary/80',
+        className
+      )}
+      {...props}
     />
   );
-}
+});
 
-export function DoubtCardSkeleton() {
+Skeleton.displayName = 'Skeleton';
+
+// Example composed skeleton for backward compatibility
+export const DoubtCardSkeleton = () => {
   return (
-    <div className="doubt-card-skeleton glass" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
-      <Skeleton height="1.5rem" width="60%" className="mb-4" />
-      <Skeleton height="1rem" width="90%" className="mb-2" />
-      <Skeleton height="1rem" width="70%" className="mb-4" />
-      <div style={{ display:'flex', gap:'8px', marginTop:'12px' }}>
-        <Skeleton width="60px" height="24px" rounded />
-        <Skeleton width="80px" height="24px" rounded />
+    <div className="p-6 rounded-2xl bg-bg-secondary border border-border-color space-y-4">
+      <Skeleton className="h-6 w-[60%]" />
+      <Skeleton className="h-4 w-[90%]" />
+      <Skeleton className="h-4 w-[70%]" />
+      <div className="flex gap-2 pt-2">
+        <Skeleton className="h-6 w-16 !rounded-full" />
+        <Skeleton className="h-6 w-20 !rounded-full" />
       </div>
-      <style dangerouslySetInnerHTML={{__html: `
-        .mb-4 { margin-bottom: 1rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-      `}} />
     </div>
   );
-}
+};
+

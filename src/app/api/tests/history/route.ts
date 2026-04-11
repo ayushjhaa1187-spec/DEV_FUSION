@@ -7,20 +7,31 @@ export async function GET(req: NextRequest) {
 
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const url = new URL(req.url);
+  const subjectId = url.searchParams.get('subjectId');
+
   try {
-    const { data: attempts, error } = await supabase
+    let query = supabase
       .from('practice_attempts')
       .select(`
         *,
         practice_tests (
           topic,
+          duration_minutes,
           subjects (
+            id,
             name
           )
         )
       `)
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('started_at', { ascending: false });
+
+    if (subjectId) {
+      query = query.eq('subject_id', subjectId);
+    }
+
+    const { data: attempts, error } = await query;
 
     if (error) throw error;
 
@@ -29,3 +40,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

@@ -31,12 +31,14 @@ function formatRelativeTime(dateString: string) {
 const getNotificationIcon = (type: string) => {
   switch (type) {
     case 'mention': return <Hash size={14} className="text-blue-400" />;
-    case 'reply': return <MessageSquare size={14} className="text-emerald-400" />;
+    case 'answer_posted': return <MessageSquare size={14} className="text-emerald-400" />;
     case 'rep': return <Flame size={14} className="text-orange-400" />;
     case 'accepted': return <CheckCircle size={14} className="text-green-400" />;
+    case 'session_reminder': return <Clock size={14} className="text-indigo-400" />;
     default: return <Info size={14} className="text-gray-400" />;
   }
 };
+
 
 export function NotificationBell({ userId }: { userId: string }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);

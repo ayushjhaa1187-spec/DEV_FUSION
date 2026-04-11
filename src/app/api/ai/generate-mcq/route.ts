@@ -30,8 +30,11 @@ export async function POST(req: NextRequest) {
     const questions = await generatePracticeQuiz(subject, topic);
     
     if (!questions || questions.length === 0) {
-      return NextResponse.json({ error: 'Failed to generate quiz' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Failed to generate quiz. This could be due to API quota limits or an invalid Gemini key.' 
+      }, { status: 500 });
     }
+
 
     return NextResponse.json({ questions, remaining });
   } catch (error) {

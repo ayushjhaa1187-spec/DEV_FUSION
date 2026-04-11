@@ -49,8 +49,11 @@ export async function POST(req: NextRequest) {
     const questions = await generatePracticeQuiz(subject?.name || 'General', topic);
     
     if (!questions || questions.length === 0) {
-      return NextResponse.json({ error: 'Failed to generate quiz' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'AI Engine failed to generate questions. Please ensure your GEMINI_API_KEY is valid and has sufficient quota.' 
+      }, { status: 500 });
     }
+
 
     // 1. Store Test
     const { data: test, error: testError } = await supabase

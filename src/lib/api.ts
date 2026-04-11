@@ -79,11 +79,18 @@ export const subjectApi = {
 };
 
 export const testApi = {
-  getHistory: () => apiFetch('/api/tests/history'),
-  generate: (data: unknown) => apiFetch('/api/tests/generate', { method: 'POST', body: JSON.stringify(data) }),
-  submit: (testId: string, answers: any) =>
-    apiFetch(`/api/tests/${testId}/submit`, { method: 'POST', body: JSON.stringify({ answers }) }),
+  getHistory: (subjectId?: string) => 
+    apiFetch(`/api/tests/history${subjectId ? `?subjectId=${subjectId}` : ''}`),
+  generate: (data: { subject_id: string; topic: string }) => 
+    apiFetch('/api/tests/generate', { method: 'POST', body: JSON.stringify(data) }),
+  start: (testId: string) =>
+    apiFetch(`/api/tests/${testId}/start`, { method: 'POST' }),
+  saveAnswer: (data: { attempt_id: string; question_id: string; selected_index: number }) =>
+    apiFetch('/api/tests/save-answer', { method: 'POST', body: JSON.stringify(data) }),
+  submit: (attemptId: string) =>
+    apiFetch(`/api/tests/${attemptId}/submit`, { method: 'POST', body: JSON.stringify({ attemptId }) }),
 };
+
 
 export const aiApi = {
   solveDoubt: (data: unknown) => apiFetch('/api/ai/solve', { method: 'POST', body: JSON.stringify(data) }),

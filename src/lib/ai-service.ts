@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Support both common environment variable names for flexibility
+const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Direct and stable model selection
 const MODEL_NAME = 'gemini-1.5-flash';
@@ -18,25 +18,23 @@ export interface AIDoubtResponse {
  */
 function extractJSON<T>(text: string, fallback: T): T {
   try {
-    // 1. Remove common AI formatting artifacts
     let cleaned = text.trim();
     
-    // 2. Look for JSON block if AI used markdown
+    // Look for JSON block if AI used markdown
     const jsonMatch = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     if (jsonMatch) {
       cleaned = jsonMatch[0];
     }
 
-    // 3. Final sanitization of escaped characters and trailing commas
+    // Final sanitization
     cleaned = cleaned
       .replace(/\\n/g, ' ')
       .replace(/,(\s*[\]\}])/g, '$1'); 
 
     return JSON.parse(cleaned) as T;
   } catch (err) {
-    console.warn('JSON parsing failed, attempting secondary cleanup...', err);
+    console.warn('[AI Service] JSON parsing failed, attempting secondary cleanup...', err);
     try {
-        // Fallback: very aggressive regex cleanup
         const start = text.indexOf('{');
         const end = text.lastIndexOf('}');
         if (start !== -1 && end !== -1) {
@@ -52,75 +50,111 @@ function extractJSON<T>(text: string, fallback: T): T {
  */
 export async function askAIDoubt(question: string, context?: string): Promise<AIDoubtResponse> {
   const fallback: AIDoubtResponse = {
-    explanation: "I'm having a bit of trouble right now. Please try again in a moment, or post your doubt to the community!",
-    steps: [],
-    suggested_tags: [],
+    explanation: "I encountered an error while processing your request. Please ensure your API key is valid and try again.",
+    steps: ["Verify API Key in environment variables", "Check network connectivity", "Ensure the prompt is valid"],
+    suggested_tags: ["Error Handling", "System"],
   };
 
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('GEMINI_API_KEY is not set');
-    return fallback;
+  if (!API_KEY) {
+    console.error('[AI Service] GEMINI_API_KEY or GOOGLE_AI_API_KEY is not set');
+    return {
+        ...fallback,
+        explanation: "API configuration missing. Please set GEMINI_API_KEY in your environment."
+    };
   }
 
-  const prompt = `You are SkillBridge AI. Solve this academic doubt instantly.
-Question: "${question}"
-${context ? `Context: ${context}` : ''}
+  const prompt = `You are SkillBridge AI, an elite academic polymath. 
+Your goal is to provide deep, exhaustive, and crystal-clear conceptual explanations. 
+DO NOT make excuses. DO NOT provide short or vague answers. 
 
-Response format (valid JSON ONLY):
+User Question: "${question}"
+${context ? `Subject Context: ${context}` : ''}
+
+Provide a comprehensive breakdown. 
+Response format (Strict valid JSON ONLY):
 {
-  "explanation": "Brief, ultra-clear conceptual explanation.",
-  "steps": ["Step 1", "Step 2", "Step 3"],
-  "suggested_tags": ["Tag1", "Tag2"]
+  "explanation": "Detailed, ultra-clear conceptual explanation with examples where applicable.",
+  "steps": ["Logical Step 1 of solving/understanding", "Step 2", "Step 3..."],
+  "suggested_tags": ["Topic1", "Concept2"]
 }`;
 
   try {
     const model = genAI.getGenerativeModel({ 
       model: MODEL_NAME,
-      generationConfig: { temperature: 0.4, topP: 0.8, topK: 40 } 
+      generationConfig: { temperature: 0.7, topP: 0.9, topK: 40 } 
     });
     
-    // Performance optimization: fast generation
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     return extractJSON<AIDoubtResponse>(text, fallback);
   } catch (error: any) {
-    console.error(`[AI Interaction] Error:`, error.message);
+    console.error(`[AI Service] Error:`, error.message);
     
-    // Attempt one ultra-stable fallback if flash fails
+    // Fallback attempt with a different model if flash fails
     try {
-      const stableModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const stableModel = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
       const stableResult = await stableModel.generateContent(prompt);
       return extractJSON<AIDoubtResponse>(stableResult.response.text(), fallback);
-    } catch {}
+    } catch (innerError: any) {
+        console.error(`[AI Service] Recursive Fallback Error:`, innerError.message);
+    }
     
-    return fallback;
+    return {
+        ...fallback,
+        explanation: `AI Error: ${error.message}. Please check your Gemini API key and quota.`
+    };
   }
 }
 
-export async function generatePracticeQuiz(subject: string, topic: string) {
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('GEMINI_API_KEY is not set');
+export async function generatePracticeQuiz(subject: string, topic: string, count: number = 10) {
+  if (!API_KEY) {
+    console.error('[AI Service] API key is missing for quiz generation');
     return [];
   }
 
-  const prompt = `Generate 10 high-quality, conceptual multiple-choice questions for college students studying "${subject}" on the topic "${topic}".
-Respond ONLY with a JSON array of 10 objects:
+  const prompt = `You are a professional academic examiner. Generate exactly ${count} high-quality, conceptual multiple-choice questions for college students.
+Subject: "${subject}"
+Topic: "${topic}"
+
+Rules:
+1. Every question must have exactly 4 options.
+2. Each option must be distinct.
+3. Only ONE correct_answer_index (0-3).
+4. provide a clear 'explanation' for the correct answer.
+5. Questions must be conceptual and challenging, not just trivia.
+
+Respond ONLY with a valid JSON array of objects:
 [
   {
-    "question_text": "...",
-    "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+    "question_text": "Question content...",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
     "correct_answer_index": 0,
-    "explanation": "..."
+    "explanation": "Why this is correct..."
   }
 ]`;
 
   try {
+    const model = genAI.getGenerativeModel({ 
+      model: MODEL_NAME,
+      generationConfig: { temperature: 0.8, topP: 0.9 } 
+    });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     const questions = extractJSON<any[]>(text, []);
-    return Array.isArray(questions) ? questions.slice(0, 10) : [];
-  } catch (error) {
-    console.error('Quiz Generation Error:', error);
+    
+    // Validation
+    if (!Array.isArray(questions)) return [];
+    
+    return questions.filter(q => 
+        q.question_text && 
+        Array.isArray(q.options) && 
+        q.options.length === 4 && 
+        typeof q.correct_answer_index === 'number'
+    ).slice(0, count);
+  } catch (error: any) {
+    console.error('[AI Service] Quiz Generation Error:', error.message);
     return [];
   }
 }
+
+
