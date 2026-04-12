@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/auth-provider';
-import { testApi, subjectApi } from '@/lib/api';
+import { testApi, subjectApi, leaderboardApi } from '@/lib/api';
 import { Skeleton } from '@/components/ui/Skeleton';
 import styles from './tests.module.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,6 +38,9 @@ export default function PracticeTestsPageClient() {
   const [attempt, setAttempt] = useState<any>(null);
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [activeTab, setActiveTab] = useState<'history' | 'leaderboard'>('history');
+  const [globalLeaderboard, setGlobalLeaderboard] = useState<any[]>([]);
+
   const [timeLeft, setTimeLeft] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
@@ -48,6 +51,9 @@ export default function PracticeTestsPageClient() {
     if (user) {
       subjectApi.getSubjects().then(setSubjects);
       testApi.getHistory().then(setHistory);
+      leaderboardApi.getTop(10).then(data => {
+        if (data?.entries) setGlobalLeaderboard(data.entries);
+      });
     }
   }, [user]);
 
@@ -114,7 +120,6 @@ export default function PracticeTestsPageClient() {
 
   const selectAnswer = async (questionId: string, index: number) => {
     if (view !== 'taking') return;
-    const prevAnswer = answers[questionId];
     setAnswers(prev => ({ ...prev, [questionId]: index }));
     
     try {
@@ -124,7 +129,6 @@ export default function PracticeTestsPageClient() {
         selected_index: index
       });
     } catch (err) {
-      // Rollback if save failed (optional, depends on UX)
       console.warn('Silent save failed', err);
     }
   };
@@ -177,9 +181,18 @@ export default function PracticeTestsPageClient() {
                 <h1 className="text-4xl font-extrabold text-white mb-2">Practice <span className="text-indigo-400">Hub</span></h1>
                 <p className="text-gray-400 max-w-xl">Configure your session or review your academic trajectory.</p>
               </div>
-              <div className="flex gap-4">
-                 <button className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white text-sm font-bold transition-all">
+              <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 self-start md:self-auto">
+                 <button 
+                  onClick={() => setActiveTab('history')}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-400 hover:text-white'}`}
+                >
                     <HistoryIcon size={16} /> History
+                 </button>
+                 <button 
+                  onClick={() => setActiveTab('leaderboard')}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'leaderboard' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Trophy size={16} /> Leaderboard
                  </button>
               </div>
             </div>
@@ -230,74 +243,127 @@ export default function PracticeTestsPageClient() {
                 </div>
               </div>
 
-              <div className="lg:col-span-7 flex flex-col gap-8">
-                 <div className="p-8 rounded-[40px] bg-white/5 border border-white/10">
-                    <div className="flex items-center justify-between mb-8">
-                       <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                         <BarChart3 className="text-emerald-400" /> Score Trajectory
-                       </h3>
-                       <select 
-                          className="bg-transparent text-xs font-bold text-gray-400 border-none outline-none cursor-pointer hover:text-white"
-                          value={filterSubjectId}
-                          onChange={(e) => setFilterSubjectId(e.target.value)}
-                       >
-                          <option value="all">All Subjects</option>
-                          {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                       </select>
-                    </div>
-
-                    <div className="h-[240px] w-full">
-                       {filteredHistory.length > 0 ? (
-                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={filteredHistory.slice(0, 7).reverse()}>
-                               <defs>
-                                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                                     <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                                     <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                                  </linearGradient>
-                               </defs>
-                               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                               <XAxis dataKey="topic" hide />
-                               <YAxis domain={[0, 100]} hide />
-                               <Tooltip 
-                                  contentStyle={{ background: '#1e1e3f', borderRadius: '16px', border: '1px solid #ffffff10' }}
-                                  itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
-                               />
-                               <Area type="monotone" dataKey="score" stroke="#6366f1" fillOpacity={1} fill="url(#colorScore)" strokeWidth={3} />
-                            </AreaChart>
-                         </ResponsiveContainer>
-                       ) : (
-                         <div className="h-full flex flex-col items-center justify-center text-gray-600 italic text-sm">
-                            <HistoryIcon className="mb-2 opacity-20" size={40} />
-                            No data points found yet.
-                         </div>
-                       )}
-                    </div>
-                 </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-               <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500">Recent Activity</h4>
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredHistory.slice(0, 6).map((h) => (
-
-                    <Link href={`/tests/${h.id}/results`} key={h.id} className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all group relative overflow-hidden">
-                       <div className="flex justify-between items-start mb-4">
-                          <div className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded-full uppercase">
-                             {h.practice_tests?.subjects?.name}
+              <div className="lg:col-span-7">
+                <AnimatePresence mode="wait">
+                  {activeTab === 'history' ? (
+                    <motion.div 
+                      key="history-tab"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="flex flex-col gap-8"
+                    >
+                      <div className="p-8 rounded-[40px] bg-white/5 border border-white/10">
+                          <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                              <BarChart3 className="text-emerald-400" /> Score Trajectory
+                            </h3>
+                            <select 
+                                className="bg-transparent text-xs font-bold text-gray-400 border-none outline-none cursor-pointer hover:text-white"
+                                value={filterSubjectId}
+                                onChange={(e) => setFilterSubjectId(e.target.value)}
+                            >
+                                <option value="all">All Subjects</option>
+                                {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            </select>
                           </div>
-                          <div className="text-2xl font-black text-white">{h.score}%</div>
-                       </div>
-                       <h5 className="text-lg font-bold text-white mb-2 truncate">{h.practice_tests?.topic}</h5>
-                       <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium">
-                          <Clock size={12} /> {new Date(h.started_at).toLocaleDateString()}
-                       </div>
-                       <ChevronRight className="absolute bottom-6 right-6 text-gray-600 group-hover:text-indigo-400 transition-colors" />
-                    </Link>
-                  ))}
-                  {history.length === 0 && Array.from({length: 3}).map((_, i) => <Skeleton key={i} height="120px" rounded />)}
-               </div>
+
+                          <div className="h-[240px] w-full">
+                            {filteredHistory.length > 0 ? (
+                              <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart data={filteredHistory.slice(0, 7).reverse()}>
+                                    <defs>
+                                        <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                    <XAxis dataKey="topic" hide />
+                                    <YAxis domain={[0, 100]} hide />
+                                    <Tooltip 
+                                        contentStyle={{ background: '#1e1e3f', borderRadius: '16px', border: '1px solid #ffffff10' }}
+                                        itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
+                                    />
+                                    <Area type="monotone" dataKey="score" stroke="#6366f1" fillOpacity={1} fill="url(#colorScore)" strokeWidth={3} />
+                                  </AreaChart>
+                              </ResponsiveContainer>
+                            ) : (
+                              <div className="h-full flex flex-col items-center justify-center text-gray-600 italic text-sm">
+                                  <HistoryIcon className="mb-2 opacity-20" size={40} />
+                                  No data points found yet.
+                              </div>
+                            )}
+                          </div>
+                      </div>
+
+                      <div className="space-y-6">
+                        <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500">Recent Activity</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {filteredHistory.slice(0, 4).map((h) => (
+                              <Link href={`/tests/${h.id}/results`} key={h.id} className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all group relative overflow-hidden">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded-full uppercase">
+                                      {h.practice_tests?.subjects?.name || 'Test'}
+                                    </div>
+                                    <div className="text-2xl font-black text-white">{h.score}%</div>
+                                </div>
+                                <h5 className="text-lg font-bold text-white mb-2 truncate">{h.practice_tests?.topic}</h5>
+                                <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium">
+                                    <Clock size={12} /> {new Date(h.started_at).toLocaleDateString()}
+                                </div>
+                                <ChevronRight className="absolute bottom-6 right-6 text-gray-600 group-hover:text-indigo-400 transition-colors" />
+                              </Link>
+                            ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div 
+                      key="leaderboard-tab"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="p-8 rounded-[40px] bg-white/5 border border-white/10 flex flex-col gap-6"
+                    >
+                      <h3 className="text-xl font-bold text-white flex items-center gap-3 mb-2">
+                        <Trophy className="text-amber-400" /> Global Top Scorers
+                      </h3>
+                      
+                      <div className="space-y-4">
+                        {globalLeaderboard.length > 0 ? globalLeaderboard.map((entry, i) => (
+                          <div key={entry.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${i === 0 ? 'bg-amber-500 text-white' : i === 1 ? 'bg-gray-300 text-gray-900' : i === 2 ? 'bg-orange-600 text-white' : 'text-gray-500'}`}>
+                              #{i + 1}
+                            </div>
+                            <img 
+                              src={entry.avatar_url || `https://ui-avatars.com/api/?name=${entry.username}`} 
+                              alt="" 
+                              className="w-10 h-10 rounded-full border-2 border-white/10"
+                            />
+                            <div className="flex-1">
+                              <div className="font-bold text-white">{entry.name || entry.username}</div>
+                              <div className="text-[10px] text-gray-500 font-medium">{entry.college || 'Dev Fusion Member'}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-indigo-400 font-black">{entry.points} pts</div>
+                              <div className="text-[8px] text-gray-600 uppercase font-black">Reputation</div>
+                            </div>
+                          </div>
+                        )) : (
+                          <div className="py-20 text-center text-gray-600 italic">
+                             No legends have risen yet.
+                          </div>
+                        )}
+                      </div>
+
+                      <Link href="/leaderboard" className="mt-4 flex items-center justify-center gap-2 text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
+                        View Full Global Leaderboard <ArrowRight size={16} />
+                      </Link>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </motion.div>
         )}

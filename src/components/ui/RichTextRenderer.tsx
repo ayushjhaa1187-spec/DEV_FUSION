@@ -1,89 +1,76 @@
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import { common, createLowlight } from 'lowlight';
-import 'highlight.js/styles/github-dark.css';
-
-const lowlight = createLowlight(common);
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 interface RichTextRendererProps {
-  content: any;
+  content: string | any; // Any in case old Tiptap JSON is passed, but we render string
 }
 
 export default function RichTextRenderer({ content }: RichTextRendererProps) {
-  // We use an editor in read-only mode for consistent rendering
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-      }),
-      Image,
-      CodeBlockLowlight.configure({
-        lowlight,
-      }),
-    ],
-    content: content || '',
-    editable: false,
-    immediatelyRender: false,
-    editorProps: {
-      attributes: {
-        class: 'prose prose-invert max-w-none focus:outline-none text-gray-300',
-      },
-    },
-  });
-
-  if (!editor) return null;
+  const markdownText = typeof content === 'string' ? content : (content?.text || '');
 
   return (
-    <div className="tiptap-renderer">
-      <EditorContent editor={editor} />
-      <style jsx global>{`
-        .tiptap-renderer .ProseMirror pre {
-          background: #0d1117;
-          border-radius: 12px;
-          padding: 1.5rem;
-          font-family: 'Fira Code', 'Courier New', Courier, monospace;
-          font-size: 0.9rem;
-          margin: 1.5rem 0;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .tiptap-renderer .ProseMirror code {
-          background: rgba(255, 255, 255, 0.1);
-          padding: 0.2rem 0.4rem;
-          border-radius: 4px;
-          color: #a78bfa;
-        }
-        .tiptap-renderer .ProseMirror blockquote {
-          border-left: 4px solid #6366f1;
-          padding-left: 1.5rem;
-          color: #94a3b8;
-          font-style: italic;
-          margin: 1.5rem 0;
-        }
-        .tiptap-renderer .ProseMirror img {
-          max-width: 100%;
-          border-radius: 16px;
-          margin: 2rem 0;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-        .tiptap-renderer .ProseMirror h2 {
-          font-size: 1.5rem;
-          font-weight: 800;
-          color: white;
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-        }
-        .tiptap-renderer .ProseMirror h3 {
-          font-size: 1.25rem;
-          font-weight: 800;
-          color: white;
-          margin-top: 1.5rem;
-          margin-bottom: 0.75rem;
-        }
-      `}</style>
+    <div className="prose prose-invert max-w-none text-gray-300">
+      <ReactMarkdown
+        components={{
+          code({ node, inline, className, children, ...props }: any) {
+            const match = /language-(\w+)/.exec(className || '');
+            return !inline && match ? (
+              <SyntaxHighlighter
+                {...props}
+                style={oneDark}
+                language={match[1]}
+                PreTag="div"
+                customStyle={{
+                  background: '#0d1117',
+                  borderRadius: '12px',
+                  padding: '1.5rem',
+                  fontFamily: '"Fira Code", "Courier New", Courier, monospace',
+                  fontSize: '0.9rem',
+                  margin: '1.5rem 0',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                }}
+              >
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+            ) : (
+              <code
+                {...props}
+                className={`${className || ''} bg-white/10 px-1.5 py-0.5 rounded text-indigo-400 font-mono text-sm`}
+              >
+                {children}
+              </code>
+            );
+          },
+          blockquote({ children, ...props }) {
+            return (
+              <blockquote {...props} className="border-l-4 border-indigo-500 pl-6 text-slate-400 italic my-6">
+                {children}
+              </blockquote>
+            );
+          },
+          img({ src, alt, ...props }) {
+            return (
+              <img
+                src={src}
+                alt={alt}
+                className="max-w-full rounded-2xl my-8 shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+                {...props}
+              />
+            );
+          },
+          h2({ children, ...props }) {
+            return <h2 className="text-2xl font-black text-white mt-8 mb-4" {...props}>{children}</h2>;
+          },
+          h3({ children, ...props }) {
+            return <h3 className="text-xl font-black text-white mt-6 mb-3" {...props}>{children}</h3>;
+          }
+        }}
+      >
+        {markdownText}
+      </ReactMarkdown>
     </div>
   );
 }

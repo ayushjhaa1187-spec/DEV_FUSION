@@ -9,12 +9,12 @@ export interface BreadcrumbItem {
   icon?: React.ReactNode;
 }
 
-export interface BreadcrumbProps extends React.HTMLAttributes<HTMLNavElement> {
+export interface BreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
   items: BreadcrumbItem[];
   separator?: React.ReactNode;
 }
 
-export const Breadcrumb = React.forwardRef<HTMLNavElement, BreadcrumbProps>(({
+export const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(({
   items,
   separator = <ChevronRight className="w-4 h-4 text-text-tertiary" />,
   className,

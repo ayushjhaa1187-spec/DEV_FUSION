@@ -157,4 +157,29 @@ Respond ONLY with a valid JSON array of objects:
   }
 }
 
+export async function getFollowUpQuestions(question: string, answer: string): Promise<string[]> {
+  if (!API_KEY) return [];
+
+  const prompt = `You are an elite academic tutor. Based on the following question and its explanation, suggest exactly 3 conceptual, curious, and deep follow-up questions that the student should ask next to deepen their understanding.
+  
+  Student Question: "${question}"
+  Explanation Provided: "${answer}"
+  
+  Rules:
+  1. Questions must be brief (max 15 words each).
+  2. Questions must be provocative and encourage deeper thinking.
+  3. No introductory text. Just a JSON array of 3 strings.
+  
+  Format: ["Question 1", "Question 2", "Question 3"]`;
+
+  try {
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    const result = await model.generateContent(prompt);
+    return extractJSON<string[]>(result.response.text(), []);
+  } catch (error) {
+    console.error('[AI Service] Follow-up Error:', error);
+    return [];
+  }
+}
+
 

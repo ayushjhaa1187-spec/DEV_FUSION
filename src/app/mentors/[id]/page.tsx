@@ -3,8 +3,14 @@
 import { useEffect, useState, use } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { mentorApi, bookingApi } from '@/lib/api';
-import styles from './profile.module.css';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Star, Users, Clock, ShieldCheck, MapPin, 
+  ChevronRight, Calendar, Award, MessageSquare,
+  CheckCircle2, IndianRupee, ArrowRight
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { toast } from 'sonner';
 
 interface MentorProfile {
   id: string;
@@ -16,11 +22,23 @@ interface MentorProfile {
   reputation_points?: number;
   mentor_profiles?: {
     specialty: string;
-    price_per_session: number;
-    rating: number;
+    hourly_rate: number;
+    rating_avg: number;
+    rating_count: number;
     sessions_completed: number;
-    skills?: string[];
-    bio?: string;
+    subjects?: string[];
+  };
+}
+
+interface Review {
+  id: string;
+  review_text: string;
+  review_rating: number;
+  created_at: string;
+  profiles: {
+    username: string;
+    full_name: string;
+    avatar_url: string;
   };
 }
 
@@ -28,370 +46,448 @@ interface Slot {
   id: string;
   start_time: string;
   end_time: string;
-  is_booked: boolean;
+  status: 'available' | 'locked' | 'booked';
 }
 
 export default function MentorProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth();
   const { id } = use(params);
+  
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [reviewPage, setReviewPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [following, setFollowing] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'reviews' | 'badges'>('about');
+
+  const REVIEWS_LIMIT = 5;
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [profileData, slotsData] = await Promise.all([
+        const [profileData, slotsData, reviewsData] = await Promise.all([
           mentorApi.getProfile(id),
-          mentorApi.getSlots(id)
+          mentorApi.getSlots(id),
+          mentorApi.getReviews(id, REVIEWS_LIMIT, 0)
         ]);
         setProfile(profileData);
         setSlots(slotsData);
-
-        if (user) {
-          const followRes = await fetch(`/api/mentors/${id}/follow`);
-          const { following } = await followRes.json();
-          setFollowing(following);
-        }
+        setReviews(reviewsData.reviews);
+        setTotalReviews(reviewsData.total);
       } catch (err) {
-        console.error('Failed to load mentor profile', err);
+        console.error('Failed to load mentor data', err);
+        toast.error('Failed to load mentor profile');
       } finally {
         setLoading(false);
       }
     }
     fetchData();
-  }, [id, user]);
+  }, [id]);
 
-  const handleFollow = async () => {
-    if (!user) return alert('Please log in to follow mentors.');
-    setFollowLoading(true);
+  const fetchMoreReviews = async (page: number) => {
+    setReviewsLoading(true);
     try {
-      const res = await fetch(`/api/mentors/${id}/follow`, { method: 'POST' });
-      const { following: newFollowing } = await res.json();
-      setFollowing(newFollowing);
+      const data = await mentorApi.getReviews(id, REVIEWS_LIMIT, page * REVIEWS_LIMIT);
+      setReviews(data.reviews);
+      setReviewPage(page);
     } catch (err) {
-      alert('Follow action failed');
+      toast.error('Failed to load reviews');
     } finally {
-      setFollowLoading(false);
+      setReviewsLoading(false);
     }
-  };
-
-  const loadRazorpay = () => {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
   };
 
   const handleBooking = async () => {
-    if (!selectedSlot) return alert('Please select a time slot.');
-    if (!user) return alert('Please log in to book a session.');
-    const slot = slots.find((s) => s.id === selectedSlot);
-    const fee = profile?.mentor_profiles?.price_per_session || 0;
+    if (!selectedSlot) return toast.error('Please select a time slot');
+    if (!user) return toast.error('Please log in to book a session');
+    
     setBookingLoading(true);
     try {
-      if (fee > 0) {
-        const res = await loadRazorpay();
-        if (!res) throw new Error('Razorpay SDK failed to load');
-        const orderData = await fetch('/api/razorpay', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: fee, mentor_id: id, slot_id: selectedSlot })
-        }).then((t) => t.json());
-        const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: orderData.amount,
-          currency: 'INR',
-          name: 'SkillBridge Mentor',
-          description: `Booking with ${profile?.full_name}`,
-          order_id: orderData.id,
-          handler: async function (response: any) {
-            await bookingApi.create({
-              slot_id: selectedSlot,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
-            } as any);
-            setSuccess(true);
-            confetti({
-              particleCount: 150,
-              spread: 70,
-              origin: { y: 0.6 },
-              colors: ['#7c3aed', '#06d6a0', '#ffffff']
-            });
-            setTimeout(() => window.location.href = '/dashboard/sessions', 3000);
-          },
-          prefill: { name: user.email?.split('@')[0], email: user.email },
-          theme: { color: '#7c3aed' }
-        };
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
-      } else {
-        await bookingApi.create({ slot_id: selectedSlot });
-        setSuccess(true);
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#7c3aed', '#06d6a0', '#ffffff']
-        });
-        setTimeout(() => window.location.href = '/dashboard/sessions', 3000);
-      }
+      await bookingApi.create({ slot_id: selectedSlot });
+      setSuccess(true);
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#6366f1', '#10b981', '#ffffff']
+      });
+      toast.success('Session booked successfully!');
+      setTimeout(() => window.location.href = '/dashboard/sessions', 2000);
     } catch (err: any) {
-      alert(err.message || 'Booking failed');
+      toast.error(err.message || 'Booking failed');
     } finally {
-      if (fee === 0) setBookingLoading(false);
+      setBookingLoading(false);
     }
   };
 
-  if (loading) return (
-    <div className={styles.container}>
-      <div className={styles.pulse}>Syncing Mentor Availability...</div>
-    </div>
-  );
-  if (!profile) return (
-    <div className={styles.container}>
-      <h2>Mentor Not Found</h2>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#06060f] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-indigo-400 font-black uppercase tracking-widest text-xs">Syncing Mentor Node...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const skills = profile.mentor_profiles?.skills || [];
-  const reputation = profile.reputation_points || 0;
-  const rating = profile.mentor_profiles?.rating || 0;
-  const sessions = profile.mentor_profiles?.sessions_completed || 0;
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-[#06060f] flex items-center justify-center text-white">
+        <div className="text-center">
+          <h2 className="text-2xl font-black mb-4">Mentor Not Found</h2>
+          <p className="text-gray-500">The requested mentor profile does not exist or has been deactivated.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const mentorInfo = profile.mentor_profiles;
+  const rating = mentorInfo?.rating_avg || 0;
+  const sessionCount = mentorInfo?.sessions_completed || 0;
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.avatarWrap}>
-          <img
-            src={profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.username}`}
-            className={styles.avatar}
-            alt={profile.full_name}
-          />
-        </div>
-        <div className={styles.info}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <h1 className={styles.name}>{profile.full_name || profile.username}</h1>
-              <p className={styles.specialty}>{profile.mentor_profiles?.specialty || 'Academic Mentor'}</p>
-            </div>
-            <button
-              className={`${styles.followBtn} ${following ? styles.following : ''}`}
-              onClick={handleFollow}
-              disabled={followLoading}
-            >
-              {followLoading ? '...' : following ? '✓ Following' : '+ Follow Mentor'}
-            </button>
-          </div>
-          <div className={styles.statsRow}>
-            <span>⭐ {rating.toFixed(1)}</span>
-            <span>📅 {sessions} Sessions</span>
-            <span className={styles.repBadge}>Rep: {reputation}</span>
-          </div>
-        </div>
-      </header>
-
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${activeTab === 'about' ? styles.activeTab : ''}`}
-          onClick={() => setActiveTab('about')}
-        >
-          About
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === 'reviews' ? styles.activeTab : ''}`}
-          onClick={() => setActiveTab('reviews')}
-        >
-          Reviews
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === 'badges' ? styles.activeTab : ''}`}
-          onClick={() => setActiveTab('badges')}
-        >
-          Badges
-        </button>
+    <main className="min-h-screen bg-[#06060f] selection:bg-indigo-500/30 text-white pb-24">
+      {/* Hero Banner */}
+      <div className="h-48 md:h-64 bg-gradient-to-r from-indigo-900 via-indigo-950 to-black relative overflow-hidden">
+        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#06060f] to-transparent" />
       </div>
 
-      <div className={styles.contentGrid}>
-        <main className={styles.mainContent}>
-          {activeTab === 'about' && (
-            <>
-              <section className={`${styles.card} glass`}>
-                <h3>Bio</h3>
-                <p className={styles.bio}>{profile.bio || "This mentor is ready to help you excel!"}</p>
-              </section>
-              {skills.length > 0 && (
-                <section className={`${styles.card} glass`}>
-                  <h3>Skills & Expertise</h3>
-                  <div className={styles.skillsGrid}>
-                    {skills.map((skill, idx) => (
-                      <span key={idx} className={styles.skillTag}>{skill}</span>
-                    ))}
+      <div className="max-w-6xl mx-auto px-6 -mt-24 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+          
+          {/* Main Content (Left) */}
+          <div className="lg:col-span-8 space-y-8">
+            
+            {/* Header Profile Section */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-[#0c0c16]/80 backdrop-blur-2xl p-8 rounded-[3rem] border border-white/5 flex flex-col md:flex-row items-center md:items-start gap-8"
+            >
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] overflow-hidden border-4 border-[#0c0c16] shadow-2xl bg-indigo-600/20 flex-shrink-0">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} className="w-full h-full object-cover" alt={profile.full_name} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl font-black text-indigo-400">
+                    {profile.username?.[0].toUpperCase()}
                   </div>
-                </section>
-              )}
-              <section className={`${styles.card} glass`}>
-                <h3>Teaching Style</h3>
-                <div className={styles.teachingStyle}>
-                  <div className={styles.styleItem}>
-                    <span className={styles.styleIcon}>🎯</span>
-                    <div>
-                      <strong>Personalized</strong>
-                      <p>Tailors approach to each student's learning pace</p>
-                    </div>
+                )}
+              </div>
+
+              <div className="flex-1 text-center md:text-left">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight leading-none mb-2">
+                      {profile.full_name || `@${profile.username}`}
+                    </h1>
+                    <p className="text-indigo-400 font-black uppercase text-xs tracking-[0.2em]">
+                      {mentorInfo?.specialty || 'Expert Academic Mentor'}
+                    </p>
                   </div>
-                  <div className={styles.styleItem}>
-                    <span className={styles.styleIcon}>💬</span>
-                    <div>
-                      <strong>Interactive</strong>
-                      <p>Encourages questions and active participation</p>
-                    </div>
-                  </div>
-                  <div className={styles.styleItem}>
-                    <span className={styles.styleIcon}>📊</span>
-                    <div>
-                      <strong>Results-Oriented</strong>
-                      <p>Focuses on measurable improvement</p>
-                    </div>
+                  <div className="flex items-center justify-center md:justify-end gap-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/5">
+                    <Star className="text-amber-400 fill-amber-400" size={18} />
+                    <span className="text-lg font-black">{rating.toFixed(1)}</span>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase ml-1">Avg Rating</span>
                   </div>
                 </div>
-              </section>
-            </>
-          )}
-          {activeTab === 'reviews' && (
-            <section className={`${styles.card} glass`}>
-              <h3>Reviews</h3>
-              <div className={styles.reviewsContainer}>
-                <div className={styles.reviewSummary}>
-                  <div className={styles.avgRating}>
-                    <span className={styles.bigRating}>{rating.toFixed(1)}</span>
-                    <div className={styles.stars}>{'★'.repeat(Math.floor(rating))}{'☆'.repeat(5 - Math.floor(rating))}</div>
-                    <span className={styles.reviewCount}>Based on {sessions} sessions</span>
+
+                <div className="flex flex-wrap justify-center md:justify-start gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  <div className="flex items-center gap-2">
+                    <Users size={14} className="text-indigo-500" />
+                    <span>{sessionCount} Sessions</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={14} className="text-emerald-500" />
+                    <span>Verified Expert</span>
                   </div>
                 </div>
-                <div className={styles.reviewList}>
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className={styles.reviewItem}>
-                      <div className={styles.reviewHeader}>
-                        <div className={styles.reviewAvatar}>U{i}</div>
-                        <div>
-                          <strong>Student {i}</strong>
-                          <div className={styles.reviewStars}>
-                            {'★'.repeat(5)}
-                          </div>
-                        </div>
-                        <span className={styles.reviewDate}>2 days ago</span>
+              </div>
+            </motion.div>
+
+            {/* Tabs Navigation */}
+            <div className="flex gap-2 p-1.5 bg-white/5 rounded-[2rem] border border-white/5 w-fit">
+              <button 
+                onClick={() => setActiveTab('about')}
+                className={`px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${
+                  activeTab === 'about' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                Profile & Bio
+              </button>
+              <button 
+                onClick={() => setActiveTab('reviews')}
+                className={`px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${
+                  activeTab === 'reviews' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                 Student Reviews ({totalReviews})
+              </button>
+              <button 
+                onClick={() => setActiveTab('badges')}
+                className={`px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest transition-all ${
+                  activeTab === 'badges' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                Achievements
+              </button>
+            </div>
+
+            {/* Tab Panels */}
+            <AnimatePresence mode="wait">
+              {activeTab === 'about' && (
+                <motion.div 
+                  key="about"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  className="space-y-8"
+                >
+                  <div className="bg-[#0c0c16]/50 p-8 rounded-[3rem] border border-white/5 group">
+                    <h3 className="text-xs font-black uppercase text-indigo-500 tracking-widest mb-6 flex items-center gap-2">
+                      <MessageSquare size={14} /> Academic Philosophy
+                    </h3>
+                    <p className="text-gray-300 text-lg leading-relaxed font-medium italic">
+                      "{profile.bio || "Optimization in progress. This mentor is dedicated to providing high-fidelity conceptual clarity for all students."}"
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+                      <h3 className="text-xs font-black uppercase text-gray-500 tracking-widest mb-6">Expertise Nodes</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {mentorInfo?.subjects?.map((s: string) => (
+                           <span key={s} className="px-4 py-2 bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-tight rounded-xl border border-indigo-500/20">
+                           {s}
+                         </span>
+                        )) || <span className="text-gray-600 italic">General Studies</span>}
                       </div>
-                      <p className={styles.reviewText}>
-                        Excellent mentor! Very patient and explains concepts clearly. Helped me improve my grade significantly.
-                      </p>
+                    </div>
+                    <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+                      <h3 className="text-xs font-black uppercase text-gray-500 tracking-widest mb-6">Teaching Style</h3>
+                      <div className="space-y-3">
+                         <div className="flex items-center gap-3 text-sm font-bold text-gray-300">
+                           <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">⚡</div>
+                            Adaptive & Fast-paced
+                         </div>
+                         <div className="flex items-center gap-3 text-sm font-bold text-gray-300">
+                           <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">🧠</div>
+                            Conceptual Depth
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'reviews' && (
+                <motion.div 
+                  key="reviews"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  className="space-y-6"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-black">Latest Transmissions</h3>
+                    <div className="text-[10px] text-gray-600 font-black uppercase tracking-widest">
+                       Showing {reviews.length} of {totalReviews}
+                    </div>
+                  </div>
+
+                  {reviews.length > 0 ? (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <div key={review.id} className="bg-[#0c0c16]/50 p-8 rounded-[2.5rem] border border-white/5 hover:border-indigo-500/30 transition-all">
+                          <div className="flex justify-between items-start mb-6">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-2xl overflow-hidden ring-2 ring-white/5">
+                                {review.profiles.avatar_url ? (
+                                  <img src={review.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
+                                ) : (
+                                  <div className="w-full h-full bg-indigo-600 flex items-center justify-center font-black text-white uppercase">
+                                    {review.profiles.username[0]}
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-black text-white text-sm uppercase tracking-tight">{review.profiles.full_name || review.profiles.username}</p>
+                                <div className="flex gap-0.5 mt-1">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <Star 
+                                      key={i} 
+                                      size={10} 
+                                      className={i < review.review_rating ? 'fill-amber-400 text-amber-400' : 'text-gray-700'} 
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tighter">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-gray-400 leading-relaxed font-medium">
+                            "{review.review_text}"
+                          </p>
+                        </div>
+                      ))}
+
+                      {totalReviews > REVIEWS_LIMIT && (
+                        <div className="flex justify-center gap-4 pt-4">
+                          <button 
+                            disabled={reviewPage === 0 || reviewsLoading}
+                            onClick={() => fetchMoreReviews(reviewPage - 1)}
+                            className="px-6 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+                          >
+                            Previous
+                          </button>
+                          <button 
+                            disabled={(reviewPage + 1) * REVIEWS_LIMIT >= totalReviews || reviewsLoading}
+                            onClick={() => fetchMoreReviews(reviewPage + 1)}
+                            className="px-6 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+                          >
+                            {reviewsLoading ? 'Loading...' : 'Next'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-24 bg-white/2 rounded-[3rem] border border-dashed border-white/5 text-gray-600 font-bold uppercase text-[10px] tracking-[0.2em]">
+                      No review logs found in current sector
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {activeTab === 'badges' && (
+                <motion.div 
+                  key="badges"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  className="grid grid-cols-2 md:grid-cols-4 gap-4"
+                >
+                  {[
+                    { id: '1', title: 'Top Rated', icon: '💎', desc: 'Consistently 5-star rating' },
+                    { id: '2', title: 'Expert', icon: '🎓', desc: 'Subject matter authority' },
+                    { id: '3', title: 'Elite', icon: '🔥', desc: '100+ sessions completed' },
+                    { id: '4', title: 'Legacy', icon: '🏆', desc: 'SkillBridge Founding Mentor' },
+                  ].map((badge) => (
+                    <div key={badge.id} className="bg-white/5 p-6 rounded-[2rem] border border-white/5 flex flex-col items-center text-center group hover:bg-white/10 transition-all">
+                       <span className="text-4xl mb-4 grayscale group-hover:grayscale-0 transition-all block filter drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">
+                         {badge.icon}
+                       </span>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1">{badge.title}</p>
+                       <p className="text-[9px] text-gray-500 font-bold">{badge.desc}</p>
                     </div>
                   ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+          </div>
+
+          {/* Booking Sidebar (Right) */}
+          <div className="lg:col-span-4 lg:sticky lg:top-24 h-fit space-y-6">
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               className="bg-gradient-to-br from-[#0c0c16] to-[#06060f] p-8 rounded-[3rem] border-2 border-indigo-500/20 shadow-2xl overflow-hidden relative"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 rounded-full blur-3xl -mr-16 -mt-16" />
+              
+              <div className="text-center mb-10">
+                <div className="flex items-center justify-center gap-1 text-3xl font-black text-white mb-2">
+                   <IndianRupee size={24} className="text-indigo-400" />
+                   {mentorInfo?.hourly_rate || 250}
+                </div>
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Fixed 30-min Strategic Session</p>
+              </div>
+
+              <div className="space-y-4 mb-10">
+                <h4 className="text-[10px] text-gray-500 font-black uppercase tracking-widest flex items-center gap-4">
+                  <span className="flex-shrink-0">Select Live Slot</span>
+                  <div className="flex-1 h-[1px] bg-white/5" />
+                </h4>
+
+                <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                  {slots.length > 0 ? (
+                    slots.map((slot) => (
+                      <button
+                        key={slot.id}
+                        disabled={slot.status === 'booked' || bookingLoading}
+                        onClick={() => setSelectedSlot(slot.id)}
+                        className={`p-4 rounded-2xl border transition-all text-left flex flex-col relative overflow-hidden ${
+                          selectedSlot === slot.id 
+                            ? 'bg-indigo-600 border-indigo-500 shadow-xl shadow-indigo-600/20 text-white' 
+                            : 'bg-white/5 border-white/5 hover:border-indigo-500/30 text-gray-400'
+                        } ${slot.status === 'booked' ? 'opacity-30 cursor-not-allowed grayscale' : ''}`}
+                      >
+                         <p className="text-[9px] font-black uppercase opacity-60">
+                           {new Date(slot.start_time).toLocaleDateString([], { weekday: 'short' })}
+                         </p>
+                         <p className="text-sm font-black">
+                           {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                         </p>
+                         {slot.status === 'booked' && (
+                           <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-red-500 text-white text-[7px] font-black rounded uppercase">FULL</span>
+                         )}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="col-span-2 py-8 text-center text-gray-600 text-[10px] font-black uppercase border border-dashed border-white/5 rounded-2xl">
+                       No open frequencies
+                    </div>
+                  )}
                 </div>
               </div>
-            </section>
-          )}
-          {activeTab === 'badges' && (
-            <section className={`${styles.card} glass`}>
-              <h3>Badges & Achievements</h3>
-              <div className={styles.badgesGrid}>
-                {reputation >= 2 && (
-                  <div className={styles.badge}>
-                    <span className={styles.badgeIcon}>🎓</span>
-                    <span className={styles.badgeName}>First Answer</span>
-                    <span className={styles.badgeDesc}>Posted first answer</span>
-                  </div>
-                )}
-                {reputation >= 25 && (
-                  <div className={styles.badge}>
-                    <span className={styles.badgeIcon}>🤝</span>
-                    <span className={styles.badgeName}>Helper</span>
-                    <span className={styles.badgeDesc}>25+ reputation points</span>
-                  </div>
-                )}
-                {reputation >= 100 && (
-                  <div className={styles.badge}>
-                    <span className={styles.badgeIcon}>⭐</span>
-                    <span className={styles.badgeName}>Rising Star</span>
-                    <span className={styles.badgeDesc}>100+ reputation points</span>
-                  </div>
-                )}
-                {reputation >= 500 && (
-                  <div className={styles.badge}>
-                    <span className={styles.badgeIcon}>🏆</span>
-                    <span className={styles.badgeName}>Expert</span>
-                    <span className={styles.badgeDesc}>500+ reputation points</span>
-                  </div>
-                )}
-                {reputation >= 1000 && (
-                  <div className={styles.badge}>
-                    <span className={styles.badgeIcon}>👑</span>
-                    <span className={styles.badgeName}>Legend</span>
-                    <span className={styles.badgeDesc}>1000+ reputation points</span>
-                  </div>
-                )}
-                {sessions >= 10 && (
-                  <div className={styles.badge}>
-                    <span className={styles.badgeIcon}>📚</span>
-                    <span className={styles.badgeName}>Dedicated Mentor</span>
-                    <span className={styles.badgeDesc}>{sessions}+ sessions completed</span>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-        </main>
-        <aside className={styles.sideContent}>
-          <div className={`${styles.bookingCard} glass`}>
-            <div className={styles.priceHeader}>
-              <span className={styles.price}>₹{profile.mentor_profiles?.price_per_session || 0}</span>
-              <span className={styles.duration}>/ 30 min session</span>
-            </div>
-            <div className={styles.slotPicker}>
-              <h4>Select a Live Slot</h4>
-              <div className={styles.slotGrid}>
-                {slots.length > 0 ? (
-                  slots.map((slot) => (
-                    <button
-                      key={slot.id}
-                      className={`${styles.slotBtn} ${selectedSlot === slot.id ? styles.selected : ''} ${slot.is_booked ? styles.booked : ''}`}
-                      onClick={() => !slot.is_booked && setSelectedSlot(slot.id)}
-                      disabled={slot.is_booked}
-                    >
-                      <span className={styles.slotDay}>
-                        {new Date(slot.start_time).toLocaleDateString([], { weekday: 'short' })}
-                      </span>
-                      <span className={styles.slotTime}>
-                        {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      {slot.is_booked && <span className={styles.bookedTag}>Booked</span>}
-                    </button>
-                  ))
+
+              <button
+                onClick={handleBooking}
+                disabled={bookingLoading || !selectedSlot || success}
+                className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                  success 
+                    ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
+                    : 'bg-white text-black hover:bg-gray-100 shadow-xl shadow-white/5 disabled:opacity-30'
+                }`}
+              >
+                {bookingLoading ? (
+                  <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                ) : success ? (
+                  <><CheckCircle2 size={16} /> Frequency Locked</>
                 ) : (
-                  <p className={styles.emptySlots}>No public slots available right now.</p>
+                  <><Calendar size={16} /> Initialize Booking</>
                 )}
+              </button>
+
+              <div className="mt-8 pt-8 border-t border-white/5 space-y-3">
+                 <div className="flex items-center gap-3 text-xs text-indigo-400/60 font-black uppercase tracking-tighter">
+                   <Clock size={12} /> Live Jitsi Video Transmission
+                 </div>
+                 <div className="flex items-center gap-3 text-xs text-indigo-400/60 font-black uppercase tracking-tighter">
+                   <Award size={12} /> Double Reputation Bonus Included
+                 </div>
               </div>
+            </motion.div>
+
+            {/* Micro Stats Card */}
+            <div className="bg-[#0c0c16]/30 p-8 rounded-[3rem] border border-white/5 text-center">
+               <MapPin size={24} className="mx-auto text-gray-700 mb-2" />
+               <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest">Currently transmitting from</p>
+               <p className="text-white font-black text-sm uppercase">SkillBridge Node Zero</p>
             </div>
-            <button
-              className={styles.bookBtn}
-              onClick={handleBooking}
-              disabled={bookingLoading || !selectedSlot || success}
-            >
-              {success ? '✅ Session Booked!' : bookingLoading ? 'Reserving...' : 'Book Now'}
-            </button>
           </div>
-        </aside>
+
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

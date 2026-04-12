@@ -12,20 +12,13 @@ export async function POST(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { vote_type } = await req.json(); // Now numeric: 1 or -1
+    const { vote_type } = await req.json(); // Now 'up' or 'down'
 
-    if (![1, -1].includes(vote_type)) {
-      return NextResponse.json({ error: 'Invalid vote type: must be 1 (up) or -1 (down)' }, { status: 400 });
+    if (!['up', 'down'].includes(vote_type)) {
+      return NextResponse.json({ error: 'Invalid vote type: must be "up" or "down"' }, { status: 400 });
     }
 
-    // Get answer author_id for reputation
-    const { data: answer } = await supabase
-      .from('answers')
-      .select('author_id')
-      .eq('id', id)
-      .single();
-
-    // Upsert vote (prevents double-voting)
+    // Upsert vote (prevents double-voting and handles mutual exclusivity)
     const { data: vote, error: voteError } = await supabase
       .from('answer_votes')
       .upsert(
@@ -37,28 +30,33 @@ export async function POST(
 
     if (voteError) throw voteError;
 
-    // Recalculate total votes and update cached count
-    const { data: totalData } = await supabase
-      .from('answer_votes')
-      .select('vote_type')
-      .eq('answer_id', id);
-
-    const totalVotes = totalData?.reduce((acc: number, v: any) => acc + v.vote_type, 0) ?? 0;
-
-    await supabase
+    // Fetch the updated count from answers table (which is updated by the database trigger)
+    const { data: updatedAnswer } = await supabase
       .from('answers')
-      .update({ votes: totalVotes })
-      .eq('id', id);
+      .select('votes')
+      .eq('id', id)
+      .single();
 
-    // Award reputation to answerer (+10) when upvoted (non-fatal)
-    if (vote_type === 1 && answer?.author_id && answer.author_id !== user.id) {
-      await supabase.rpc('update_reputation', {
-        p_user_id: answer.author_id,
-        p_action: 'answer_upvoted',
-        p_ref_id: id,
-      }).then(({ error: repErr }) => {
-        if (repErr) console.warn('[vote] Reputation award failed (non-fatal):', repErr.message);
-      });
+    const totalVotes = updatedAnswer?.votes ?? 0;
+
+    // Task 7: Notify Expert if upvoted
+    if (vote_type === 'up') {
+      const { data: authorData } = await supabase
+        .from('answers')
+        .select('user_id, doubt_id, doubts(title)')
+        .eq('id', id)
+        .single();
+
+      if (authorData && authorData.user_id !== user.id) {
+        const doubtTitle = (authorData.doubts as any)?.title || 'your post';
+        await supabase.from('notifications').insert({
+          user_id: authorData.user_id,
+          title: '⭐ New Upvote!',
+          message: `⭐ Your answer to "${doubtTitle}" received an upvote!`,
+          type: 'vote_up',
+          link: `/doubts/${authorData.doubt_id}`
+        });
+      }
     }
 
     return NextResponse.json({ totalVotes, userVote: vote_type });

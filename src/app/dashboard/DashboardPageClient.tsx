@@ -207,18 +207,18 @@ export default function DashboardPageClient() {
         </header>
         <div className={styles.statsRow}>
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} width="100%" height="120px" rounded />
+            <Skeleton key={i} className="w-full h-[120px] rounded-xl" />
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2 flex flex-col gap-8">
-            <Skeleton width="100%" height="200px" rounded />
-            <Skeleton width="100%" height="300px" rounded />
+            <Skeleton className="w-full h-[200px] rounded-xl" />
+            <Skeleton className="w-full h-[300px] rounded-xl" />
           </div>
           <div className="flex flex-col gap-8">
-            <Skeleton width="100%" height="200px" rounded />
-            <Skeleton width="100%" height="200px" rounded />
-            <Skeleton width="100%" height="200px" rounded />
+            <Skeleton className="w-full h-[200px] rounded-xl" />
+            <Skeleton className="w-full h-[200px] rounded-xl" />
+            <Skeleton className="w-full h-[200px] rounded-xl" />
           </div>
         </div>
       </div>
@@ -418,7 +418,9 @@ export default function DashboardPageClient() {
             {badges.length > 0 ? (
               badges.slice(0, 3).map((badge, idx) => (
                 <div key={idx} className={styles.badgeItem}>
-                  {getBadgeIcon(badge.name)}
+                  <div className="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-400 mx-auto">
+                    <Award size={24} />
+                  </div>
                   <h4 className="font-semibold text-white mt-3 mb-1">{badge.name}</h4>
                   <p className="text-sm text-gray-400">
                     Unlocked on {new Date(badge.earned_at).toLocaleDateString()}

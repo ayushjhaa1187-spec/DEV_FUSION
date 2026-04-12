@@ -89,7 +89,7 @@ export default function ProfilePageClient({ user, initialProfile, initialBadges 
            <div className="absolute -bottom-10 left-8">
              <Avatar 
                userId={user.id} 
-               fallback={profile?.full_name?.substring(0, 2).toUpperCase() || 'US'} 
+               name={profile?.full_name?.substring(0, 2).toUpperCase() || 'US'} 
                size="lg" 
                className="border-4 border-bg-primary h-24 w-24 shadow-md bg-bg-secondary"
              />

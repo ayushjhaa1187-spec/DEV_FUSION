@@ -4,9 +4,9 @@ import OnboardingClient from './OnboardingClient';
 
 export default async function OnboardingPage() {
   const supabase = await createSupabaseServer();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/auth');
   }
 
@@ -14,7 +14,7 @@ export default async function OnboardingPage() {
   const { data: profile } = await supabase
     .from('profiles')
     .select('college, branch')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single();
 
   if (profile?.college && profile?.branch) {
@@ -25,5 +25,5 @@ export default async function OnboardingPage() {
   // Provide subjects for the multi-select
   const { data: subjects } = await supabase.from('subjects').select('id, name');
 
-  return <OnboardingClient user={session.user} subjects={subjects || []} />;
+  return <OnboardingClient user={user} subjects={subjects || []} />;
 }

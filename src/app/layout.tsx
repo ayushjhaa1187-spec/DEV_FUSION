@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   keywords: ["education", "mentorship", "doubt resolution", "college", "student learning"],
 };
 
+import { Suspense } from "react";
+import DailyStreakTracker from "@/components/auth/DailyStreakTracker";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,6 +35,9 @@ export default function RootLayout({
     <html lang="en" className={`dark ${spaceGrotesk.variable} ${instrumentSerif.variable}`} style={{ colorScheme: 'dark' }}>
       <body>
         <Providers>
+          <Suspense fallback={null}>
+            <DailyStreakTracker />
+          </Suspense>
           <ConditionalNavbar />
           <main className="app-main">
             {children}

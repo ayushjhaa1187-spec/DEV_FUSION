@@ -33,7 +33,7 @@ const DoubtCard = memo(function DoubtCard({ doubt, onVote }: DoubtCardProps) {
         )}
         {doubt.status === 'resolved' && (
           <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-            Solved
+            Resolved
           </span>
         )}
         <span className="ml-auto text-xs text-gray-400">{doubt.votes ?? 0} votes</span>

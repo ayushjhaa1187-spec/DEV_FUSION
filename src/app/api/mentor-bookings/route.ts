@@ -84,11 +84,22 @@ export async function POST(req: NextRequest) {
       .update({ is_booked: true })
       .eq('id', slot_id);
 
-    // 6. Notify mentor
+    // 6. Notify mentor with student details
+    const { data: studentProfile } = await supabase
+      .from('profiles')
+      .select('username, full_name')
+      .eq('id', user.id)
+      .single();
+
+    const studentName = studentProfile?.full_name || studentProfile?.username || 'A student';
+    const slotTime = new Date(slot.start_time).toLocaleString('en-US', { 
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    });
+
     await supabase.from('notifications').insert({
       user_id: slot.mentor_id,
-      title: 'Session Successfully Booked!',
-      message: `A student secured a session for ${new Date(slot.start_time).toLocaleString()}. View your dashboard for details.`,
+      title: '📅 New Session Booking',
+      message: `📅 New booking from ${studentName} for ${slotTime}.`,
       type: 'booking_confirmed',
       link: '/dashboard/sessions'
     });

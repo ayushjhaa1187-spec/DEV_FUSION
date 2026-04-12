@@ -103,7 +103,7 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
     try {
       const { totalVotes } = await answerApi.vote(answerId, type);
       setAnswers(answers.map(a =>
-        a.id === answerId ? { ...a, votes: totalVotes } : a
+        a.id === answerId ? { ...a, votes: totalVotes, user_vote: type } : a
       ));
     } catch (err) {
       console.error('Vote failed');
@@ -227,7 +227,9 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
             </div>
           ) : (
             <div className="space-y-8">
-              {answers.map((answer) => (
+              {answers
+                .sort((a, b) => (b.is_accepted ? 1 : 0) - (a.is_accepted ? 1 : 0))
+                .map((answer) => (
                 <div 
                   key={answer.id} 
                   className={`relative p-10 rounded-[48px] border transition-all duration-300 ${

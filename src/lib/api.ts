@@ -31,9 +31,7 @@ export const badgeApi = {
   getBadges: () => apiFetch('/api/badges'),
 };
 
-export const leaderboardApi = {
-  getTop: (limit = 10) => apiFetch(`/api/leaderboard?limit=${limit}`),
-};
+
 
 export const doubtApi = {
   getDoubts: (filters?: Record<string, string>) => {
@@ -62,6 +60,8 @@ export const mentorApi = {
   },
   getSlots: (mentorId: string) => apiFetch(`/api/mentor-slots?mentor_id=${mentorId}`),
   getProfile: (id: string) => apiFetch(`/api/mentors/${id}`),
+  getReviews: (id: string, limit = 5, offset = 0) => 
+    apiFetch(`/api/mentors/${id}/reviews?limit=${limit}&offset=${offset}`),
 };
 
 export const bookingApi = {
@@ -103,4 +103,9 @@ export const notificationApi = {
     apiFetch('/api/notifications', { method: 'POST', body: JSON.stringify({ notification_id: id }) }),
   markAllRead: () =>
     apiFetch('/api/notifications', { method: 'POST', body: JSON.stringify({ mark_all: true }) }),
+};
+
+export const leaderboardApi = {
+  getTop: (limit: number = 10) => apiFetch(`/api/leaderboard?limit=${limit}&timeframe=allTime`),
+  getWeekly: (limit: number = 10) => apiFetch(`/api/leaderboard?limit=${limit}&timeframe=weekly`),
 };

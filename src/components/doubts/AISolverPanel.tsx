@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Send, CheckCircle2, MessageCircle } from 'lucide-react';
+import { X, Sparkles, Send, CheckCircle2, MessageCircle, ArrowRight } from 'lucide-react';
 
 interface AISolverPanelProps {
   isOpen: boolean;
@@ -16,6 +16,9 @@ export default function AISolverPanel({ isOpen, onClose, doubtTitle, doubtConten
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
+  const [followUps, setFollowUps] = useState<string[]>([]);
+  const [isLoadingFollowUps, setIsLoadingFollowUps] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(doubtTitle);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,14 +33,19 @@ export default function AISolverPanel({ isOpen, onClose, doubtTitle, doubtConten
     }
   }, [response]);
 
-  const handleSolve = async () => {
+  const handleSolve = async (queryOverride?: string) => {
+    const query = queryOverride || doubtTitle;
+    setCurrentQuestion(query);
     setIsLoading(true);
     setResponse('');
+    setIsFinished(false);
+    setFollowUps([]);
+    
     try {
       const res = await fetch('/api/ai/solve-doubt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: doubtTitle, content: doubtContent }),
+        body: JSON.stringify({ title: query, content: doubtContent }),
       });
 
       if (!res.body) throw new Error('No readable stream');
@@ -45,19 +53,43 @@ export default function AISolverPanel({ isOpen, onClose, doubtTitle, doubtConten
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let done = false;
+      let fullText = '';
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
         const chunkValue = decoder.decode(value);
+        fullText += chunkValue;
         setResponse((prev) => prev + chunkValue);
       }
       setIsFinished(true);
+
+      // Fetch follow-ups once the main answer is complete
+      fetchFollowUps(query, fullText);
     } catch (error) {
       console.error('AI Solving error:', error);
       setResponse('I encountered an error trying to process your doubt. Please try again or post to the community.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchFollowUps = async (question: string, answer: string) => {
+    setIsLoadingFollowUps(true);
+    try {
+      const res = await fetch('/api/ai/follow-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, answer }),
+      });
+      const data = await res.json();
+      if (data.followUps) {
+        setFollowUps(data.followUps);
+      }
+    } catch (err) {
+      console.error('Failed to fetch follow-ups:', err);
+    } finally {
+      setIsLoadingFollowUps(false);
     }
   };
 
@@ -97,7 +129,7 @@ export default function AISolverPanel({ isOpen, onClose, doubtTitle, doubtConten
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
               <div className="user-doubt-preview p-6 bg-white/5 rounded-3xl border border-white/5 mb-8">
                 <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2 block">Your Question</span>
-                <h4 className="text-white font-bold text-lg mb-2">{doubtTitle}</h4>
+                <h4 className="text-white font-bold text-lg mb-2">{currentQuestion}</h4>
                 <div className="text-gray-400 text-sm line-clamp-2 italic">
                   Analyzing your context for pedagogical insights...
                 </div>
@@ -131,6 +163,46 @@ export default function AISolverPanel({ isOpen, onClose, doubtTitle, doubtConten
                     <div className="w-1.5 h-1.5 bg-indigo-500/50 rounded-full animate-bounce" />
                   </div>
                 )}
+
+                {/* Follow-up Question Chips */}
+                <AnimatePresence>
+                  {isFinished && (followUps.length > 0 || isLoadingFollowUps) && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-12 pt-8 border-t border-white/5 space-y-4"
+                    >
+                      <div className="flex items-center gap-2 text-indigo-400 mb-2">
+                        <Sparkles size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Recommended follow-ups</span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        {isLoadingFollowUps ? (
+                          [1, 2].map(i => (
+                            <div key={i} className="h-10 bg-white/5 rounded-xl animate-pulse" />
+                          ))
+                        ) : (
+                          followUps.map((q, idx) => (
+                            <motion.button
+                              key={idx}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: idx * 0.1 }}
+                              onClick={() => handleSolve(q)}
+                              className="text-left p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all text-xs text-indigo-300 font-bold group"
+                            >
+                              <div className="flex items-center gap-3">
+                                <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-all -ml-2 group-hover:ml-0" />
+                                {q}
+                              </div>
+                            </motion.button>
+                          ))
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 

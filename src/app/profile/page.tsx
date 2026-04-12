@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 
 export default async function ProfilePage() {
   const supabase = await createSupabaseServer();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/auth');
   }
 
@@ -20,14 +20,14 @@ export default async function ProfilePage() {
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single();
 
   const { data: badges } = await supabase
     .from('user_badges')
     .select('unlocked_at, badges(*)')
-    .eq('user_id', session.user.id);
+    .eq('user_id', user.id);
 
-  return <ProfilePageClient user={session.user} initialProfile={profile} initialBadges={badges || []} />;
+  return <ProfilePageClient user={user} initialProfile={profile} initialBadges={badges || []} />;
 }
 

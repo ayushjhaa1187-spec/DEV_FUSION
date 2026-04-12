@@ -1,0 +1,29 @@
+src/app/api/tests/[id]/submit/route.ts(2,8): error TS2304: Cannot find name 'NextRequest'.
+src/app/api/tests/[id]/submit/route.ts(10,26): error TS2304: Cannot find name 'createSupabaseServer'.
+src/app/api/tests/[id]/submit/route.ts(13,21): error TS2552: Cannot find name 'NextResponse'. Did you mean 'Response'?
+src/app/api/tests/[id]/submit/route.ts(28,14): error TS2552: Cannot find name 'NextResponse'. Did you mean 'Response'?
+src/app/api/tests/[id]/submit/route.ts(32,15): error TS2552: Cannot find name 'NextResponse'. Did you mean 'Response'?
+src/app/api/tests/[id]/submit/route.ts(45,22): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/tests/[id]/submit/route.ts(55,37): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/app/api/tests/[id]/submit/route.ts(87,12): error TS2552: Cannot find name 'NextResponse'. Did you mean 'Response'?
+src/app/api/tests/[id]/submit/route.ts(96,12): error TS2552: Cannot find name 'NextResponse'. Did you mean 'Response'?
+src/app/dashboard/DashboardPageClient.tsx(210,31): error TS2322: Type '{ key: number; width: string; height: string; rounded: true; }' is not assignable to type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+  Property 'width' does not exist on type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+src/app/dashboard/DashboardPageClient.tsx(215,23): error TS2322: Type '{ width: string; height: string; rounded: true; }' is not assignable to type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+  Property 'width' does not exist on type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+src/app/dashboard/DashboardPageClient.tsx(216,23): error TS2322: Type '{ width: string; height: string; rounded: true; }' is not assignable to type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+  Property 'width' does not exist on type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+src/app/dashboard/DashboardPageClient.tsx(219,23): error TS2322: Type '{ width: string; height: string; rounded: true; }' is not assignable to type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+  Property 'width' does not exist on type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+src/app/dashboard/DashboardPageClient.tsx(220,23): error TS2322: Type '{ width: string; height: string; rounded: true; }' is not assignable to type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+  Property 'width' does not exist on type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+src/app/dashboard/DashboardPageClient.tsx(221,23): error TS2322: Type '{ width: string; height: string; rounded: true; }' is not assignable to type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+  Property 'width' does not exist on type 'IntrinsicAttributes & SkeletonProps & RefAttributes<HTMLDivElement>'.
+src/app/dashboard/DashboardPageClient.tsx(421,20): error TS2304: Cannot find name 'getBadgeIcon'.
+src/app/profile/ProfilePageClient.tsx(92,16): error TS2322: Type '{ userId: any; fallback: any; size: "lg"; className: string; }' is not assignable to type 'IntrinsicAttributes & AvatarProps & RefAttributes<HTMLDivElement>'.
+  Property 'fallback' does not exist on type 'IntrinsicAttributes & AvatarProps & RefAttributes<HTMLDivElement>'.
+src/app/tests/PracticeTestsPageClient.tsx(54,7): error TS2304: Cannot find name 'leaderboardApi'.
+src/app/tests/PracticeTestsPageClient.tsx(54,38): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/components/ui/Breadcrumb.tsx(12,63): error TS2304: Cannot find name 'HTMLNavElement'.
+src/components/ui/Breadcrumb.tsx(17,44): error TS2552: Cannot find name 'HTMLNavElement'. Did you mean 'HTMLElement'?
+src/components/ui/RichTextEditor.tsx(6,26): error TS2307: Cannot find module 'next-themes' or its corresponding type declarations.

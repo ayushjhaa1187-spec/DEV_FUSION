@@ -1,11 +1,11 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createSupabaseServer } from '@/lib/supabase/server';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params; // This is the attempt_id from the user perspective, but for compatibility with existing structure it might be test_id? 
-  // Wait, the folder is [id]/submit. In most of my code, [id] refers to the test_id. 
-  // But a submission should target an ATTEMPT. 
-  // Let's check body for attemptId if id is test_id.
+  const { id } = await params;
 
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
@@ -14,7 +14,7 @@ export async function POST(
 
   try {
     const { attemptId } = await req.json();
-    const final_attempt_id = attemptId || id; // Fallback if user passed it in URL as attemptId
+    const final_attempt_id = attemptId || id;
 
     // 1. Fetch the attempt to verify it's active
     const { data: attempt, error: attemptErr } = await supabase
@@ -42,7 +42,7 @@ export async function POST(
 
     // Create a snapshot for the legacy selected_answers column
     const answers_snapshot: Record<string, number> = {};
-    answers?.forEach(a => {
+    answers?.forEach((a: any) => {
         if (a.selected_index !== null) answers_snapshot[a.question_id] = a.selected_index;
     });
 
@@ -52,7 +52,7 @@ export async function POST(
         .eq('test_id', attempt.test_id);
 
     const total = questions?.length || 0;
-    const correct = answers?.filter(a => a.is_correct).length || 0;
+    const correct = answers?.filter((a: any) => a.is_correct).length || 0;
     const wrong = (answers?.length || 0) - correct;
     const score = total > 0 ? Math.round((correct / total) * 100) : 0;
 
@@ -96,4 +96,3 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-

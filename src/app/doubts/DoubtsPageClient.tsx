@@ -8,21 +8,48 @@ import { DoubtCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { Search, X, Sparkles, Send, Filter, Clock, TrendingUp, CheckCircle2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function DoubtsPageClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  
   const [doubts, setDoubts] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeSubject, setActiveSubject] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState('all');
+  
+  // Initialize from URL
+  const [activeSubject, setActiveSubject] = useState<string | null>(searchParams.get('subject'));
+  const [filterType, setFilterType] = useState(searchParams.get('filter') || 'all');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [searchInput, setSearchInput] = useState(searchParams.get('q') || '');
+  
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userSubjects, setUserSubjects] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchInput, setSearchInput] = useState('');
+  const [isChangingFilters, setIsChangingFilters] = useState(false);
   const searchDebounce = useRef<any>(null);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (activeSubject) params.set('subject', activeSubject);
+    else params.delete('subject');
+    
+    if (filterType !== 'all') params.set('filter', filterType);
+    else params.delete('filter');
+    
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+    else params.delete('q');
+
+    const newUrl = `${pathname}?${params.toString()}`;
+    if (window.location.search !== `?${params.toString()}`) {
+      router.push(newUrl, { scroll: false });
+    }
+  }, [activeSubject, filterType, searchQuery, pathname, router, searchParams]);
 
   useEffect(() => {
     async function loadUserData() {
@@ -83,12 +110,53 @@ export default function DoubtsPageClient() {
 
   useEffect(() => {
     const supabase = createSupabaseBrowser();
+    
     const channel = supabase
       .channel('doubts-feed')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'doubts' }, () => loadDoubts(false))
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'doubts' }, () => loadDoubts(false))
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'doubts' 
+      }, async (payload) => {
+        // Fetch full doubt with relations for the new entry
+        const { data: newDoubt, error } = await supabase
+          .from('doubts')
+          .select('*, subjects(name), profiles(username, avatar_url, reputation_points)')
+          .eq('id', payload.new.id)
+          .single();
+
+        if (error || !newDoubt) return;
+
+        // Check scroll position
+        const isAtTop = window.scrollY < 100;
+
+        if (isAtTop) {
+          setDoubts(prev => [newDoubt, ...prev]);
+        } else {
+          toast.info('New doubt posted!', {
+            action: {
+              label: 'View',
+              onClick: () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setDoubts(prev => {
+                  if (prev.find(d => d.id === newDoubt.id)) return prev;
+                  return [newDoubt, ...prev];
+                });
+              }
+            }
+          });
+        }
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'doubts' 
+      }, () => loadDoubts(false))
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+      
+    return () => { 
+      supabase.removeChannel(channel); 
+    };
   }, [loadDoubts]);
 
   const handleSearchChange = (val: string) => {
@@ -204,74 +272,82 @@ export default function DoubtsPageClient() {
             <button onClick={() => loadDoubts(true)} className="px-10 py-4 bg-red-500/20 text-red-400 rounded-2xl hover:bg-red-500/30 transition uppercase font-black text-[10px] tracking-widest">Retry Connection</button>
           </div>
         ) : doubts.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {doubts.map((doubt) => (
-              <Link 
-                key={doubt.id} 
-                href={`/doubts/${doubt.id}`} 
-                className="group relative h-full flex flex-col p-10 rounded-[40px] bg-[#0c0c16] border border-white/5 hover:border-indigo-500/30 transition-all duration-500 hover:shadow-[0_40px_80px_rgba(0,0,0,0.5)] hover:-translate-y-2 overflow-hidden"
-              >
-                {/* Background Decor */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-600/10 transition" />
-                
-                <div className="flex items-center justify-between mb-8">
-                  <span className="px-4 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">
-                    {doubt.subjects?.name || 'General'}
-                  </span>
-                  {doubt.status === 'resolved' && (
-                    <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
-                      <CheckCircle2 size={12} />
-                      Solved
-                    </div>
-                  )}
-                  {doubt.votes > 0 && (
-                    <span className="text-gray-600 text-[10px] font-black uppercase tracking-widest ml-auto">
-                      {doubt.votes} VIBES
-                    </span>
-                  )}
-                </div>
-
-                <h3 className="text-2xl font-black text-white mb-6 group-hover:text-indigo-400 transition-colors line-clamp-2 leading-[1.2] tracking-tight">
-                  {doubt.title}
-                </h3>
-                
-                <p className="text-gray-500 text-sm mb-12 line-clamp-3 leading-[1.6] font-medium">
-                  {doubt.content_text || 'Synthesizing conceptual breakdown... Click to explore detail.'}
-                </p>
-
-                <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {doubt.profiles?.avatar_url ? (
-                      <img src={doubt.profiles.avatar_url} alt="" className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white/5" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center text-white text-[10px] font-black ring-2 ring-white/5">
-                        {doubt.profiles?.username?.[0] || 'L'}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-xs font-black text-white uppercase tracking-tighter hover:text-indigo-400 transition cursor-pointer">
-                        {doubt.profiles?.username || 'Learner'}
-                      </p>
-                      <p className="text-[10px] text-gray-600 font-bold uppercase tracking-tighter">
-                        {new Date(doubt.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <motion.div 
-                    initial={false}
-                    animate={{ x: 0 }}
-                    whileHover={{ x: 5 }}
-                    className="flex items-center gap-1.5"
+          <motion.div 
+            layout
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10"
+          >
+            <AnimatePresence mode="popLayout">
+              {doubts.map((doubt) => (
+                <motion.div
+                  key={doubt.id}
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  layout
+                >
+                  <Link 
+                    href={`/doubts/${doubt.id}`} 
+                    className="group relative h-full flex flex-col p-10 rounded-[40px] bg-[#0c0c16] border border-white/5 hover:border-indigo-500/30 transition-all duration-500 hover:shadow-[0_40px_80px_rgba(0,0,0,0.5)] hover:-translate-y-2 overflow-hidden"
                   >
-                     <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
-                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/30" />
-                     <div className="w-1 h-1 rounded-full bg-indigo-500/10" />
-                  </motion.div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                    {/* Background Decor */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-600/10 transition" />
+                    
+                    <div className="flex items-center justify-between mb-8">
+                      <span className="px-4 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">
+                        {doubt.subjects?.name || 'General'}
+                      </span>
+                      {doubt.status === 'resolved' && (
+                        <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                          <CheckCircle2 size={12} />
+                          Solved
+                        </div>
+                      )}
+                      {doubt.votes > 0 && (
+                        <span className="text-gray-600 text-[10px] font-black uppercase tracking-widest ml-auto">
+                          {doubt.votes} VIBES
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-2xl font-black text-white mb-6 group-hover:text-indigo-400 transition-colors line-clamp-2 leading-[1.2] tracking-tight">
+                      {doubt.title}
+                    </h3>
+                    
+                    <p className="text-gray-500 text-sm mb-12 line-clamp-3 leading-[1.6] font-medium">
+                      {doubt.content_text || 'Synthesizing conceptual breakdown... Click to explore detail.'}
+                    </p>
+
+                    <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        {doubt.profiles?.avatar_url ? (
+                          <img src={doubt.profiles.avatar_url} alt="" className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white/5" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center text-white text-[10px] font-black ring-2 ring-white/5">
+                            {doubt.profiles?.username?.[0] || 'L'}
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs font-black text-white uppercase tracking-tighter hover:text-indigo-400 transition cursor-pointer">
+                            {doubt.profiles?.username || 'Learner'}
+                          </p>
+                          <p className="text-[10px] text-gray-600 font-bold uppercase tracking-tighter">
+                            {new Date(doubt.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5">
+                         <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/30" />
+                         <div className="w-1 h-1 rounded-full bg-indigo-500/10" />
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         ) : (
           <EmptyState
             icon="💬"
