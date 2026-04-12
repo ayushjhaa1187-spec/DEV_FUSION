@@ -16,7 +16,7 @@ interface MentorProfile {
   reputation_points?: number;
   mentor_profiles?: {
     specialty: string;
-    hourly_rate: number;
+    price_per_session: number;
     rating: number;
     sessions_completed: number;
     skills?: string[];
@@ -96,7 +96,7 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
     if (!selectedSlot) return alert('Please select a time slot.');
     if (!user) return alert('Please log in to book a session.');
     const slot = slots.find((s) => s.id === selectedSlot);
-    const fee = profile?.mentor_profiles?.hourly_rate || 0;
+    const fee = profile?.mentor_profiles?.price_per_session || 0;
     setBookingLoading(true);
     try {
       if (fee > 0) {
@@ -354,7 +354,7 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
         <aside className={styles.sideContent}>
           <div className={`${styles.bookingCard} glass`}>
             <div className={styles.priceHeader}>
-              <span className={styles.price}>₹{profile.mentor_profiles?.hourly_rate || 0}</span>
+              <span className={styles.price}>₹{profile.mentor_profiles?.price_per_session || 0}</span>
               <span className={styles.duration}>/ 30 min session</span>
             </div>
             <div className={styles.slotPicker}>

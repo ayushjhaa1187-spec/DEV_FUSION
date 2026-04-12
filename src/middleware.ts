@@ -64,6 +64,7 @@ export async function middleware(request: NextRequest) {
     '/doubts/ask',
     '/mentors/book',
     '/practice-tests/take',
+    '/admin',
   ];
 
   const isProtected = protectedPaths.some((p) =>

@@ -35,7 +35,8 @@ export default function MentorApplyPage() {
     bio: '',
     linkedin_url: '',
     github_url: '',
-    sample_work_url: ''
+    sample_work_url: '',
+    availability_type: 'weekdays'
   });
 
   useEffect(() => {
@@ -253,6 +254,20 @@ export default function MentorApplyPage() {
                       value={formData.github_url}
                       onChange={e => setFormData({...formData, github_url: e.target.value})}
                     />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-3 ml-1">Availability</label>
+                    <select
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-indigo-500/50 transition font-medium text-sm appearance-none cursor-pointer"
+                      value={formData.availability_type}
+                      onChange={e => setFormData({...formData, availability_type: e.target.value})}
+                    >
+                      <option value="weekdays" className="bg-[#13132b]">Weekdays (Mon-Fri)</option>
+                      <option value="weekends" className="bg-[#13132b]">Weekends (Sat-Sun)</option>
+                    </select>
+                    <div className="mt-2 text-[10px] text-gray-600 font-bold ml-1">
+                      This helps us recommend you for the right sessions.
+                    </div>
                   </div>
                 </div>
 

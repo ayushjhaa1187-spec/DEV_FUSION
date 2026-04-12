@@ -37,9 +37,12 @@ function PriorityLearningWidget() {
 
   useEffect(() => {
     fetch('/api/analytics/weak-areas')
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : [])
       .then(setWeakAreas)
-      .catch(console.error)
+      .catch((err) => {
+        console.error('Weak areas fetch failed:', err);
+        setWeakAreas([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -51,7 +54,7 @@ function PriorityLearningWidget() {
         <BrainCircuit className="w-5 h-5 text-cyan-400" />
         Concept Review Queue
       </h3>
-      {weakAreas.length === 0 ? (
+      {!Array.isArray(weakAreas) || weakAreas.length === 0 ? (
         <div className="text-center py-8 text-gray-400">
           <div className="text-4xl mb-2">✨</div>
           Absolute Mastery. You've cleared your review queue!
@@ -73,14 +76,59 @@ function PriorityLearningWidget() {
   );
 }
 
-const getBadgeIcon = (name: string) => {
-  const n = name.toLowerCase();
-  if (n.includes('answer')) return <Award className="w-8 h-8 text-amber-400" />;
-  if (n.includes('mentor')) return <Rocket className="w-8 h-8 text-purple-400" />;
-  if (n.includes('star')) return <Star className="w-8 h-8 text-yellow-400" />;
-  if (n.includes('quick')) return <Zap className="w-8 h-8 text-blue-400" />;
-  return <Trophy className="w-8 h-8 text-gray-400" />;
-};
+function TrendingDoubtsWidget() {
+  const [trending, setTrending] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/doubts/trending')
+      .then(res => res.json())
+      .then(setTrending)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="h-40 bg-white/5 rounded-3xl p-8 border border-white/5 animate-pulse" />;
+  if (trending.length === 0) return null;
+
+  return (
+    <div className={styles.sectionCard}>
+      <h3 className={styles.sectionTitle}>
+        <TrendingUp className="w-5 h-5 text-indigo-400" />
+        Explore Trending Doubts
+      </h3>
+      <div className="space-y-4">
+        {trending.map((doubt, idx) => (
+          <Link 
+            key={doubt.id} 
+            href={`/doubts/${doubt.id}`}
+            className="block p-4 bg-white/5 border border-white/5 rounded-2xl hover:border-indigo-500/30 group transition-all"
+          >
+            <div className="flex justify-between items-start gap-4">
+               <div>
+                  <h4 className="font-bold text-white mb-1 group-hover:text-indigo-400 transition-colors line-clamp-1">{doubt.title}</h4>
+                  <div className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                     <span className="text-indigo-400">{(doubt.author_name || 'Expert').split(' ')[0]}</span>
+                     <span>•</span>
+                     <span>{doubt.answer_count} Answers</span>
+                     <span>•</span>
+                     <Flame className="w-3 h-3 text-orange-500" />
+                  </div>
+               </div>
+               <div className="flex flex-col items-center justify-center p-2 bg-white/5 rounded-xl border border-white/5 min-w-[50px]">
+                  <div className="text-sm font-black text-white">{doubt.votes}</div>
+                  <div className="text-[8px] text-gray-500 font-bold">VOTES</div>
+               </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <Link href="/doubts" className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors py-2 border border-dashed border-indigo-500/20 rounded-xl hover:bg-indigo-500/5">
+         View All Transmissions <ArrowRight size={14} />
+      </Link>
+    </div>
+  );
+}
 
 export default function DashboardPageClient() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -105,20 +153,30 @@ export default function DashboardPageClient() {
   const fetchData = useCallback(async () => {
     if (!user) return;
     try {
-      const [profileData, questionsData, answersData] = await Promise.all([
+      const [profileRes, questionsRes, answersRes] = await Promise.allSettled([
         authApi.getMyProfile(),
         doubtApi.getDoubts({ author_id: user.id }),
         authApi.getMyAnswers(),
       ]);
-      setProfile(profileData.profile || null);
-      setStats({
-        answers: profileData.stats?.answers ?? 0,
-        accepted: profileData.stats?.accepted ?? 0,
-        doubts: profileData.stats?.doubts ?? 0,
-      });
-      setBadges(profileData.badges || []);
-      setQuestions(Array.isArray(questionsData) ? questionsData : []);
-      setAnswers(Array.isArray(answersData) ? answersData : []);
+      
+      if (profileRes.status === 'fulfilled') {
+        const profileData = profileRes.value;
+        setProfile(profileData.profile || null);
+        setStats({
+          answers: profileData.stats?.answers ?? 0,
+          accepted: profileData.stats?.accepted ?? 0,
+          doubts: profileData.stats?.doubts ?? 0,
+        });
+        setBadges(profileData.badges || []);
+      }
+      
+      if (questionsRes.status === 'fulfilled') {
+        setQuestions(Array.isArray(questionsRes.value) ? questionsRes.value : []);
+      }
+      
+      if (answersRes.status === 'fulfilled') {
+        setAnswers(Array.isArray(answersRes.value) ? answersRes.value : []);
+      }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -197,9 +255,9 @@ export default function DashboardPageClient() {
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <Link href="/profile" className={styles.btnEdit}>
+            <Link href="/settings" className={styles.btnEdit}>
               <Settings />
-              Edit Profile
+              Settings
             </Link>
             <button
               onClick={() => signOut()}
@@ -231,144 +289,150 @@ export default function DashboardPageClient() {
         ))}
       </div>
 
-      <div className={styles.sectionCard}>
-        <h3 className={styles.sectionTitle}>
-          <Flame className="w-5 h-5 text-orange-400" />
-          Activity Pulse
-        </h3>
-        <StreakHeatmap events={questions} />
-      </div>
-
-      <div className={styles.sectionCard}>
-        <div className="flex gap-4 border-b border-white/10 pb-4 mb-6">
-          <button
-            onClick={() => setActiveTab('questions')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'questions'
-                ? 'bg-white/10 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            My Questions ({questions.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('answers')}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              activeTab === 'answers'
-                ? 'bg-white/10 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            Contributions ({answers.length})
-          </button>
-        </div>
-        {activeTab === 'questions' ? (
-          questions.length > 0 ? (
-            questions.map((item, idx) => (
-              <div key={idx} className={styles.activityItem}>
-                <h4 className="font-semibold text-white mb-2">{item.title}</h4>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    item.status === 'answered' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                  }`}>
-                    {item.status}
-                  </span>
-                  <span className="text-gray-400">
-                    {new Date(item.created_at).toLocaleDateString()}
-                  </span>
-                  <span className="text-gray-400">
-                    {item.answer_count || 0} answers
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-400">
-              <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              No questions asked yet.
-            </div>
-          )
-        ) : (
-          answers.length > 0 ? (
-            answers.map((item, idx) => (
-              <div key={idx} className={styles.activityItem}>
-                <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">
-                  Response to:
-                </div>
-                <h4 className="font-semibold text-white mb-2">
-                  {item.doubts?.title || 'Untitled Doubt'}
-                </h4>
-                <p className="text-sm text-gray-400 line-clamp-2 mb-3">
-                  {item.content}
-                </p>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="text-gray-400">
-                    {item.votes ?? 0} votes
-                  </span>
-                  {item.is_accepted && (
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
-                      ACCEPTED
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-400">
-              <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              No contributions yet.
-            </div>
-          )
-        )}
-      </div>
-
-      <div className={styles.sectionCard}>
-        <h3 className={styles.sectionTitle}>
-          <LayoutDashboard className="w-5 h-5 text-indigo-400" />
-          Terminals
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {navActions.map((action, i) => {
-            const IconComponent = action.icon;
-            return (
-              <Link
-                key={i}
-                href={action.href}
-                className={`${styles.navCard} ${action.color}`}
-              >
-                <IconComponent className="w-6 h-6" />
-                <span className="font-semibold">{action.label}</span>
-                <ArrowRight className="w-4 h-4" />
-                <span className="text-xs opacity-70">Access Module</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      <PriorityLearningWidget />
-
-      <div className={styles.sectionCard}>
-        <h3 className={styles.sectionTitle}>
-          <Trophy className="w-5 h-5 text-amber-400" />
-          Top Badges
-        </h3>
-        {badges.length > 0 ? (
-          badges.slice(0, 3).map((badge, idx) => (
-            <div key={idx} className={styles.badgeItem}>
-              {getBadgeIcon(badge.name)}
-              <h4 className="font-semibold text-white mt-3 mb-1">{badge.name}</h4>
-              <p className="text-sm text-gray-400">
-                Unlocked on {new Date(badge.earned_at).toLocaleDateString()}
-              </p>
-            </div>
-          ))
-        ) : (
-          <div className="text-center py-8 text-gray-400">
-            <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            No badges yet
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+           <div className={styles.sectionCard}>
+            <h3 className={styles.sectionTitle}>
+              <Flame className="w-5 h-5 text-orange-400" />
+              Activity Pulse
+            </h3>
+            <StreakHeatmap events={questions} />
           </div>
-        )}
+
+          <div className={styles.sectionCard}>
+            <div className="flex gap-4 border-b border-white/10 pb-4 mb-6">
+              <button
+                onClick={() => setActiveTab('questions')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  activeTab === 'questions'
+                    ? 'bg-white/10 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                My Questions ({questions.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('answers')}
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                  activeTab === 'answers'
+                    ? 'bg-white/10 text-white'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Contributions ({answers.length})
+              </button>
+            </div>
+            {activeTab === 'questions' ? (
+              questions.length > 0 ? (
+                questions.map((item, idx) => (
+                  <div key={idx} className={styles.activityItem}>
+                    <h4 className="font-semibold text-white mb-2">{item.title}</h4>
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        item.status === 'answered' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {item.status}
+                      </span>
+                      <span className="text-gray-400">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </span>
+                      <span className="text-gray-400">
+                        {item.answer_count || 0} answers
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  No questions asked yet.
+                </div>
+              )
+            ) : (
+              answers.length > 0 ? (
+                answers.map((item, idx) => (
+                  <div key={idx} className={styles.activityItem}>
+                    <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">
+                      Response to:
+                    </div>
+                    <h4 className="font-semibold text-white mb-2">
+                      {item.doubts?.title || 'Untitled Doubt'}
+                    </h4>
+                    <p className="text-sm text-gray-400 line-clamp-2 mb-3">
+                      {item.content}
+                    </p>
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="text-gray-400">
+                        {item.votes ?? 0} votes
+                      </span>
+                      {item.is_accepted && (
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                          ACCEPTED
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  No contributions yet.
+                </div>
+              )
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          <TrendingDoubtsWidget />
+          <PriorityLearningWidget />
+
+          <div className={styles.sectionCard}>
+            <h3 className={styles.sectionTitle}>
+              <LayoutDashboard className="w-5 h-5 text-indigo-400" />
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
+              {navActions.map((action, i) => {
+                const IconComponent = action.icon;
+                return (
+                  <Link
+                    key={i}
+                    href={action.href}
+                    className={`${styles.navCard} ${action.color}`}
+                  >
+                    <IconComponent className="w-6 h-6" />
+                    <span className="font-semibold">{action.label}</span>
+                    <ArrowRight className="w-4 h-4 ml-auto" />
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={styles.sectionCard}>
+            <h3 className={styles.sectionTitle}>
+              <Trophy className="w-5 h-5 text-amber-400" />
+              Top Badges
+            </h3>
+            {badges.length > 0 ? (
+              badges.slice(0, 3).map((badge, idx) => (
+                <div key={idx} className={styles.badgeItem}>
+                  {getBadgeIcon(badge.name)}
+                  <h4 className="font-semibold text-white mt-3 mb-1">{badge.name}</h4>
+                  <p className="text-sm text-gray-400">
+                    Unlocked on {new Date(badge.earned_at).toLocaleDateString()}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <Trophy className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                No badges yet
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

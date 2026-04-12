@@ -8,8 +8,9 @@ async function getDoubt(id: string) {
   return res.json();
 }
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  const doubt = await getDoubt(params.id);
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const doubt = await getDoubt(id);
   if (!doubt) return { title: 'Doubt Not Found | DEV_FUSION' };
 
   return {
@@ -22,6 +23,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   };
 }
 
-export default function DoubtDetailPage({ params }: { params: { id: string } }) {
-  return <DoubtDetailPageClient id={params.id} />;
+export default async function DoubtDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <DoubtDetailPageClient id={id} />;
 }

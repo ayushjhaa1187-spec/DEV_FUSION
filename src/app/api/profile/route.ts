@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         .eq('author_id', user.id).eq('is_accepted', true),
       supabase.from('doubts').select('*', { count: 'exact', head: true })
         .eq('author_id', user.id),
-      supabase.from('reputation_history').select('event_type, points, entity_type, entity_id, created_at')
+      supabase.from('reputation_events').select('event_type, points, entity_id, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20),
@@ -40,7 +40,12 @@ export async function GET(req: NextRequest) {
         accepted: accepted || 0,
         doubts: doubts || 0
       },
-      history: history || [],
+      history: (history || []).map((h: any) => ({
+        event_type: h.event_type,
+        points: h.points,
+        entity_id: h.entity_id,
+        created_at: h.created_at
+      })),
       badges: (badges || []).map((ub: any) => ({ ...ub.badges, earned_at: ub.unlocked_at }))
     });
   } catch (error) {
@@ -61,7 +66,8 @@ export async function PATCH(req: NextRequest) {
     const allowed: Record<string, unknown> = {};
     const updatableFields = [
       'full_name', 'bio', 'college', 'branch', 'semester',
-      'github_url', 'linkedin_url', 'website_url', 'avatar_url'
+      'github_url', 'linkedin_url', 'website_url', 'avatar_url',
+      'twitter_url', 'subjects'
     ];
     for (const field of updatableFields) {
       if (field in body) allowed[field] = body[field];

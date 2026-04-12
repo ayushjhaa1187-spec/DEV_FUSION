@@ -35,6 +35,30 @@ export async function GET(
       .order('created_at', { ascending: false })
       .limit(50);
 
+    // Get follow stats
+    const { count: followersCount } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', profile.id);
+
+    const { count: followingCount } = await supabase
+      .from('follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('follower_id', profile.id);
+
+    // Check if current user is following this profile
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    let isFollowing = false;
+    if (currentUser) {
+      const { data: followData } = await supabase
+        .from('follows')
+        .select('id')
+        .eq('follower_id', currentUser.id)
+        .eq('following_id', profile.id)
+        .single();
+      isFollowing = !!followData;
+    }
+
     // Compute reputation stats
     const totalDoubts = doubts?.length || 0;
     const totalAnswers = answers?.length || 0;
@@ -72,6 +96,9 @@ export async function GET(
         reputationScore,
         rank,
         badges,
+        followersCount: followersCount || 0,
+        followingCount: followingCount || 0,
+        isFollowing,
       },
     });
   } catch (error) {

@@ -2,17 +2,16 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { doubtApi, aiApi, subjectApi, authApi } from '@/lib/api';
-import ReputationBadge from '@/components/user/ReputationBadge';
+import { motion, AnimatePresence } from 'framer-motion';
+import { doubtApi, subjectApi, authApi } from '@/lib/api';
 import { DoubtCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import AskDoubtModal from '@/components/doubts/AskDoubtModal';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import { Search, X } from 'lucide-react';
-import styles from './doubts.module.css';
+import { Search, X, Sparkles, Send, Filter, Clock, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function DoubtsPageClient() {
+  const router = useRouter();
   const [doubts, setDoubts] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,11 +20,6 @@ export default function DoubtsPageClient() {
   const [filterType, setFilterType] = useState('all');
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userSubjects, setUserSubjects] = useState<string[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [prefillQuestion, setPrefillQuestion] = useState('');
-  const [isAiSolving, setIsAiSolving] = useState(false);
-  const [aiResponse, setAiResponse] = useState<any>(null);
-  const [aiQuestion, setAiQuestion] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const searchDebounce = useRef<any>(null);
@@ -51,6 +45,15 @@ export default function DoubtsPageClient() {
     setError(null);
     try {
       const params: Record<string, any> = {};
+      
+      // Sort mapping
+      if (filterType === 'trending') {
+        params.sort = 'trending';
+      } else {
+        params.sort = 'newest';
+      }
+
+      // Filter mapping
       if (activeSubject) params.subject_id = activeSubject;
       if (filterType === 'unanswered') params.filter = 'unanswered';
       if (filterType === 'my-branch' && userProfile?.branch) params.branch = userProfile.branch;
@@ -59,10 +62,12 @@ export default function DoubtsPageClient() {
         params.user_subjects = userSubjects.join(',');
       }
       if (searchQuery.trim()) params.search = searchQuery.trim();
+
       const [doubtsData, subjectsData] = await Promise.all([
-        doubtApi.getDoubts(Object.keys(params).length ? params : undefined),
+        doubtApi.getDoubts(params),
         subjectApi.getSubjects()
       ]);
+      
       setDoubts(doubtsData || []);
       if (subjectsData) setSubjects(subjectsData);
     } catch (err: any) {
@@ -94,141 +99,175 @@ export default function DoubtsPageClient() {
     }, 400);
   };
 
-  const handleAiSolve = async () => {
-    if (!aiQuestion.trim()) return;
-      if (!userProfile) { setError('Please sign in to use the AI Solver.'); return; }
-    setIsAiSolving(true);
-    setAiResponse(null);
-    try {
-      const data = await aiApi.solveDoubt({ question: aiQuestion });
-      setAiResponse(data);
-    } catch {
-      setError('AI service temporary unavailable. Try again later.');
-    } finally {
-      setIsAiSolving(false);
-    }
-  };
-
-  const handlePostToCommunity = () => {
-    setPrefillQuestion(aiQuestion);
-    setIsModalOpen(true);
-  };
-
   const filterButtons = [
-    { key: 'all', label: 'Recent' },
-    { key: 'unanswered', label: 'Unanswered' },
-    ...(userProfile?.branch ? [{ key: 'my-branch', label: 'My Branch' }] : []),
-    ...(userSubjects.length > 0 ? [{ key: 'my-subjects', label: 'My Subjects' }] : []),
+    { key: 'all', label: 'Recent', icon: <Clock size={14} /> },
+    { key: 'trending', label: 'Trending', icon: <TrendingUp size={14} /> },
+    { key: 'unanswered', label: 'Unanswered', icon: <Filter size={14} /> },
+    ...(userProfile?.branch ? [{ key: 'my-branch', label: 'My Branch', icon: <Sparkles size={14} /> }] : []),
+    ...(userSubjects.length > 0 ? [{ key: 'my-subjects', label: 'My Subjects', icon: <TrendingUp size={14} /> }] : []),
   ];
 
   return (
-    <>
-      <div className={styles.page}>
-        <div className={styles.hero}>
-          <span className={styles.heroBadge}>24/7 Peer & AI Support</span>
-          <h1 className={styles.heroTitle}>Doubt Feed</h1>
-          <p className={styles.heroSub}>Get instant logical breakdowns from AI or connect with top-rated student peers for conceptual clarity.</p>
+    <div className="min-h-screen bg-[#06060c] selection:bg-indigo-500/30">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-indigo-600/5 border-b border-white/5 pt-24 pb-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(99,102,241,0.15),transparent)] opacity-50" />
+        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-8"
+          >
+            <Sparkles size={14} />
+            SkillBridge Network
+          </motion.div>
+          <motion.h1 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-6xl lg:text-8xl font-black text-white tracking-tighter mb-8 leading-none"
+          >
+            Doubt Feed
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-gray-400 text-xl max-w-2xl mx-auto font-medium"
+          >
+            Bridge the knowledge gap. Connect with mentors or solve doubts to earn reputation.
+          </motion.p>
         </div>
+      </div>
 
-        {/* AI Solver Panel */}
-        <div className={styles.aiPanel}>
-          <div className={styles.aiPanelHeader}>
-            <span className={styles.aiBadge}>SKILLBRIDGE AI AGENT</span>
-            <h2 className={styles.aiPanelTitle}>Instant Conceptual Guidance</h2>
+      {/* Sticky Filter Bar */}
+      <div className="sticky top-0 z-40 bg-[#06060c]/80 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between gap-8">
+          <div className="flex items-center gap-1.5 bg-white/5 p-1.5 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar">
+            {filterButtons.map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => setFilterType(key)}
+                className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shrink-0 ${
+                  filterType === key 
+                    ? 'bg-indigo-600 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]' 
+                    : 'text-gray-500 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {icon}
+                {label}
+              </button>
+            ))}
           </div>
-          <div className={styles.aiInputRow}>
+
+          <div className="flex-1 max-w-lg relative group">
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-indigo-400 transition" />
             <input
               type="text"
-              placeholder="Explain the intuition behind 'P vs NP' or ask a specific doubt..."
-              value={aiQuestion}
-              onChange={(e) => setAiQuestion(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAiSolve()}
-              className={styles.aiInput}
-            />
-            <button onClick={handleAiSolve} disabled={isAiSolving} className={styles.aiSolveBtn}>
-              {isAiSolving ? 'Synthesizing...' : 'Solve with AI'}
-            </button>
-          </div>
-          {aiResponse && (
-            <div className={styles.aiResult}>
-              <h3>Logical Breakdown</h3>
-              <p>{aiResponse.explanation}</p>
-              {aiResponse.steps?.length > 0 && (
-                <ol className={styles.aiSteps}>
-                  {aiResponse.steps.map((step: string, i: number) => (
-                    <li key={i}><span className={styles.stepNum}>{i + 1}</span> {step}</li>
-                  ))}
-                </ol>
-              )}
-              <div className={styles.aiFooter}>
-                <span>Not satisfied? Let the community help.</span>
-                <button onClick={handlePostToCommunity} className={styles.postCommunityBtn}>Post to Community</button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Search Bar */}
-        <div className={styles.searchRow}>
-          <div className={styles.searchWrapper}>
-            <Search size={16} className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder="Search doubts by title or content..."
+              placeholder="Search doubts by title, content or context..."
               value={searchInput}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className={styles.searchInput}
+              className="w-full h-14 pl-14 pr-6 bg-white/5 border border-white/5 rounded-3xl text-sm text-gray-300 focus:outline-none focus:border-indigo-500/30 transition shadow-inner"
             />
-            {searchInput && (
-              <button className={styles.searchClear} onClick={() => { setSearchInput(''); setSearchQuery(''); }}>
-                <X size={14} />
-              </button>
-            )}
+          </div>
+
+          <div className="flex items-center gap-6">
+             <div className="hidden xl:flex items-center gap-3">
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">Filter By Subject</span>
+              <select 
+                className="bg-transparent text-[10px] font-black text-white uppercase tracking-widest focus:outline-none cursor-pointer hover:text-indigo-400 transition"
+                value={activeSubject || ''}
+                onChange={(e) => setActiveSubject(e.target.value || null)}
+              >
+                <option value="" className="bg-[#0f0f1b]">All Subjects</option>
+                {subjects.map(s => <option key={s.id} value={s.id} className="bg-[#0f0f1b]">{s.name}</option>)}
+              </select>
+            </div>
+            <Link 
+              href="/doubts/new"
+              className="px-8 py-4 rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition shadow-[0_10px_30px_rgba(99,102,241,0.2)] whitespace-nowrap active:scale-95"
+            >
+              Ask Community
+            </Link>
           </div>
         </div>
+      </div>
 
-        {/* Filters Row */}
-        <div className={styles.filters}>
-          <div className={styles.subjectPills}>
-            <button onClick={() => setActiveSubject(null)} className={`${styles.subjectBtn} ${!activeSubject ? styles.active : ''}`}>All Subjects</button>
-            {subjects.map(s => (
-              <button key={s.id} onClick={() => setActiveSubject(s.id)} className={`${styles.subjectBtn} ${activeSubject === s.id ? styles.active : ''}`}>{s.name}</button>
-            ))}
-          </div>
-          <div className={styles.filterToggle}>
-            {filterButtons.map(({ key, label }) => (
-              <button key={key} onClick={() => setFilterType(key)} className={`${styles.toggleBtn} ${filterType === key ? styles.active : ''}`}>{label}</button>
-            ))}
-            <button onClick={() => setIsModalOpen(true)} className="sb-btnPrimary" style={{ whiteSpace: 'nowrap', border: 'none', cursor: 'pointer' }}>Ask Community</button>
-          </div>
-        </div>
-
-        {/* Doubts Grid */}
+      <div className="max-w-7xl mx-auto px-6 py-20">
         {loading ? (
-          <div className={styles.grid}>{[1,2,3,4,5,6].map(i => <DoubtCardSkeleton key={i} />)}</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {[1, 2, 3, 4, 5, 6].map(i => <DoubtCardSkeleton key={i} />)}
+          </div>
         ) : error ? (
-          <div className={styles.errorState}>
-            <p>{error}</p>
-            <button onClick={() => loadDoubts(true)} className="sb-btnPrimary" style={{ marginTop: 16 }}>Retry</button>
+          <div className="text-center py-24 bg-red-500/5 rounded-[32px] border border-red-500/10">
+            <p className="text-red-400 font-bold text-lg mb-6">{error}</p>
+            <button onClick={() => loadDoubts(true)} className="px-10 py-4 bg-red-500/20 text-red-400 rounded-2xl hover:bg-red-500/30 transition uppercase font-black text-[10px] tracking-widest">Retry Connection</button>
           </div>
         ) : doubts.length > 0 ? (
-          <div className={styles.grid}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             {doubts.map((doubt) => (
-              <Link key={doubt.id} href={`/doubts/${doubt.id}`} className={styles.doubtCard}>
-                <div className={styles.cardHeader}>
-                  <span className={styles.subjectLabel}>{doubt.subjects?.name || 'General'}</span>
-                  {doubt.status === 'resolved' && <span className={styles.solvedBadge}>Solved</span>}
-                  <span className={styles.voteBadge}>{doubt.votes ?? 0} votes</span>
+              <Link 
+                key={doubt.id} 
+                href={`/doubts/${doubt.id}`} 
+                className="group relative h-full flex flex-col p-10 rounded-[40px] bg-[#0c0c16] border border-white/5 hover:border-indigo-500/30 transition-all duration-500 hover:shadow-[0_40px_80px_rgba(0,0,0,0.5)] hover:-translate-y-2 overflow-hidden"
+              >
+                {/* Background Decor */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-600/10 transition" />
+                
+                <div className="flex items-center justify-between mb-8">
+                  <span className="px-4 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">
+                    {doubt.subjects?.name || 'General'}
+                  </span>
+                  {doubt.status === 'resolved' && (
+                    <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                      <CheckCircle2 size={12} />
+                      Solved
+                    </div>
+                  )}
+                  {doubt.votes > 0 && (
+                    <span className="text-gray-600 text-[10px] font-black uppercase tracking-widest ml-auto">
+                      {doubt.votes} VIBES
+                    </span>
+                  )}
                 </div>
-                <h3 className={styles.doubtTitle}>{doubt.title}</h3>
-                <p className={styles.doubtPreview}>{doubt.content?.substring(0, 150)}...</p>
-                <div className={styles.cardFooter}>
-                   {doubt.profiles?.avatar_url
-                    ? <img src={doubt.profiles.avatar_url} alt="" className={styles.authorAvatar} />
-                    : <div className={styles.authorInitial}>{doubt.profiles?.username?.[0] || 'L'}</div>
-                  }
-                  <span className={styles.authorName}>{doubt.profiles?.username || 'Learner'}</span>
-                  <span className={styles.cardDate}>{new Date(doubt.created_at).toLocaleDateString()}</span>
+
+                <h3 className="text-2xl font-black text-white mb-6 group-hover:text-indigo-400 transition-colors line-clamp-2 leading-[1.2] tracking-tight">
+                  {doubt.title}
+                </h3>
+                
+                <p className="text-gray-500 text-sm mb-12 line-clamp-3 leading-[1.6] font-medium">
+                  {doubt.content_text || 'Synthesizing conceptual breakdown... Click to explore detail.'}
+                </p>
+
+                <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {doubt.profiles?.avatar_url ? (
+                      <img src={doubt.profiles.avatar_url} alt="" className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white/5" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center text-white text-[10px] font-black ring-2 ring-white/5">
+                        {doubt.profiles?.username?.[0] || 'L'}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs font-black text-white uppercase tracking-tighter hover:text-indigo-400 transition cursor-pointer">
+                        {doubt.profiles?.username || 'Learner'}
+                      </p>
+                      <p className="text-[10px] text-gray-600 font-bold uppercase tracking-tighter">
+                        {new Date(doubt.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <motion.div 
+                    initial={false}
+                    animate={{ x: 0 }}
+                    whileHover={{ x: 5 }}
+                    className="flex items-center gap-1.5"
+                  >
+                     <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500/30" />
+                     <div className="w-1 h-1 rounded-full bg-indigo-500/10" />
+                  </motion.div>
                 </div>
               </Link>
             ))}
@@ -236,19 +275,12 @@ export default function DoubtsPageClient() {
         ) : (
           <EmptyState
             icon="💬"
-            title={searchQuery ? `No results for "${searchQuery}"` : 'No doubts yet'}
-            description={searchQuery ? 'Try different keywords or clear the search.' : 'Be the first to ask!'}
-            onAction={() => setIsModalOpen(true)}
+            title={searchQuery ? `No results for "${searchQuery}"` : 'Zero Doubts Found'}
+            description={searchQuery ? 'Our synaptic network couldn\'t find a match. Try broadening your query.' : 'The community is silent. Be the catalyst that starts the conversation.'}
+            onAction={() => router.push('/doubts/new')}
           />
         )}
       </div>
-
-      <AskDoubtModal
-        isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setPrefillQuestion(''); }}
-        prefillContent={prefillQuestion}
-        onPublished={() => loadDoubts(false)}
-      />
-    </>
+    </div>
   );
 }

@@ -21,7 +21,7 @@ export function GamificationListener() {
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'reputation_ledger',
+          table: 'reputation_events',
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {

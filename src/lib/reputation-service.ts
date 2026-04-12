@@ -22,35 +22,32 @@ const REPUTATION_POINTS: Record<ReputationEventType, number> = {
 export async function addReputationEvent(
   userId: string, 
   eventType: ReputationEventType, 
-  entityType?: string, 
-  entityId?: string, 
-  metadata: any = {}
+  entityId?: string
 ) {
   const supabase = await createSupabaseServer();
   const pointsDelta = REPUTATION_POINTS[eventType];
-  const { error: ledgerError } = await supabase
-    .from('reputation_history')
-    .insert({
-      user_id: userId,
-      event_type: eventType,
-      points: pointsDelta,
-      entity_type: entityType,
-      entity_id: entityId,
-      metadata
-    });
-  if (ledgerError) throw ledgerError;
-  const { data: profile, error: profileError } = await supabase
+  
+  // award_points RPC handles the insert into reputation_events AND the update to profiles
+  const { error } = await supabase.rpc('award_points', {
+    u_id: userId,
+    p_count: pointsDelta,
+    e_type: eventType,
+    ent_id: entityId,
+    i_key: `${eventType}:${userId}:${entityId || Date.now()}`
+  });
+
+  if (error) throw error;
+
+  // Still check for badges manually for now if the trigger isn't reliable
+  const { data: profile } = await supabase
     .from('profiles')
-    .select('reputation_score')
+    .select('reputation_points')
     .eq('id', userId)
     .single();
-  if (profileError) throw profileError;
-  const newScore = (profile.reputation_score || 0) + pointsDelta;
-  await supabase
-    .from('profiles')
-    .update({ reputation_score: newScore })
-    .eq('id', userId);
+
+  const newScore = profile?.reputation_points || 0;
   await checkBadgeUnlocks(userId, newScore);
+  
   return { success: true, pointsDelta, newScore };
 }
 
@@ -59,8 +56,7 @@ async function checkBadgeUnlocks(userId: string, currentScore: number) {
   const { data: badges } = await supabase
     .from('badges')
     .select('*')
-    .eq('requirement_type', 'reputation')
-    .lte('requirement_value', currentScore);
+    .lte('requirement_points', currentScore);
   if (!badges) return;
   for (const badge of badges) {
     await supabase

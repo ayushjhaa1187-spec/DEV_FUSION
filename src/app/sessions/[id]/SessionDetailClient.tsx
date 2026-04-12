@@ -1,9 +1,8 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Video, Star, FileText, Calendar, User, Loader2 } from 'lucide-react';
-import { getJitsiMeetUrl } from '@/lib/jitsi';
 
 interface SessionDetailData {
   booking: {
@@ -60,15 +59,29 @@ export default function SessionDetailClient({
   userId: string;
 }) {
   const queryClient = useQueryClient();
+  const [notes, setNotes] = useState('');
+  const [rating, setRating] = useState<number>(0);
+  const [feedback, setFeedback] = useState('');
+  const [sessionActive, setSessionActive] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['session', bookingId],
     queryFn: () => fetchSessionDetail(bookingId),
   });
 
-  const [notes, setNotes] = useState('');
-  const [rating, setRating] = useState<number>(0);
-  const [feedback, setFeedback] = useState('');
+  useEffect(() => {
+    const startTime = data?.booking?.mentor_slots?.start_time;
+    if (data?.booking?.status === 'confirmed' && startTime) {
+      const start = new Date(startTime).getTime();
+      const checkActive = () => {
+        const now = Date.now();
+        setSessionActive(start - now <= 10 * 60 * 1000);
+      };
+      checkActive();
+      const interval = setInterval(checkActive, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [data]);
 
   const updateMutation = useMutation({
     mutationFn: updateSession,
@@ -103,10 +116,6 @@ export default function SessionDetailClient({
       'Mentor';
 
   const startTime = booking.mentor_slots?.start_time;
-  const sessionActive =
-    booking.status === 'confirmed' &&
-    startTime &&
-    new Date(startTime).getTime() - Date.now() <= 10 * 60 * 1000;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">

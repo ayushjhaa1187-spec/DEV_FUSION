@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import OnboardingClient from './OnboardingClient';
 
 export default async function OnboardingPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {

@@ -13,15 +13,14 @@ export async function POST(
 
   try {
     const { vote_type } = await req.json(); // 1 or -1
-
     if (![1, -1].includes(vote_type)) {
       return NextResponse.json({ error: 'Invalid vote type' }, { status: 400 });
     }
 
-    // Fetch current doubt
+    // Fetch current doubt author for reputation
     const { data: doubt, error: fetchError } = await supabase
       .from('doubts')
-      .select('votes, author_id')
+      .select('author_id')
       .eq('id', id)
       .single();
 
@@ -29,23 +28,50 @@ export async function POST(
       return NextResponse.json({ error: 'Doubt not found' }, { status: 404 });
     }
 
-    // Prevent self-voting
     if (doubt.author_id === user.id) {
       return NextResponse.json({ error: 'Cannot vote on your own doubt' }, { status: 403 });
     }
 
-    // Update vote count directly
-    const newVotes = (doubt.votes || 0) + vote_type;
-    const { data, error } = await supabase
+    // Upsert vote record
+    const { error: voteError } = await supabase
+      .from('doubt_votes')
+      .upsert(
+        { user_id: user.id, doubt_id: id, vote_type },
+        { onConflict: 'user_id,doubt_id' }
+      );
+
+    if (voteError) throw voteError;
+
+    // Recalculate total votes for this doubt
+    const { data: totalData } = await supabase
+      .from('doubt_votes')
+      .select('vote_type')
+      .eq('doubt_id', id);
+
+    const totalVotes = totalData?.reduce((acc: number, v: any) => acc + v.vote_type, 0) ?? 0;
+
+    // Update cached count in doubts table
+    const { data: updatedDoubt, error: updateError } = await supabase
       .from('doubts')
-      .update({ votes: newVotes })
+      .update({ votes: totalVotes })
       .eq('id', id)
-      .select('id, votes')
+      .select('votes')
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (updateError) throw updateError;
 
-    return NextResponse.json({ votes: data.votes });
+    // Optional: award points to doubt author for upvote (+2)
+    if (vote_type === 1) {
+      await supabase.rpc('update_reputation', {
+        p_user_id: doubt.author_id,
+        p_action: 'doubt_upvoted',
+        p_ref_id: id,
+      }).then(({ error: repErr }) => {
+        if (repErr) console.warn('[doubt-vote] Reputation failed:', repErr.message);
+      });
+    }
+
+    return NextResponse.json({ votes: updatedDoubt.votes });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error';
     return NextResponse.json({ error: message }, { status: 500 });

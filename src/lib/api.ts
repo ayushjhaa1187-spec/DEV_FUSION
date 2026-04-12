@@ -51,7 +51,7 @@ export const answerApi = {
   // Fixed: use actual route structure /api/doubts/:doubtId/accept/:answerId with PATCH
   acceptAnswer: (doubtId: string, answerId: string) =>
     apiFetch(`/api/doubts/${doubtId}/accept/${answerId}`, { method: 'PATCH' }),
-  vote: (answerId: string, vote_type: number) =>
+  vote: (answerId: string, vote_type: 'up' | 'down') =>
     apiFetch(`/api/answers/${answerId}/vote`, { method: 'POST', body: JSON.stringify({ vote_type }) }),
 };
 

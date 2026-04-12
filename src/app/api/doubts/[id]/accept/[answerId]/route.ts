@@ -18,7 +18,7 @@ export async function PATCH(
   // Verify the current user owns the doubt
   const { data: doubt, error: doubtError } = await supabase
     .from('doubts')
-    .select('user_id, is_resolved')
+    .select('author_id, status')
     .eq('id', id)
     .single();
 
@@ -26,18 +26,18 @@ export async function PATCH(
     return NextResponse.json({ error: 'Doubt not found' }, { status: 404 });
   }
 
-  if (doubt.user_id !== user.id) {
+  if (doubt.author_id !== user.id) {
     return NextResponse.json({ error: 'Forbidden: only doubt author can accept answers' }, { status: 403 });
   }
 
-  if (doubt.is_resolved) {
+  if (doubt.status === 'resolved') {
     return NextResponse.json({ error: 'Doubt already resolved' }, { status: 409 });
   }
 
   // Fetch answer author for reputation award
   const { data: answer, error: answerError } = await supabase
     .from('answers')
-    .select('user_id')
+    .select('author_id')
     .eq('id', answerId)
     .eq('doubt_id', id)
     .single();
@@ -47,24 +47,45 @@ export async function PATCH(
   }
 
   // Mark answer as accepted + resolve doubt (sequential updates)
-  const { error: updateAnswerError } = await supabase
-    .from('answers')
-    .update({ is_accepted: true })
-    .eq('id', answerId);
+  const [updateAnswerRes, updateDoubtRes] = await Promise.all([
+    supabase
+      .from('answers')
+      .update({ is_accepted: true })
+      .eq('id', answerId),
+    supabase
+      .from('doubts')
+      .update({ 
+        status: 'resolved',
+        accepted_answer_id: answerId
+      })
+      .eq('id', id)
+  ]);
 
-  const { error: updateDoubtError } = await supabase
-    .from('doubts')
-    .update({ is_resolved: true, accepted_answer_id: answerId })
-    .eq('id', id);
-
-  if (updateAnswerError || updateDoubtError) {
+  if (updateAnswerRes.error || updateDoubtRes.error) {
     return NextResponse.json({ error: 'Failed to mark answer as accepted' }, { status: 500 });
   }
 
-  // Award reputation to answer author
+  // Award reputation to answer author (25 points for accepted answer)
   try {
-    const result = await awardReputation(answer.user_id, 'answer_accepted', answerId);
-    return NextResponse.json({ success: true, reputation: result });
+    const { error: repErr } = await supabase.rpc('award_points', {
+      u_id: answer.author_id,
+      p_count: 25,
+      e_type: 'answer_accepted',
+      ent_id: answerId,
+      i_key: `accept_${answerId}`
+    });
+    
+    if (repErr) throw repErr;
+
+    // Notify the answer author
+    await supabase.from('notifications').insert({
+      user_id: answer.author_id,
+      type: 'answer_accepted',
+      message: `Your answer was accepted! You earned 25 reputation points.`,
+      link: `/doubts/${id}`
+    });
+
+    return NextResponse.json({ success: true });
   } catch (repError) {
     console.error('Reputation award failed:', repError);
     return NextResponse.json({ success: true, reputationError: 'Points award delayed' });

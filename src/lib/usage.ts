@@ -5,7 +5,7 @@ export type UsageType = 'interview' | 'question';
 const LIMITS = {
   free: {
     interview: 5, // per month
-    question: 50, // per day (increased for testing)
+    question: 100, // per day (increased for testing)
   },
   pro: {
     interview: Infinity,
@@ -16,14 +16,14 @@ const LIMITS = {
 export async function checkAndIncrementUsage(userId: string, type: UsageType): Promise<{ allowed: boolean; remaining: number | string }> {
   const supabase = await createSupabaseServer();
   
-  // 1. Get user tier
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_tier')
-    .eq('id', userId)
+  // 1. Get user tier from subscriptions table
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('tier')
+    .eq('user_id', userId)
     .single();
   
-  const tier = (profile?.subscription_tier || 'free') as 'free' | 'pro';
+  const tier = (sub?.tier || 'free') as 'free' | 'pro';
   
   if (tier === 'pro') {
     return { allowed: true, remaining: 'Unlimited' };

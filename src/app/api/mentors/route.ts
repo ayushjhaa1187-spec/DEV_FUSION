@@ -10,10 +10,9 @@ export async function GET(req: NextRequest) {
   const minRating = searchParams.get('min_rating');
 
   try {
-    // In combined_migration schema, mentor_profiles.id IS the FK to profiles(id)
     let query = supabase
       .from('mentor_profiles')
-      .select('*, profiles!id(username, avatar_url, full_name, branch, college)');
+      .select('*, profiles!inner(username, avatar_url, full_name, branch, college)');
 
     if (specialty) query = query.ilike('specialty', `%${specialty}%`);
     if (branch) query = query.eq('profiles.branch', branch);

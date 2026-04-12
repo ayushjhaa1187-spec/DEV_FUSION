@@ -13,16 +13,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Provide robust fallback if DB has not been seeded yet
   if (!data || data.length === 0) {
     return NextResponse.json([
-      { id: '1', name: 'Data Structures and Algorithms' },
-      { id: '2', name: 'Operating Systems' },
-      { id: '3', name: 'Database Management Systems' },
-      { id: '4', name: 'Computer Networks' },
-      { id: '5', name: 'Machine Learning' },
-      { id: '6', name: 'Web Development' },
-      { id: '7', name: 'System Design' }
+      { id: '1c07d977-0eeb-4bfa-baa2-b1df5b15bdb2', name: 'Data Structures and Algorithms' },
+      { id: 'b51cc189-3997-41aa-89f1-68a41ed00375', name: 'Operating Systems' },
+      { id: 'eab82c9f-3951-419b-a010-0a2b0aa0dabb', name: 'Database Management Systems' },
+      { id: '34e9e03d-8f9f-4db7-a414-f8b8a5fc768e', name: 'Computer Networks' },
+      { id: '94d3c11b-685b-4394-a4b5-ea9a0a4cbb79', name: 'Machine Learning' },
+      { id: 'bb2f0bf2-4ed0-4354-94c6-e9e43dfa72aa', name: 'Web Development' },
+      { id: 'fedc5e93-9c86-4447-97d8-112dfd66bd2d', name: 'System Design' }
     ]);
   }
 

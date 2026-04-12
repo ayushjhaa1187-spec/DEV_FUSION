@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // 1. Verify slot is available and get mentor pricing
     const { data: slot, error: slotError } = await supabase
       .from('mentor_slots')
-      .select('mentor_id, is_booked, start_time, mentor_profiles(hourly_rate)')
+      .select('mentor_id, is_booked, start_time, mentor_profiles(price_per_session)')
       .eq('id', slot_id)
       .single();
 
@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
     }
 
     const mentorProfile = slot.mentor_profiles as any;
-    const hourlyRate = mentorProfile?.hourly_rate || 0;
+    const sessionRate = mentorProfile?.price_per_session || 0;
 
     // 2. Enforce Razorpay Signature for paid sessions
-    if (hourlyRate > 0) {
+    if (sessionRate > 0) {
       if (!razorpay_signature || !razorpay_order_id || !razorpay_payment_id) {
         return NextResponse.json({ error: 'Payment verification details missing' }, { status: 402 });
       }
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         status: 'confirmed', 
         meeting_link: `https://meet.jit.si/${meetingRoomId}`,
         payment_id: razorpay_payment_id || null,
-        amount_paid: hourlyRate
+        payment_status: sessionRate > 0 ? 'completed' : 'pending'
       })
       .select()
       .single();
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     // 4. Record in transactions table
     await supabase.from('transactions').insert({
       user_id: user.id,
-      amount: hourlyRate * 100, // stored in paise
+      amount: sessionRate * 100, // stored in paise
       status: 'completed',
       type: 'session',
       razorpay_order_id: razorpay_order_id || null,

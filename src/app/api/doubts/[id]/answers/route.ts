@@ -45,9 +45,16 @@ export async function POST(
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const answer = data;
 
-    // Award +5 reputation for posting an answer
-    await supabase.rpc('increment_reputation', { user_id_param: user.id, points_param: 5 });
+    // Award reputation for posting an answer
+    await supabase.rpc('update_reputation', {
+      p_user_id: user.id,
+      p_action: 'post_answer',
+      p_ref_id: answer.id,
+    }).then(({ error: repErr }) => {
+      if (repErr) console.warn('Reputation award failed (non-fatal):', repErr.message);
+    });
 
     // Notify the doubt author
     const { data: doubt } = await supabase
@@ -63,16 +70,16 @@ export async function POST(
         .eq('id', user.id)
         .single();
 
+      // type must match ENUM: answer_received, answer_posted, etc.
       await supabase.from('notifications').insert({
         user_id: doubt.author_id,
-        type: 'new_answer',
+        type: 'answer_posted',
+        title: 'New Answer Received',
         message: `${profile?.username ?? 'Someone'} answered your doubt: "${doubt.title?.slice(0, 60)}"`,
         link: `/doubts/${id}`
       });
     }
 
-    // Manually increment answer_count as a fallback for the trigger
-    await supabase.rpc('increment_answer_count', { doubt_id_param: id });
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });

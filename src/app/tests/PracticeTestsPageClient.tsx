@@ -282,7 +282,7 @@ export default function PracticeTestsPageClient() {
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredHistory.slice(0, 6).map((h) => (
 
-                    <Link href={`/tests/${h.test_id}/results`} key={h.id} className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all group relative overflow-hidden">
+                    <Link href={`/tests/${h.id}/results`} key={h.id} className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all group relative overflow-hidden">
                        <div className="flex justify-between items-start mb-4">
                           <div className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded-full uppercase">
                              {h.practice_tests?.subjects?.name}
@@ -441,7 +441,7 @@ export default function PracticeTestsPageClient() {
 
              <div className="flex flex-col md:flex-row gap-4 w-full max-w-md">
                 <Link 
-                  href={`/tests/${test.id}/results`}
+                  href={`/tests/${attempt.id}/results`}
                   className="flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-2xl transition-all"
                 >
                   <Layout size={18} /> Detailed Review

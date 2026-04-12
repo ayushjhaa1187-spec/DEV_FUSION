@@ -1,8 +1,21 @@
 import type { Metadata } from "next";
+import { Space_Grotesk, Instrument_Serif } from 'next/font/google';
 import "./globals.css";
 import ConditionalNavbar, { ConditionalFooter } from '@/components/layout/ConditionalNavbar';
 import Providers from '@/components/providers';
 import ClientAIAssistant from '@/components/ClientAIAssistant';
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
+});
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  variable: '--font-instrument-serif',
+});
 
 export const metadata: Metadata = {
   title: "SkillBridge — Learn. Earn. Grow.",
@@ -16,12 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-      </head>
+    <html lang="en" className={`dark ${spaceGrotesk.variable} ${instrumentSerif.variable}`} style={{ colorScheme: 'dark' }}>
       <body>
         <Providers>
           <ConditionalNavbar />

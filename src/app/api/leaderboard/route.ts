@@ -63,13 +63,13 @@ export async function GET(req: NextRequest) {
     const entries = (data as ProfileRow[] || []).map((p, i) => toEntry(p, i + 1));
     return NextResponse.json({ entries, currentUser: undefined });
   } else {
-    // Time-based query using reputation_history table
+    // Time-based query using reputation_events table
     const days = isWeekly ? 7 : 30;
     const since = new Date();
     since.setDate(since.getDate() - days);
 
     const { data: events, error: eventError } = await supabase
-      .from('reputation_history')
+      .from('reputation_events')
       .select('user_id, points')
       .gte('created_at', since.toISOString());
 

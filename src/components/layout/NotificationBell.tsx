@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import { Bell, Hash, MessageSquare, Flame, CheckCircle, Info } from 'lucide-react';
+import { Bell, Hash, MessageSquare, Flame, CheckCircle, Info, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './NotificationBell.module.css';

@@ -91,8 +91,11 @@ export async function POST(req: NextRequest) {
       remaining,
       rateLimitRemaining: rateCheck.remaining,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Test Generation Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message || 'Internal Server Error during test generation. Please try again.',
+      details: error.toString() 
+    }, { status: 500 });
   }
 }

@@ -8,8 +8,9 @@ async function getProfile(username: string) {
   return res.json();
 }
 
-export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
-  const data = await getProfile(params.username);
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+  const data = await getProfile(username);
   if (!data?.profile) return { title: 'User Not Found | DEV_FUSION' };
 
   const { profile } = data;
@@ -24,6 +25,7 @@ export async function generateMetadata({ params }: { params: { username: string 
   };
 }
 
-export default function PublicProfilePage({ params }: { params: { username: string } }) {
-  return <PublicProfilePageClient username={params.username} />;
+export default async function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = await params;
+  return <PublicProfilePageClient username={username} />;
 }

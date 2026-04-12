@@ -22,30 +22,42 @@ export async function GET(req: NextRequest) {
     if (subjectId) query = query.eq('subject_id', subjectId);
     if (authorId) query = query.eq('author_id', authorId);
     if (status) query = query.eq('status', status);
-    if (branch) query = query.eq('academic_context_snapshot->>branch', branch);
+    if (branch) {
+      query = query.or(`academic_context_snapshot->>branch.eq.${branch},profiles.branch.eq.${branch}`);
+    }
     if (userSubjects.length > 0 && filter === 'my_subjects') {
       query = query.in('subject_id', userSubjects);
     }
 
-    // Full-text search on title and content
+    // Full-text search on title, content_text, and content
     if (search && search.trim()) {
-      query = query.or(`title.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%`);
+      query = query.or(`title.ilike.%${search.trim()}%,content_text.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%`);
     }
 
-    // 'unanswered' filter
+    // 'unanswered' filter: doubts with 0 accepted answers
     if (filter === 'unanswered') {
-      query = query.eq('status', 'open');
+      query = query.is('accepted_answer_id', null);
     }
 
-    // Safe sort — only use created_at and votes (always present); skip trending_score
+    // Sort mapping
     const safeSortMap: Record<string, { column: string; ascending: boolean }> = {
       newest: { column: 'created_at', ascending: false },
       oldest: { column: 'created_at', ascending: true },
       votes: { column: 'votes', ascending: false },
-      trending: { column: 'created_at', ascending: false }, // fallback until trending_score column exists
     };
-    const selectedSort = (sort && safeSortMap[sort]) ? safeSortMap[sort] : safeSortMap.newest;
-    query = query.order(selectedSort.column, { ascending: selectedSort.ascending });
+    
+    if (sort === 'trending') {
+      // Trending: doubts with most upvotes + answers in last 7 days
+      // For now, we sort by votes and answer_count DESC (if available in view)
+      // Since we are using doubts table directly here, we'll sort by votes and limit by date if possible
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      query = query.gte('created_at', sevenDaysAgo.toISOString());
+      query = query.order('votes', { ascending: false });
+    } else {
+      const selectedSort = (sort && safeSortMap[sort]) ? safeSortMap[sort] : safeSortMap.newest;
+      query = query.order(selectedSort.column, { ascending: selectedSort.ascending });
+    }
 
     // Pagination
     const page = parseInt(searchParams.get('page') || '1');
@@ -90,8 +102,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { title, content, subject_id, branch, semester } = await req.json();
-    if (!title?.trim() || !content?.trim()) {
+    const { title, content, content_text, subject_id, branch, semester, ai_attempted } = await req.json();
+    if (!title?.trim() || !content) {
       return NextResponse.json({ error: 'Title and content are required' }, { status: 400 });
     }
 
@@ -106,8 +118,11 @@ export async function POST(req: NextRequest) {
       .insert({
         author_id: user.id,
         title: title.trim(),
-        content: content.trim(),
+        content: typeof content === 'string' ? content : JSON.stringify(content),
+        content_jsonb: typeof content === 'object' ? content : null,
+        content_text: content_text || (typeof content === 'string' ? content : ''),
         subject_id: subject_id || null,
+        ai_attempted: !!ai_attempted,
         academic_context_snapshot: {
           branch: branch || profile?.branch,
           semester: semester || profile?.semester,

@@ -47,8 +47,9 @@ async function getProfile(username: string): Promise<Profile | null> {
   return res.json();
 }
 
-export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
-  const profile = await getProfile(params.username);
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+  const { username } = await params;
+  const profile = await getProfile(username);
   if (!profile) return { title: 'User Not Found | DEV_FUSION' };
 
   return {
@@ -62,8 +63,9 @@ export async function generateMetadata({ params }: { params: { username: string 
   };
 }
 
-export default async function ProfilePage({ params }: { params: { username: string } }) {
-  const profile = await getProfile(params.username);
+export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = await params;
+  const profile = await getProfile(username);
 
   if (!profile) notFound();
 

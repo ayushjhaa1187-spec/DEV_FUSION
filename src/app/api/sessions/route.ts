@@ -43,7 +43,7 @@ export async function GET(_req: NextRequest) {
   const { data: bookings, error } = await supabase
     .from('mentor_bookings')
     .select(SESSION_SELECT)
-    .or(`student_id.eq.${user.id},mentor_id.in.(select id from mentor_profiles where user_id='${user.id}')`)
+    .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
     .order('created_at', { ascending: false });
 
   if (error) {

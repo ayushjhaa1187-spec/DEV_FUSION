@@ -12,10 +12,10 @@ export async function POST(
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { vote_type } = await req.json();
+    const { vote_type } = await req.json(); // Now numeric: 1 or -1
 
     if (![1, -1].includes(vote_type)) {
-      return NextResponse.json({ error: 'Invalid vote type: must be 1 or -1' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid vote type: must be 1 (up) or -1 (down)' }, { status: 400 });
     }
 
     // Get answer author_id for reputation
@@ -37,7 +37,7 @@ export async function POST(
 
     if (voteError) throw voteError;
 
-    // Recalculate total votes
+    // Recalculate total votes and update cached count
     const { data: totalData } = await supabase
       .from('answer_votes')
       .select('vote_type')
@@ -45,7 +45,6 @@ export async function POST(
 
     const totalVotes = totalData?.reduce((acc: number, v: any) => acc + v.vote_type, 0) ?? 0;
 
-    // Update cached vote count on answers table
     await supabase
       .from('answers')
       .update({ votes: totalVotes })

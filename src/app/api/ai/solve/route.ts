@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const { allowed, remaining } = await checkAndIncrementUsage(user.id, 'question');
     if (!allowed) {
       return NextResponse.json({ 
-        error: 'Free tier limit reached (10 questions/day). Upgrade to Pro for unlimited access!',
+        error: `Free tier daily limit reached (100 questions/day). Upgrade to Pro for unlimited access!`,
         limitReached: true 
       }, { status: 403 });
     }

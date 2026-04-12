@@ -37,7 +37,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
-          await fetchProfile(currentUser.id);
+          try {
+            await fetchProfile(currentUser.id);
+          } catch (e) {
+            console.error("Profile fetch failed:", e);
+          }
         } else {
           setProfile(null);
         }
@@ -57,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (currentUser) fetchProfile(currentUser.id);
+      if (currentUser) fetchProfile(currentUser.id).catch(console.error);
       setLoading(false);
     });
 

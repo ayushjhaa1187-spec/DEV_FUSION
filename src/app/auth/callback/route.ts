@@ -31,7 +31,7 @@ export async function GET(request: Request) {
         .single();
       
       if (!profile || !profile.college) {
-        return NextResponse.redirect(`${origin}/auth/onboarding`);
+        return NextResponse.redirect(`${origin}/onboarding`);
       }
 
       const path = next.startsWith('/') ? next : '/dashboard';

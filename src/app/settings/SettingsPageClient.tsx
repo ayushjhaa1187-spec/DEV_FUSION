@@ -1,39 +1,84 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { Save, AlertTriangle, Upload } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { 
+  Save, AlertTriangle, Upload, Github, Linkedin, 
+  Twitter, Globe, X, Plus, ShieldCheck, User,
+  Mail, BookOpen, GraduationCap, MapPin, Sparkles,
+  Calendar, Clock, UserCheck
+} from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useAuth } from '@/components/auth/auth-provider';
+import { motion, AnimatePresence } from 'framer-motion';
+import ReputationBadge from '@/components/user/ReputationBadge';
+import AvailabilityGrid from '@/components/settings/AvailabilityGrid';
 
 type ProfileFormData = {
-  name: string;
+  full_name: string;
   college: string;
   branch?: string;
-  year?: number;
+  semester?: number;
   bio?: string;
-};
-
-type PasswordFormData = {
-  current_password: string;
-  new_password: string;
-  confirm_password: string;
+  github_url?: string;
+  linkedin_url?: string;
+  twitter_url?: string;
+  website_url?: string;
+  subjects: string[];
 };
 
 export default function SettingsPageClient() {
   const { user } = useAuth();
   const supabase = createSupabaseBrowser();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [inAppNotifications, setInAppNotifications] = useState(true);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [subjectInput, setSubjectInput] = useState('');
+  const [profileData, setProfileData] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'profile' | 'mentorship'>('profile');
 
-  const profileForm = useForm<ProfileFormData>();
-  const passwordForm = useForm<PasswordFormData>();
+  const { register, handleSubmit, setValue, watch, control, reset } = useForm<ProfileFormData>({
+    defaultValues: {
+      subjects: []
+    }
+  });
+
+  const subjects = watch('subjects') || [];
+  const watchedFields = watch();
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (data) {
+        setProfileData(data);
+        setAvatarUrl(data.avatar_url);
+        reset({
+          full_name: data.full_name || '',
+          college: data.college || '',
+          branch: data.branch || '',
+          semester: data.semester || 1,
+          bio: data.bio || '',
+          github_url: data.github_url || '',
+          linkedin_url: data.linkedin_url || '',
+          twitter_url: data.twitter_url || '',
+          website_url: data.website_url || '',
+          subjects: data.subjects || []
+        });
+      }
+      setLoading(false);
+    }
+    loadProfile();
+  }, [user, reset, supabase]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -44,186 +89,374 @@ export default function SettingsPageClient() {
       const fileExt = file.name.split('.').pop();
       const filePath = `${user.id}-${Math.random()}.${fileExt}`;
 
-      // 1. Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // 2. Get Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
       setAvatarUrl(publicUrl);
 
-      // 3. Update Profile Table
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
         .eq('id', user.id);
 
       if (updateError) throw updateError;
-      
-      alert('Avatar updated successfully!');
+      alert('Avatar updated!');
     } catch (err: any) {
-      console.error('Upload error:', err);
-      alert(`Upload failed: ${err.message || 'Unknown error'}`);
+      alert(`Upload failed: ${err.message}`);
     } finally {
       setUploading(false);
     }
   };
 
-  const onProfileSubmit = profileForm.handleSubmit(async (data) => {
-    const res = await fetch('/api/user/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (res.ok) alert('Profile updated successfully');
-    else alert('Failed to update profile');
-  });
-
-  const onPasswordSubmit = passwordForm.handleSubmit(async (data) => {
-    if (data.new_password !== data.confirm_password) {
-      alert('Passwords do not match');
-      return;
-    }
-    const res = await fetch('/api/user/password', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ current_password: data.current_password, new_password: data.new_password }),
-    });
-    if (res.ok) {
-      alert('Password updated successfully');
-      passwordForm.reset();
-    } else {
-      alert('Failed to update password');
-    }
-  });
-
-  const handleDeleteAccount = async () => {
-    const res = await fetch('/api/user', { method: 'DELETE' });
-    if (res.ok) {
-      router.push('/login?deleted=true');
-    } else {
-      alert('Failed to delete account');
+  const addSubject = () => {
+    if (subjectInput.trim() && !subjects.includes(subjectInput.trim())) {
+      setValue('subjects', [...subjects, subjectInput.trim()]);
+      setSubjectInput('');
     }
   };
 
+  const removeSubject = (index: number) => {
+    const newSubjects = [...subjects];
+    newSubjects.splice(index, 1);
+    setValue('subjects', newSubjects);
+  };
+
+  const onSubmit = async (data: ProfileFormData) => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Failed to update');
+      alert('Profile updated successfully!');
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveAvailability = async (schedule: any) => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ availability: schedule })
+        .eq('id', user?.id);
+      
+      if (error) throw error;
+      alert('Availability schedule updated!');
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center p-20 gap-4">
+       <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent" />
+       <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Syncing Neural Profiles...</p>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-transparent p-6 text-white">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <h1 className="text-4xl font-black text-white mb-8 font-heading tracking-tight">Settings</h1>
-
-        {/* Profile Settings */}
-        <div className="bg-white/5 dark:bg-[#13132b] rounded-3xl shadow-2xl p-8 border border-white/5 backdrop-blur-xl">
-          <h2 className="text-xl font-bold text-white mb-6 font-heading">Profile Settings</h2>
-          <form onSubmit={onProfileSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">Avatar</label>
-              <div className="flex items-center gap-4">
-                <div className="w-20 h-20 rounded-full bg-gray-300 overflow-hidden border-2 border-indigo-500/20">
-                  {avatarUrl
-                    ? <Image src={avatarUrl} alt="Avatar" width={80} height={80} />
-                    : <div className="w-full h-full bg-gradient-to-br from-indigo-400 to-purple-600 flex items-center justify-center text-2xl text-white font-black uppercase">U</div>
-                  }
-                </div>
-                <label className="cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-500 transition flex items-center gap-2 text-sm font-bold shadow-lg shadow-indigo-600/20">
-                  <Upload className="w-4 h-4" />
-                  {uploading ? 'Uploading...' : 'Upload New'}
-                  <input type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} className="hidden" />
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Full Name</label>
-              <input {...profileForm.register('name', { required: true })} className="w-full px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white outline-none focus:border-indigo-500/30 transition-all" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">College</label>
-              <input {...profileForm.register('college', { required: true })} className="w-full px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white outline-none focus:border-indigo-500/30 transition-all" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Branch</label>
-                <input {...profileForm.register('branch')} className="w-full px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white outline-none focus:border-indigo-500/30 transition-all" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Year</label>
-                <input {...profileForm.register('year', { valueAsNumber: true })} type="number" min="1" max="5" className="w-full px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white outline-none focus:border-indigo-500/30 transition-all" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Bio</label>
-              <textarea {...profileForm.register('bio')} rows={3} className="w-full px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white outline-none focus:border-indigo-500/30 transition-all" />
-            </div>
-
-            <button type="submit" className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/20 text-sm font-bold">
-              <Save className="w-4 h-4" /> Save Changes
-            </button>
-          </form>
-        </div>
-
-        {/* Password */}
-        <div className="bg-white/5 dark:bg-[#13132b] rounded-3xl shadow-2xl p-8 border border-white/5 backdrop-blur-xl">
-          <h2 className="text-xl font-bold text-white mb-6 font-heading">Change Password</h2>
-          <form onSubmit={onPasswordSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Current Password</label>
-              <input {...passwordForm.register('current_password', { required: true })} type="password" className="w-full px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white outline-none focus:border-indigo-500/30 transition-all" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">New Password</label>
-              <input {...passwordForm.register('new_password', { required: true, minLength: 8 })} type="password" className="w-full px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white outline-none focus:border-indigo-500/30 transition-all" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-400 mb-1">Confirm Password</label>
-              <input {...passwordForm.register('confirm_password', { required: true })} type="password" className="w-full px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg bg-white dark:bg-white/5 text-gray-900 dark:text-white outline-none focus:border-indigo-500/30 transition-all" />
-            </div>
-            <button type="submit" className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/20 text-sm font-bold">
-              <Save className="w-4 h-4" /> Update Password
-            </button>
-          </form>
-        </div>
-
-        {/* Notifications */}
-        <div className="bg-white/5 dark:bg-[#13132b] rounded-3xl shadow-2xl p-8 border border-white/5 backdrop-blur-xl">
-          <h2 className="text-xl font-bold text-white mb-6 font-heading">Notifications</h2>
-          <div className="space-y-4">
-            <label className="flex items-center justify-between cursor-pointer group">
-              <span className="text-gray-700 dark:text-gray-400 group-hover:text-white transition-colors">Email Notifications</span>
-              <input type="checkbox" checked={emailNotifications} onChange={(e) => setEmailNotifications(e.target.checked)} className="w-5 h-5 accent-indigo-500" />
-            </label>
-            <label className="flex items-center justify-between cursor-pointer group">
-              <span className="text-gray-700 dark:text-gray-400 group-hover:text-white transition-colors">In-App Notifications</span>
-              <input type="checkbox" checked={inAppNotifications} onChange={(e) => setInAppNotifications(e.target.checked)} className="w-5 h-5 accent-indigo-500" />
-            </label>
+    <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Settings Form */}
+      <div className="lg:col-span-2 space-y-8">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-black text-white font-heading tracking-tight">System Configuration</h1>
+            <p className="text-gray-400 mt-2">Personalize your academic interface and network parameters.</p>
           </div>
-        </div>
+          
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 backdrop-blur-md">
+            <button 
+              onClick={() => setActiveTab('profile')}
+              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                activeTab === 'profile' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Neural Profile
+            </button>
+            <button 
+              onClick={() => setActiveTab('mentorship')}
+              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                activeTab === 'mentorship' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Mentorship
+            </button>
+          </div>
+        </header>
 
-        {/* Danger Zone */}
-        <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-8 shadow-2xl shadow-red-500/5">
-          <h2 className="text-xl font-bold text-red-500 mb-6 flex items-center gap-2 font-heading">
-            <AlertTriangle className="w-5 h-5" /> Danger Zone
-          </h2>
-          <p className="text-red-600 dark:text-red-300 text-sm mb-4">Once you delete your account, there is no going back. Please be certain.</p>
-          {!showDeleteConfirm ? (
-            <button onClick={() => setShowDeleteConfirm(true)} className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-500 transition shadow-lg shadow-red-600/20 text-sm font-bold">Delete Account</button>
+        <AnimatePresence mode="wait">
+          {activeTab === 'profile' ? (
+            <motion.div
+              key="profile"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+            >
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Avatar Section */}
+                <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
+                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <User className="w-5 h-5 text-indigo-400" />
+                    Public Identity
+                  </h2>
+                  <div className="flex flex-col md:flex-row gap-8 items-start">
+                    <div className="relative group">
+                      <div className="w-32 h-32 rounded-3xl bg-white/10 overflow-hidden ring-4 ring-white/5 group-hover:ring-indigo-500/30 transition-all">
+                        {avatarUrl ? (
+                          <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-indigo-500/20 flex items-center justify-center text-3xl font-black">{watchedFields.full_name?.[0] || 'U'}</div>
+                        )}
+                      </div>
+                      <label className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 rounded-xl cursor-pointer hover:bg-indigo-500 transition-all shadow-xl">
+                        <Upload className="w-4 h-4 text-white" />
+                        <input type="file" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                      </label>
+                    </div>
+                    
+                    <div className="flex-1 w-full space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Full Display Name</label>
+                        <input {...register('full_name')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="e.g. Ayush Jha" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Bio / Mission Statement</label>
+                        <textarea {...register('bio')} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="Tell the community about your expertise..." />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Academic Info */}
+                <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
+                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-emerald-400" />
+                    Academic Credentials
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">College / University</label>
+                      <input {...register('college')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Department / Branch</label>
+                      <input {...register('branch')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Current Semester</label>
+                      <select {...register('semester', { valueAsNumber: true })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50">
+                        {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s} className="bg-slate-900 font-bold">Semester {s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <label className="block text-sm font-medium text-gray-400 mb-2 font-bold uppercase text-[10px] tracking-widest">Subject Expertise Tags</label>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <AnimatePresence>
+                        {subjects.map((s, i) => (
+                          <motion.span 
+                            key={s} 
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-xs font-bold flex items-center gap-2"
+                          >
+                            {s}
+                            <button type="button" onClick={() => removeSubject(i)} className="hover:text-white transition-colors"><X className="w-3 h-3" /></button>
+                          </motion.span>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                    <div className="flex gap-2">
+                      <input 
+                        value={subjectInput}
+                        onChange={(e) => setSubjectInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSubject())}
+                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" 
+                        placeholder="Add expertise (e.g. Quantum Physics)..." 
+                      />
+                      <button type="button" onClick={addSubject} className="bg-indigo-600 aspect-square p-3 rounded-xl hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-600/20">
+                        <Plus className="w-6 h-6 text-white" />
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Social Presence */}
+                <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
+                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-sky-400" />
+                    Neural Network Links
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="relative">
+                      <Github className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                      <input {...register('github_url')} placeholder="GitHub URL" className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:border-indigo-500/50" />
+                    </div>
+                    <div className="relative">
+                      <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input {...register('linkedin_url')} placeholder="LinkedIn URL" className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:border-indigo-500/50" />
+                    </div>
+                    <div className="relative">
+                      <Twitter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input {...register('twitter_url')} placeholder="Twitter / X URL" className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:border-indigo-500/50" />
+                    </div>
+                    <div className="relative">
+                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input {...register('website_url')} placeholder="Personal Portfolio" className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:border-indigo-500/50" />
+                    </div>
+                  </div>
+                </section>
+
+                <div className="flex justify-end pt-4">
+                  <button 
+                    type="submit" 
+                    disabled={saving}
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-8 py-4 rounded-2xl font-black font-heading shadow-2xl shadow-indigo-600/30 transition-all transform hover:-translate-y-1 active:translate-y-0 uppercase tracking-widest text-sm"
+                  >
+                    {saving ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <Save className="w-5 h-5" />}
+                    {saving ? 'Syncing...' : 'Commit Profile Changes'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           ) : (
-            <div className="space-y-2">
-              <p className="text-red-700 dark:text-red-300 font-semibold">Are you absolutely sure?</p>
-              <div className="flex gap-2">
-                <button onClick={handleDeleteAccount} className="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition font-bold text-sm">Yes, delete my account</button>
-                <button onClick={() => setShowDeleteConfirm(false)} className="bg-white/5 text-gray-400 px-4 py-2 rounded-lg hover:text-white transition font-bold text-sm">Cancel</button>
+            <motion.div
+              key="mentorship"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
+                 <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                       <ShieldCheck className="w-5 h-5 text-indigo-400" />
+                       Mentor Status
+                    </h2>
+                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                       profileData?.role === 'mentor' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-gray-500/10 text-gray-500 border-white/5'
+                    }`}>
+                       {profileData?.role === 'mentor' ? 'Active Expert' : 'Student Access'}
+                    </div>
+                 </div>
+
+                 {profileData?.role !== 'mentor' ? (
+                    <div className="py-12 text-center space-y-4">
+                       <UserCheck className="w-16 h-16 text-gray-700 mx-auto opacity-20" />
+                       <h3 className="text-xl font-bold text-gray-300">Become an Expert Mentor</h3>
+                       <p className="text-gray-500 max-w-md mx-auto text-sm">
+                          Help others, build your reputation, and earn high-tier badges. You need at least 500 reputation points to apply.
+                       </p>
+                       <div className="pt-4">
+                          <button className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 font-bold text-sm hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all">
+                             Coming Soon
+                          </button>
+                       </div>
+                    </div>
+                 ) : (
+                    <AvailabilityGrid 
+                      initialData={profileData?.availability} 
+                      onSave={saveAvailability} 
+                      saving={saving} 
+                    />
+                 )}
+              </section>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Live Preview Sidebar */}
+      <div className="lg:col-span-1">
+        <div className="sticky top-8 space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Real-time Simulation
+            </h3>
+          </div>
+          
+          <div className="bg-gradient-to-br from-indigo-900/40 via-slate-900 to-black rounded-[2.5rem] p-8 border border-white/10 shadow-3xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-6 opacity-20">
+              <ReputationBadge points={profileData?.reputation_points || 0} />
+            </div>
+            
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <div className="w-24 h-24 rounded-[2rem] bg-indigo-500/20 overflow-hidden mb-4 ring-4 ring-white/5 group-hover:scale-105 transition-all">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white/20">{watchedFields.full_name?.[0] || 'U'}</div>
+                )}
+              </div>
+              
+              <h4 className="text-2xl font-black text-white mb-1 leading-tight">
+                {watchedFields.full_name || 'Anonymous User'}
+              </h4>
+              <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 mb-4">
+                <ShieldCheck className="w-3 h-3" />
+                {profileData?.role || 'student'}
+              </p>
+              
+              <p className="text-gray-400 text-sm line-clamp-3 min-h-[3rem] mb-6 px-4 italic leading-relaxed">
+                "{watchedFields.bio || 'Your transmission signature appears here...'}"
+              </p>
+              
+              <div className="w-full grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
+                  <div className="text-[9px] text-gray-500 uppercase font-black mb-1">NODE</div>
+                  <div className="text-[11px] text-white font-bold truncate">{watchedFields.college || 'STAGING'}</div>
+                </div>
+                <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
+                  <div className="text-[9px] text-gray-500 uppercase font-black mb-1">PHASE</div>
+                  <div className="text-[11px] text-white font-bold text-center">SEM {watchedFields.semester || 'X'}</div>
+                </div>
+              </div>
+              
+              <div className="flex gap-4">
+                <Twitter className={`w-5 h-5 transition-all ${watchedFields.twitter_url ? 'text-sky-400' : 'text-white/5'}`} />
+                <Github className={`w-5 h-5 transition-all ${watchedFields.github_url ? 'text-white' : 'text-white/5'}`} />
+                <Linkedin className={`w-5 h-5 transition-all ${watchedFields.linkedin_url ? 'text-blue-500' : 'text-white/5'}`} />
+                <Globe className={`w-5 h-5 transition-all ${watchedFields.website_url ? 'text-emerald-400' : 'text-white/5'}`} />
               </div>
             </div>
-          )}
+
+            <div className="mt-8 pt-8 border-t border-white/5">
+              <div className="text-[10px] text-gray-500 uppercase font-black mb-3 tracking-widest">Expertise Pulse</div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {subjects.slice(0, 4).map(s => (
+                  <span key={s} className="px-2 py-1 bg-indigo-500/10 rounded-md text-[9px] text-indigo-300 border border-indigo-500/20 font-black uppercase">{s}</span>
+                ))}
+                {subjects.length > 4 && <span className="text-[10px] text-gray-500">+{subjects.length - 4} more</span>}
+                {subjects.length === 0 && <span className="text-[10px] text-gray-700 italic font-bold">Awaiting Data</span>}
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex gap-3">
+             <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+             <p className="text-[10px] text-amber-200/60 font-medium leading-relaxed">
+                <span className="text-amber-400 font-bold block mb-1 uppercase tracking-wider">Security Warning</span>
+                Social links and bio are visible to all users. Avoid sharing private sensitive data in these fields.
+             </p>
+          </div>
         </div>
       </div>
     </div>

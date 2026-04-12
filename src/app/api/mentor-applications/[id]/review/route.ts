@@ -70,7 +70,7 @@ export async function PATCH(
       updates.push(
         supabase
           .from('profiles')
-          .update({ role: 'mentor' })
+          .update({ role: 'mentor', is_mentor: true })
           .eq('id', user_id)
           .then(r => r)
       );
