@@ -19,9 +19,18 @@ CREATE TABLE IF NOT EXISTS public.follows (
 
 -- RLS for follows
 ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public can view follows" ON public.follows FOR SELECT USING (true);
-CREATE POLICY "Users can follow others" ON public.follows FOR INSERT WITH CHECK (auth.uid() = follower_id);
-CREATE POLICY "Users can unfollow" ON public.follows FOR DELETE USING (auth.uid() = follower_id);
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public can view follows' AND tablename = 'follows') THEN
+        CREATE POLICY "Public can view follows" ON public.follows FOR SELECT USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can follow others' AND tablename = 'follows') THEN
+        CREATE POLICY "Users can follow others" ON public.follows FOR INSERT WITH CHECK (auth.uid() = follower_id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Users can unfollow' AND tablename = 'follows') THEN
+        CREATE POLICY "Users can unfollow" ON public.follows FOR DELETE USING (auth.uid() = follower_id);
+    END IF;
+END $$;
 
 -- 3. Mentor Availability Table
 CREATE TABLE IF NOT EXISTS public.mentor_availability (
@@ -36,9 +45,15 @@ CREATE TABLE IF NOT EXISTS public.mentor_availability (
 
 -- RLS for mentor_availability
 ALTER TABLE public.mentor_availability ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public can view availability" ON public.mentor_availability FOR SELECT USING (true);
-CREATE POLICY "Mentors can manage availability" ON public.mentor_availability 
-    FOR ALL USING (auth.uid() = mentor_id);
+
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public can view availability' AND tablename = 'mentor_availability') THEN
+        CREATE POLICY "Public can view availability" ON public.mentor_availability FOR SELECT USING (true);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Mentors can manage availability' AND tablename = 'mentor_availability') THEN
+        CREATE POLICY "Mentors can manage availability" ON public.mentor_availability FOR ALL USING (auth.uid() = mentor_id);
+    END IF;
+END $$;
 
 -- 4. Trending Doubts View
 -- Formula: (votes * 2 + answer_count * 3) / (hours_old + 2)^1.5
