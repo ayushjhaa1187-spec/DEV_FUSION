@@ -58,10 +58,17 @@ END $$;
 -- 4. Trending Doubts View
 -- Formula: (votes * 2 + answer_count * 3) / (hours_old + 2)^1.5
 CREATE OR REPLACE VIEW trending_doubts AS
+WITH answer_counts AS (
+    SELECT doubt_id, COUNT(*) as cnt
+    FROM answers
+    GROUP BY doubt_id
+)
 SELECT 
     d.*,
-    ((d.votes * 2 + d.answer_count * 3)::FLOAT / POWER((EXTRACT(EPOCH FROM (NOW() - d.created_at))/3600 + 2), 1.5)) AS hotness_score
+    COALESCE(ac.cnt, 0) as answer_count,
+    ((d.votes * 2 + COALESCE(ac.cnt, 0) * 3)::FLOAT / POWER((EXTRACT(EPOCH FROM (NOW() - d.created_at))/3600 + 2), 1.5)) AS hotness_score
 FROM doubts d
+LEFT JOIN answer_counts ac ON d.id = ac.doubt_id
 ORDER BY hotness_score DESC;
 
 -- 5. Full-Text Search for Doubts
