@@ -22,7 +22,7 @@ async function getCertificate(hash: string) {
   
   const { data, error } = await supabase
     .from("certificates")
-    .select("*, users!inner(full_name, avatar_url)")
+    .select("*, profiles!inner(full_name, avatar_url)")
     .eq("verification_hash", hash)
     .single();
 
@@ -40,7 +40,7 @@ export default async function VerifyPage({ params }: PageProps) {
   // Transform data for CertificateView
   const transformedData = {
     id: cert.id,
-    full_name: cert.users.full_name,
+    full_name: cert.profiles.full_name,
     subject: cert.subject,
     score: cert.score_achieved,
     cert_type: cert.cert_type,
