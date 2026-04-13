@@ -1,70 +1,158 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { askAIDoubt } from '@/lib/ai-service';
-import { checkRateLimit } from '@/lib/rate-limiter';
-import { createSupabaseServer } from '@/lib/supabase/server';
-import { checkAndIncrementUsage } from '@/lib/usage';
+/**
+ * /api/ai/solve/route.ts
+ *
+ * Streams a Gemini 1.5 Pro answer for a user's doubt.
+ * Gating order:
+ *   1. Auth check
+ *   2. Daily free limit (Free tier: 5/day at no credit cost)
+ *   3. Credit wallet deduction (if over daily free limit)
+ *   4. Gemini streaming
+ */
 
+import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseServer } from "@/lib/supabase/server";
+import {
+  consumeCredit,
+  checkDailyFreeLimit,
+  incrementDailyUsage,
+} from "@/lib/usage";
+import { z } from "zod";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
+const SolveSchema = z.object({
+  doubt: z.string().optional(),
+  question: z.string().optional(),
+  title: z.string().optional(),
+  content: z.string().optional(),
+  subject: z.string().max(100).default("General Academy"),
+  difficulty: z.enum(["beginner", "intermediate", "advanced"]).default("intermediate"),
+});
+
+// ─── Free tier daily limit ────────────────────────────────────────────────────
+const FREE_DAILY_SOLVES = 5;
+
+// ─── System prompt builder ────────────────────────────────────────────────────
+function buildSystemPrompt(subject: string, difficulty: string): string {
+  return `You are SkillBridge AI — an expert tutor for college students specialising in ${subject}.
+Your task is to answer the student's doubt clearly and pedagogically.
+
+Rules:
+- Respond in structured Markdown with headers, code blocks, and bullet points as needed.
+- Explain STEP BY STEP — do not just give the final answer.
+- Match the explanation depth to difficulty level: ${difficulty}.
+- If the doubt involves code, always include a working code example with comments.
+- End with a "Key Takeaway" section summarising the concept in 1–2 sentences.
+- Be encouraging. Use a warm, student-friendly tone.
+- Keep response under 800 words unless complexity demands more.`;
+}
+
+// ─── Route Handler ────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  // 1. Auth
   const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Sliding-window rate limit check (30 requests / hour)
-  const rateCheck = await checkRateLimit(user.id, 'ai_chat');
-  if (!rateCheck.allowed) {
-    const retryAfterSecs = Math.ceil((rateCheck.resetAt.getTime() - Date.now()) / 1000);
-    return NextResponse.json(
-      {
-        error: 'Rate limit exceeded. Try again later.',
-        resetAt: rateCheck.resetAt.toISOString(),
-      },
-      {
-        status: 429,
-        headers: { 'Retry-After': String(retryAfterSecs) },
-      }
-    );
+  // 2. Parse & validate body
+  let body: z.infer<typeof SolveSchema>;
+  try {
+    const raw = await req.json();
+    body = SolveSchema.parse(raw);
+  } catch (e) {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
+
+  // Extract query from various possible fields
+  const queryText = body.doubt || body.question || (body.title ? `${body.title}\n${body.content || ""}` : body.content);
+  
+  if (!queryText) {
+    return NextResponse.json({ error: "No query content provided" }, { status: 400 });
+  }
+
+  const { subject, difficulty } = body;
+
+  // 3. Check daily free limit
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("plan")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const plan = sub?.plan ?? "free";
+
+  if (plan === "free") {
+    const { withinLimit } = await checkDailyFreeLimit(
+      user.id,
+      "ai_doubt_solve",
+      FREE_DAILY_SOLVES
+    );
+
+    if (!withinLimit) {
+      const creditResult = await consumeCredit(user.id, "ai_doubt_solve", supabase);
+      if (!creditResult.allowed) {
+        return NextResponse.json(
+          {
+            error: "limit_reached",
+            message: "You've used all your free daily solves. Upgrade to Pro or purchase credits.",
+            upgradeUrl: "/billing/plans",
+            creditsUrl: "/billing/credits",
+          },
+          { status: 402 }
+        );
+      }
+    } else {
+      await incrementDailyUsage(user.id, "ai_doubt_solve");
+    }
+  } else {
+      // For non-free plans, consumeCredit handles bypass (and potential quota checks)
+      await consumeCredit(user.id, "ai_doubt_solve", supabase);
+  }
+
+  // 4. Stream from Gemini
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+  const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+  }, { apiVersion: 'v1' });
+
+  const prompt = `${buildSystemPrompt(subject, difficulty)}\n\n---\nStudent Query: ${queryText}`;
 
   try {
-    const { question, context } = await req.json();
-    
-    if (!question) {
-      return NextResponse.json({ error: 'Question is required' }, { status: 400 });
-    }
+    const streamResult = await model.generateContentStream(prompt);
 
-    // Check usage limits (Questions)
-    const { allowed, remaining } = await checkAndIncrementUsage(user.id, 'question');
-    if (!allowed) {
-      return NextResponse.json({ 
-        error: `Free tier daily limit reached (100 questions/day). Upgrade to Pro for unlimited access!`,
-        limitReached: true 
-      }, { status: 403 });
-    }
-
-    const aiResponse = await askAIDoubt(question, context);
-    return NextResponse.json({
-      explanation: aiResponse.explanation,
-      steps: aiResponse.steps,
-      suggested_tags: aiResponse.suggested_tags,
-      remaining,
-      rateLimitRemaining: rateCheck.remaining,
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        try {
+          for await (const chunk of streamResult.stream) {
+            const text = chunk.text();
+            if (text) {
+              // Send raw text instead of SSE-JSON for easier client parsing
+              controller.enqueue(encoder.encode(text));
+            }
+          }
+          controller.close();
+        } catch (err) {
+          controller.error(err);
+        }
+      },
     });
-  } catch (error: any) {
-    console.error(' [AI Solve API Error]:', {
-      message: error.message,
-      stack: error.stack,
-      user: user?.id
-    });
-    
-    // Check for common DB errors to provide more specific feedback
-    if (error.message?.includes('rate_limit_windows') || error.message?.includes('user_usage')) {
-      return NextResponse.json({ 
-        error: 'Database table missing. Please apply Migration 004 to your Supabase project.' 
-      }, { status: 500 });
-    }
 
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+      },
+    });
+  } catch (err) {
+    console.error("[ai/solve] Gemini error:", err);
+    return NextResponse.json({ error: "AI service unavailable" }, { status: 503 });
   }
 }

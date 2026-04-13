@@ -35,23 +35,51 @@ export default function AIFloatingAssistant() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: textToSend })
       });
-      const data = await res.json();
       
-      let aiContent: string;
       if (res.status === 401) {
-        aiContent = '🔒 **Sign in required.** Please [sign in](/auth) to use the AI tutor. Your question will be waiting!';
-      } else if (res.status === 429) {
-        aiContent = '⏱️ **Slow down!** You\'ve hit the rate limit (30 questions/hour). Please wait a moment and try again.';
-      } else if (res.status === 403) {
-        aiContent = '🚀 **Free tier limit reached.** You\'ve used your 10 daily questions. [Upgrade to Pro](/pricing) for unlimited AI assistance!';
-      } else if (data.explanation) {
-        aiContent = `${data.explanation}${data.steps?.length ? '\n\n**Steps:**\n' + data.steps.map((s: string, i: number) => `${i+1}. ${s}`).join('\n') : ''}`;
-      } else {
-        aiContent = data.error || 'The neural network encountered a slight latency. Please retry.';
+        setMessages(prev => [...prev, { role: 'ai', content: '🔒 **Sign in required.** Please [sign in](/auth) to use the AI tutor.' }]);
+        setLoading(false);
+        return;
       }
+      
+      if (res.status === 402) {
+        setMessages(prev => [...prev, { role: 'ai', content: '🚀 **Free tier limit reached.** [Upgrade to Pro](/billing/plans) for unlimited AI assistance!' }]);
+        setLoading(false);
+        return;
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        setMessages(prev => [...prev, { role: 'ai', content: errorData.message || 'The neural network encountered an error. Please retry.' }]);
+        setLoading(false);
+        return;
+      }
+
+      if (!res.body) throw new Error('No readable stream');
+
+      // Add a placeholder AI message
+      setMessages(prev => [...prev, { role: 'ai', content: '' }]);
+      
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+      let accumulated = '';
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunk = decoder.decode(value);
+        accumulated += chunk;
         
-      setMessages(prev => [...prev, { role: 'ai', content: aiContent }]);
-    } catch {
+        // Update the last message (the placeholder we just added)
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1].content = accumulated;
+          return newMessages;
+        });
+      }
+    } catch (err) {
+      console.error('AI Stream Error:', err);
       setMessages(prev => [...prev, { role: 'ai', content: '📡 Connection issue. Please check your internet and retry.' }]);
     } finally {
       setLoading(false);

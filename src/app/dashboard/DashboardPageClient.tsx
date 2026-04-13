@@ -190,52 +190,57 @@ export default function DashboardPageClient() {
   const fetchData = useCallback(async () => {
     if (!user) return;
     try {
-      const [profileRes, questionsRes, answersRes, activityRes] = await Promise.allSettled([
-        authApi.getMyProfile(),
-        doubtApi.getDoubts({ author_id: user.id }),
-        authApi.getMyAnswers(),
-        fetch('/api/analytics/activity').then(r => r.json()),
-      ]);
-      
-      if (profileRes.status === 'fulfilled') {
-        const profileData = profileRes.value;
-        setProfile(profileData.profile || null);
-        setStats({
-          answers: profileData.stats?.answers ?? 0,
-          accepted: profileData.stats?.accepted ?? 0,
-          doubts: profileData.stats?.doubts ?? 0,
-        });
+      // Use individual try/catches to ensure one failure doesn't block the whole dashboard
+      const fetchProfile = async () => {
+        try {
+          const profileData = await authApi.getMyProfile();
+          setProfile(profileData.profile || null);
+          setStats({
+            answers: profileData.stats?.answers ?? 0,
+            accepted: profileData.stats?.accepted ?? 0,
+            doubts: profileData.stats?.doubts ?? 0,
+          });
 
-        const newBadges = profileData.badges || [];
-        
-        // Show modal only if not first load and badges increased
-        if (!isFirstLoad && newBadges.length > badges.length) {
-          const addedBadge = newBadges.find((nb: any) => 
-            !badges.some((ob: any) => ob.badge_id === nb.badge_id)
-          );
-          if (addedBadge) setNewlyUnlockedBadge(addedBadge);
-        }
+          const newBadges = profileData.badges || [];
+          if (!isFirstLoad && newBadges.length > badges.length) {
+            const addedBadge = newBadges.find((nb: any) => 
+              !badges.some((ob: any) => ob.badge_id === nb.badge_id)
+            );
+            if (addedBadge) setNewlyUnlockedBadge(addedBadge);
+          }
+          setBadges(newBadges);
+        } catch (e) { console.error('Profile fetch failed:', e); }
+      };
 
-        setBadges(newBadges);
-        setIsFirstLoad(false);
-      }
-      
-      if (questionsRes.status === 'fulfilled') {
-        setQuestions(Array.isArray(questionsRes.value) ? questionsRes.value : []);
-      }
-      
-      if (answersRes.status === 'fulfilled') {
-        setAnswers(Array.isArray(answersRes.value) ? answersRes.value : []);
-      }
-      if (activityRes.status === 'fulfilled') {
-        setActivity(activityRes.value);
-      }
+      const fetchQuestions = async () => {
+        try {
+          const res = await doubtApi.getDoubts({ author_id: user.id });
+          setQuestions(Array.isArray(res) ? res : []);
+        } catch (e) { console.error('Doubt fetch failed:', e); }
+      };
+
+      const fetchAnswers = async () => {
+        try {
+          const res = await authApi.getMyAnswers();
+          setAnswers(Array.isArray(res) ? res : []);
+        } catch (e) { console.error('Answers fetch failed:', e); }
+      };
+
+      const fetchActivity = async () => {
+        try {
+          const res = await fetch('/api/analytics/activity').then(r => r.ok ? r.json() : null);
+          if (res) setActivity(res);
+        } catch (e) { console.error('Activity fetch failed:', e); }
+      };
+
+      await Promise.all([fetchProfile(), fetchQuestions(), fetchAnswers(), fetchActivity()]);
+      setIsFirstLoad(false);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, badges.length, isFirstLoad]);
 
   useEffect(() => {
     if (!authLoading && !user) {

@@ -1,102 +1,149 @@
-import { createSupabaseServer } from './supabase/server';
+/**
+ * usage.ts — SkillBridge AI Credit Gate
+ *
+ * Centralised utility for checking and consuming AI credits.
+ * Rules:
+ *   - Free tier users pull from their credit_wallets balance.
+ *   - Pro tier bypasses the wallet for standard actions (solve, test, study_plan).
+ *   - Elite tier bypasses ALL actions including coaching_report.
+ *   - Wallet deduction is atomic — done in a single Supabase RPC call to prevent
+ *     race conditions on concurrent requests.
+ */
 
-export type UsageType = 'interview' | 'question';
+import { createSupabaseServer } from "@/lib/supabase/server";
+import { SupabaseClient } from "@supabase/supabase-js";
 
-const LIMITS = {
-  free: {
-    interview: 5, // per month
-    question: 100, // per day (increased for testing)
-  },
-  pro: {
-    interview: Infinity,
-    question: Infinity,
-  }
+// ─── Action Cost Table ───────────────────────────────────────────────────────
+export const AI_ACTION_COSTS = {
+  ai_doubt_solve: 2,
+  ai_test_generate: 5,
+  ai_coaching_report: 8,   // charged even on Pro (premium feature)
+  ai_study_plan: 15,
+} as const;
+
+export type AiAction = keyof typeof AI_ACTION_COSTS;
+
+// ─── Plan Hierarchy ──────────────────────────────────────────────────────────
+const PLAN_BYPASS: Record<string, AiAction[]> = {
+  pro: ["ai_doubt_solve", "ai_test_generate", "ai_study_plan"],
+  elite: ["ai_doubt_solve", "ai_test_generate", "ai_coaching_report", "ai_study_plan"],
+  campus: ["ai_doubt_solve", "ai_test_generate", "ai_coaching_report", "ai_study_plan"],
+  institutional: ["ai_doubt_solve", "ai_test_generate", "ai_coaching_report", "ai_study_plan"],
 };
 
-export async function checkAndIncrementUsage(userId: string, type: UsageType): Promise<{ allowed: boolean; remaining: number | string }> {
-  const supabase = await createSupabaseServer();
-  
-  // 1. Get user tier from subscriptions table
+// ─── Result Types ─────────────────────────────────────────────────────────────
+export type CreditCheckResult =
+  | { allowed: true; deducted: number; remainingBalance: number | null }
+  | { allowed: false; reason: "insufficient_credits" | "no_wallet" | "db_error"; balance: number };
+
+// ─── Core Function ────────────────────────────────────────────────────────────
+/**
+ * Checks whether a user can perform an AI action and, if allowed,
+ * atomically deducts the cost from their wallet.
+ *
+ * @param userId  - Supabase auth user ID
+ * @param action  - The AI action being attempted
+ * @param client  - Optional pre-created Supabase server client (for reuse)
+ */
+export async function consumeCredit(
+  userId: string,
+  action: AiAction,
+  client?: SupabaseClient
+): Promise<CreditCheckResult> {
+  const supabase = client ?? await createSupabaseServer();
+  const cost = AI_ACTION_COSTS[action];
+
+  // 1. Fetch the user's active subscription plan
   const { data: sub } = await supabase
-    .from('subscriptions')
-    .select('tier')
-    .eq('user_id', userId)
-    .single();
-  
-  const tier = (sub?.tier || 'free') as 'free' | 'pro';
-  
-  if (tier === 'pro') {
-    return { allowed: true, remaining: 'Unlimited' };
+    .from("subscriptions")
+    .select("plan")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const plan = sub?.plan ?? "free";
+
+  // 2. Check if this plan bypasses the credit requirement for this action
+  const bypassActions = PLAN_BYPASS[plan] ?? [];
+  if (bypassActions.includes(action)) {
+    return { allowed: true, deducted: 0, remainingBalance: null };
   }
 
-  // 2. Get usage
-  const { data: usage, error: usageError } = await supabase
-    .from('user_usage')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
+  // 3. Atomically deduct credits via DB function (prevents race conditions)
+  const { data, error } = await supabase.rpc("consume_ai_credit", {
+    p_user_id: userId,
+    p_action: action,
+  });
 
-  if (usageError && usageError.code !== 'PGRST116') { // PGRST116 is "not found"
-    throw usageError;
+  if (error) {
+    console.error("[usage] consume_ai_credit RPC error:", error.message);
+    return { allowed: false, reason: "db_error", balance: 0 };
   }
 
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-  const thisMonth = today.substring(0, 7); // YYYY-MM
+  // The RPC returns { success: boolean, new_balance: number }
+  const result = data as { success: boolean; new_balance: number };
 
-// If no row exists yet, insert a fresh default row first
-  if (!usage) {
-    const defaultUsage = {
-      user_id: userId,
-      interviews_this_month: 0,
-      questions_today: 0,
-      last_reset_interviews: today,
-      last_reset_questions: today
+  if (!result.success) {
+    return {
+      allowed: false,
+      reason: "insufficient_credits",
+      balance: result.new_balance,
     };
-    const { error: insertError } = await supabase
-      .from('user_usage')
-      .insert(defaultUsage);
-    if (insertError) throw insertError;
   }
-    let currentUsage = usage || {
-    user_id: userId,
-    interviews_this_month: 0,
-    questions_today: 0,
-    last_reset_interviews: today,
-    last_reset_questions: today
+
+  return {
+    allowed: true,
+    deducted: cost,
+    remainingBalance: result.new_balance,
   };
+}
 
-  // Reset logic
-  if (currentUsage.last_reset_questions !== today) {
-    currentUsage.questions_today = 0;
-    currentUsage.last_reset_questions = today;
-  }
+// ─── Balance Query (no deduction) ────────────────────────────────────────────
+export async function getCreditBalance(userId: string): Promise<number> {
+  const supabase = await createSupabaseServer();
+  const { data } = await supabase
+    .from("credit_wallets")
+    .select("balance")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return data?.balance ?? 0;
+}
 
-  if (currentUsage.last_reset_interviews.substring(0, 7) !== thisMonth) {
-    currentUsage.interviews_this_month = 0;
-    currentUsage.last_reset_interviews = today;
-  }
+// ─── Daily free-tier limit check (non-wallet gating) ─────────────────────────
+// Free users get N free solves/day BEFORE touching their wallet. This is
+// tracked via a simple counter in the `usage_daily_log` table.
+export async function checkDailyFreeLimit(
+  userId: string,
+  action: AiAction,
+  dailyMax: number
+): Promise<{ withinLimit: boolean; usedToday: number }> {
+  const supabase = await createSupabaseServer();
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
-  // Check limits
-  const limit = LIMITS.free[type];
-  const currentCount = type === 'interview' ? currentUsage.interviews_this_month : currentUsage.questions_today;
+  const { data } = await supabase
+    .from("usage_daily_log")
+    .select("count")
+    .eq("user_id", userId)
+    .eq("action", action)
+    .eq("date", today)
+    .maybeSingle();
 
-  if (currentCount >= limit) {
-    return { allowed: false, remaining: 0 };
-  }
+  const usedToday = data?.count ?? 0;
+  return { withinLimit: usedToday < dailyMax, usedToday };
+}
 
-  // Increment usage
-  if (type === 'interview') {
-    currentUsage.interviews_this_month += 1;
-  } else {
-    currentUsage.questions_today += 1;
-  }
+export async function incrementDailyUsage(
+  userId: string,
+  action: AiAction
+): Promise<void> {
+  const supabase = await createSupabaseServer();
+  const today = new Date().toISOString().slice(0, 10);
 
-  const { error: updateError } = await supabase
-    .from('user_usage')
-    .upsert(currentUsage, { onConflict: 'user_id' });
-
-  if (updateError) throw updateError;
-
-  return { allowed: true, remaining: limit - (currentCount + 1) };
+  await supabase.rpc("increment_daily_usage", {
+    p_user_id: userId,
+    p_action: action,
+    p_date: today,
+  });
 }

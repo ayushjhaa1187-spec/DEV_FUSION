@@ -53,29 +53,34 @@ export default function SettingsPageClient() {
   useEffect(() => {
     async function loadProfile() {
       if (!user) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (data) {
-        setProfileData(data);
-        setAvatarUrl(data.avatar_url);
-        reset({
-          full_name: data.full_name || '',
-          college: data.college || '',
-          branch: data.branch || '',
-          semester: data.semester || 1,
-          bio: data.bio || '',
-          github_url: data.github_url || '',
-          linkedin_url: data.linkedin_url || '',
-          twitter_url: data.twitter_url || '',
-          website_url: data.website_url || '',
-          subjects: data.subjects || []
-        });
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (data) {
+          setProfileData(data);
+          setAvatarUrl(data.avatar_url);
+          reset({
+            full_name: data.full_name || '',
+            college: data.college || '',
+            branch: data.branch || '',
+            semester: data.semester || 1,
+            bio: data.bio || '',
+            github_url: data.github_url || '',
+            linkedin_url: data.linkedin_url || '',
+            twitter_url: data.twitter_url || '',
+            website_url: data.website_url || '',
+            subjects: data.subjects || []
+          });
+        }
+      } catch (e) {
+        console.error('Settings load failed:', e);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     loadProfile();
   }, [user, reset, supabase]);

@@ -54,10 +54,13 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // Refresh session if expired - mandatory for SSR consistency
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
 
+  // If we have a userError or no user, and it's a protected path, redirect immediately
   const protectedPaths = [
     '/dashboard',
     '/profile',
@@ -65,14 +68,20 @@ export async function middleware(request: NextRequest) {
     '/mentors/book',
     '/practice-tests/take',
     '/admin',
+    '/organization',
   ];
 
   const isProtected = protectedPaths.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   );
 
-  if (!user && isProtected) {
-    return NextResponse.redirect(new URL('/auth', request.url));
+  if ((!user || userError) && isProtected) {
+    const redirectUrl = new URL('/auth', request.url);
+    // Remove all auth cookies on redirect to ensure a clean state
+    const res = NextResponse.redirect(redirectUrl);
+    res.cookies.delete('sb-access-token');
+    res.cookies.delete('sb-refresh-token');
+    return res;
   }
 
   if (user && request.nextUrl.pathname.startsWith('/auth') && !request.nextUrl.pathname.startsWith('/auth/callback')) {

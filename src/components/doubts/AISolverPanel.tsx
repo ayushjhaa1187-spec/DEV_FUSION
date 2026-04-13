@@ -42,7 +42,7 @@ export default function AISolverPanel({ isOpen, onClose, doubtTitle, doubtConten
     setFollowUps([]);
     
     try {
-      const res = await fetch('/api/ai/solve-doubt', {
+      const res = await fetch('/api/ai/solve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: query, content: doubtContent }),

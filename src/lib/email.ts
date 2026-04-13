@@ -1,141 +1,205 @@
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-const DEFAULT_FROM = process.env.RESEND_FROM_EMAIL || 'SkillBridge <no-reply@skillbridge.dev>';
-
 /**
- * Sends notification to organization owner about new membership applicant
+ * lib/email.ts
+ *
+ * Resend-powered transactional email helpers.
+ * All emails are plain HTML (no external template engine) for hackathon speed.
  */
-export async function sendOrganizationApplicationEmail({
-  to,
-  organizationName,
-  applicantName,
-  applicantReputation,
-  dashboardUrl
-}: {
-  to: string;
-  organizationName: string;
-  applicantName: string;
-  applicantReputation: number;
-  dashboardUrl: string;
-}) {
-  return sendGenericEmail({
-    to,
-    subject: `New Application: ${applicantName} wants to join ${organizationName}`,
-    title: 'New Organization Application',
-    message: `<strong>${applicantName}</strong> (Reputation: ${applicantReputation}) has submitted a request to join <strong>${organizationName}</strong>.`,
-    buttonText: 'Review Application',
-    buttonUrl: dashboardUrl
-  });
+
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY!);
+const FROM = process.env.RESEND_FROM_EMAIL || "SkillBridge <noreply@skillbridge.edu>";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface SubscriptionConfirmationArgs {
+  email: string;
+  name: string;
+  plan: string;
+  amount: number;
+  nextBillingDate: string;
+  invoiceId: string;
 }
 
-/**
- * Sends notification to mentor applicant about their approval/rejection status
- */
-export async function sendMentorStatusEmail({
-  to,
-  status,
-  mentorName,
-  dashboardUrl
-}: {
-  to: string;
-  status: 'approved' | 'rejected';
+interface PaymentFailedArgs {
+  email: string;
+  name: string;
+  amount: number;
+  reason: string;
+}
+
+interface CreditPurchaseArgs {
+  email: string;
+  name: string;
+  creditsAdded: number;
+  amount: number;
+  paymentId: string;
+}
+
+interface MentorPayoutArgs {
+  mentorEmail: string;
   mentorName: string;
-  dashboardUrl: string;
-}) {
-  const isApproved = status === 'approved';
-  return sendGenericEmail({
-    to,
-    subject: isApproved ? 'Welcome to the SkillBridge Mentor Circle! 🎓' : 'Update on your Mentor Application',
-    title: isApproved ? 'Application Approved' : 'Application Update',
-    message: isApproved 
-      ? `Congratulations <strong>${mentorName}</strong>! Your application has been approved. You can now set your availability and start hosting sessions.`
-      : `Hi ${mentorName}, thank you for your interest. At this time, we are unable to approve your application. Feel free to re-apply once you have gained more reputation in the community.`,
-    buttonText: isApproved ? 'Go to Dashboard' : 'View Profile',
-    buttonUrl: dashboardUrl
+  grossAmount: number;
+  platformFee: number;
+  mentorPayout: number;
+  commissionRate: number;
+  mentorTier: string;
+  bookingId: string;
+}
+
+// ─── Shared HTML shell ────────────────────────────────────────────────────────
+function emailShell(content: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: #0a0612; color: #e2e8f0; margin: 0; padding: 0; }
+    .wrapper { max-width: 560px; margin: 40px auto; padding: 0 20px; }
+    .card { background: #13111e; border: 1px solid #2d2b3d; border-radius: 16px;
+            overflow: hidden; }
+    .header { background: linear-gradient(135deg, #4f46e5, #7c3aed);
+              padding: 28px 32px; }
+    .header h1 { margin: 0; font-size: 22px; font-weight: 700; color: #fff; }
+    .header p { margin: 4px 0 0; font-size: 13px; color: rgba(255,255,255,0.7); }
+    .body { padding: 28px 32px; }
+    .body p { margin: 0 0 16px; font-size: 15px; line-height: 1.6; color: #cbd5e1; }
+    .row { display: flex; justify-content: space-between; align-items: center;
+           padding: 10px 0; border-bottom: 1px solid #2d2b3d; font-size: 14px; }
+    .row:last-child { border-bottom: none; }
+    .label { color: #94a3b8; }
+    .value { font-weight: 600; color: #f1f5f9; }
+    .cta { display: inline-block; margin: 20px 0 0; background: #4f46e5;
+           color: #fff !important; padding: 12px 24px; border-radius: 8px;
+           text-decoration: none; font-weight: 600; font-size: 14px; }
+    .footer { padding: 20px 32px; border-top: 1px solid #2d2b3d;
+              font-size: 12px; color: #475569; text-align: center; }
+    .badge { display: inline-block; background: rgba(79,70,229,0.15); color: #818cf8;
+             border: 1px solid rgba(79,70,229,0.3); border-radius: 999px;
+             padding: 3px 12px; font-size: 12px; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      ${content}
+    </div>
+    <div style="text-align:center;margin-top:20px;font-size:12px;color:#475569;">
+      © 2026 SkillBridge · <a href="https://skillbridge.edu/unsubscribe" style="color:#6366f1;">Unsubscribe</a>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+// ─── Email Functions ──────────────────────────────────────────────────────────
+export async function sendSubscriptionConfirmationEmail(args: SubscriptionConfirmationArgs) {
+  const nextDate = new Date(args.nextBillingDate).toLocaleDateString("en-IN", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+
+  const html = emailShell(`
+    <div class="header">
+      <h1>🎉 Welcome to SkillBridge ${args.plan}!</h1>
+      <p>Your subscription is now active</p>
+    </div>
+    <div class="body">
+      <p>Hi ${args.name},</p>
+      <p>Your payment was successful. You now have full ${args.plan} access to SkillBridge.</p>
+      <div class="row"><span class="label">Plan</span><span class="value badge">${args.plan}</span></div>
+      <div class="row"><span class="label">Amount Paid</span><span class="value">₹${args.amount.toFixed(2)}</span></div>
+      <div class="row"><span class="label">Next Billing</span><span class="value">${nextDate}</span></div>
+      <div class="row"><span class="label">Invoice ID</span><span class="value" style="font-size:12px;font-family:monospace">${args.invoiceId}</span></div>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/billing/history" class="cta">View Invoice →</a>
+    </div>
+    <div class="footer">SkillBridge · Because every doubt deserves an answer.</div>
+  `);
+
+  return resend.emails.send({
+    from: FROM,
+    to: args.email,
+    subject: `✅ SkillBridge ${args.plan} — Payment Confirmed`,
+    html,
   });
 }
 
-/**
- * Sends booking confirmation to both student and mentor
- */
-export async function sendBookingConfirmationEmail({
-  to,
-  isMentor,
-  otherPartyName,
-  startTime,
-  meetingUrl
-}: {
-  to: string;
-  isMentor: boolean;
-  otherPartyName: string;
-  startTime: string;
-  meetingUrl: string;
-}) {
-  return sendGenericEmail({
-    to,
-    subject: `Meeting Confirmed: ${startTime}`,
-    title: 'Session Scheduled',
-    message: isMentor 
-      ? `A new session has been booked by <strong>${otherPartyName}</strong>.`
-      : `Your session with <strong>${otherPartyName}</strong> is confirmed.`,
-    secondaryMessage: `Time: ${startTime}`,
-    buttonText: 'Join Meeting',
-    buttonUrl: meetingUrl
+export async function sendPaymentFailedEmail(args: PaymentFailedArgs) {
+  const html = emailShell(`
+    <div class="header" style="background:linear-gradient(135deg,#7f1d1d,#991b1b);">
+      <h1>⚠️ Payment Failed</h1>
+      <p>Action required to restore access</p>
+    </div>
+    <div class="body">
+      <p>Hi ${args.name},</p>
+      <p>Unfortunately your payment of <strong>₹${args.amount.toFixed(2)}</strong> could not be processed.</p>
+      <div class="row"><span class="label">Reason</span><span class="value" style="color:#fca5a5">${args.reason}</span></div>
+      <p style="margin-top:20px">Please update your payment method to continue enjoying SkillBridge without interruption.</p>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/billing/plans" class="cta" style="background:#dc2626">Retry Payment →</a>
+    </div>
+    <div class="footer">SkillBridge · Need help? Contact support@skillbridge.edu</div>
+  `);
+
+  return resend.emails.send({
+    from: FROM,
+    to: args.email,
+    subject: "⚠️ SkillBridge — Payment Failed",
+    html,
   });
 }
 
-/**
- * BASE GENERIC TEMPLATE
- */
-async function sendGenericEmail({
-  to,
-  subject,
-  title,
-  message,
-  secondaryMessage,
-  buttonText,
-  buttonUrl
-}: {
-  to: string;
-  subject: string;
-  title: string;
-  message: string;
-  secondaryMessage?: string;
-  buttonText?: string;
-  buttonUrl?: string;
-}) {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: DEFAULT_FROM,
-      to: [to],
-      subject: subject,
-      html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #f0f0f0; border-radius: 16px; background-color: #ffffff; color: #1a1a1a;">
-          <div style="margin-bottom: 24px;">
-             <span style="color: #7c3aed; font-weight: 800; font-size: 24px; letter-spacing: -0.5px;">SkillBridge</span>
-          </div>
-          <h2 style="color: #111827; font-size: 22px; margin-bottom: 16px;">${title}</h2>
-          <p style="font-size: 16px; line-height: 1.6; color: #4b5563; margin-bottom: 24px;">${message}</p>
-          ${secondaryMessage ? `<p style="font-size: 15px; background: #f9fafb; padding: 12px; border-radius: 8px; color: #6b7280; margin-bottom: 24px;">${secondaryMessage}</p>` : ''}
-          ${buttonText && buttonUrl ? `
-            <div style="margin-top: 32px; margin-bottom: 32px;">
-              <a href="${buttonUrl}" style="background-color: #7c3aed; color: white; padding: 14px 28px; border-radius: 10px; text-decoration: none; font-weight: 600; display: inline-block;">${buttonText}</a>
-            </div>
-          ` : ''}
-          <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 32px 0;" />
-          <p style="color: #9ca3af; font-size: 12px; text-align: center;">You received this because an action was taken on your SkillBridge account.<br/>© ${new Date().getFullYear()} SkillBridge Protocol.</p>
-        </div>
-      `,
-    });
+export async function sendCreditPurchaseEmail(args: CreditPurchaseArgs) {
+  const html = emailShell(`
+    <div class="header" style="background:linear-gradient(135deg,#0f4c81,#1e40af);">
+      <h1>🪙 Credits Added!</h1>
+      <p>Your AI wallet has been topped up</p>
+    </div>
+    <div class="body">
+      <p>Hi ${args.name},</p>
+      <p>Your AI credits have been added to your wallet. Start solving doubts!</p>
+      <div class="row"><span class="label">Credits Added</span><span class="value" style="color:#60a5fa">+${args.creditsAdded} credits</span></div>
+      <div class="row"><span class="label">Amount Paid</span><span class="value">₹${args.amount.toFixed(2)}</span></div>
+      <div class="row"><span class="label">Payment ID</span><span class="value" style="font-size:12px;font-family:monospace">${args.paymentId}</span></div>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/doubts" class="cta">Start Solving →</a>
+    </div>
+    <div class="footer">Credits never expire. Use them anytime.</div>
+  `);
 
-    if (error) {
-      console.error('Email Error:', error);
-      return { success: false, error };
-    }
-    return { success: true, data };
-  } catch (err) {
-    console.error('Email caught error:', err);
-    return { success: false, error: err };
-  }
+  return resend.emails.send({
+    from: FROM,
+    to: args.email,
+    subject: `🪙 +${args.creditsAdded} AI Credits Added to Your SkillBridge Wallet`,
+    html,
+  });
+}
+
+export async function sendMentorPayoutEmail(args: MentorPayoutArgs) {
+  const html = emailShell(`
+    <div class="header" style="background:linear-gradient(135deg,#064e3b,#065f46);">
+      <h1>💸 Session Completed — Payout Recorded</h1>
+      <p>Your earnings have been logged for the next payout cycle</p>
+    </div>
+    <div class="body">
+      <p>Hi ${args.mentorName},</p>
+      <p>A session has been marked as completed and your earnings have been recorded.</p>
+      <div class="row"><span class="label">Tier</span><span class="value badge">${args.mentorTier}</span></div>
+      <div class="row"><span class="label">Session Fee</span><span class="value">₹${args.grossAmount.toFixed(2)}</span></div>
+      <div class="row"><span class="label">Platform Fee (${args.commissionRate.toFixed(0)}%)</span><span class="value" style="color:#fca5a5">−₹${args.platformFee.toFixed(2)}</span></div>
+      <div class="row"><span class="label">Your Earnings</span><span class="value" style="color:#34d399;font-size:18px">₹${args.mentorPayout.toFixed(2)}</span></div>
+      <p style="font-size:13px;color:#64748b;margin-top:12px">Payouts are processed on the 1st and 15th of each month. Reduce your commission rate by completing more sessions and maintaining a high rating.</p>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/mentors/dashboard" class="cta">View Earnings Dashboard →</a>
+    </div>
+    <div class="footer">SkillBridge Mentor Programme · Thank you for teaching!</div>
+  `);
+
+  return resend.emails.send({
+    from: FROM,
+    to: args.mentorEmail,
+    subject: `💸 SkillBridge — ₹${args.mentorPayout.toFixed(2)} Earnings Recorded`,
+    html,
+  });
+}
+
+export async function sendGenericEmail(to: string, subject: string, html: string) {
+  return resend.emails.send({ from: FROM, to, subject, html });
 }

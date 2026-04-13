@@ -141,14 +141,21 @@ export default function Navbar() {
                           <p className={styles.dropdownEmail}>{user.email}</p>
                         </div>
                         <div className={styles.divider} />
-                        <Link href={`/u/${profile?.username}`} className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>
-                          <User size={16} /> My Public Profile
-                        </Link>
                         <Link href="/dashboard" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>
-                          <Trophy size={16} /> Dashboard
+                          <Trophy size={16} /> My Dashboard
                         </Link>
+                        {profile?.role === 'admin' && (
+                          <Link href="/admin" className={`${styles.dropdownItem} text-amber-400`} onClick={() => setIsProfileOpen(false)}>
+                            <ShieldAlert size={16} /> Admin Command Hub
+                          </Link>
+                        )}
+                        {(profile?.role === 'organization' || profile?.role === 'campus_admin') && (
+                          <Link href="/organization/dashboard" className={`${styles.dropdownItem} text-indigo-400`} onClick={() => setIsProfileOpen(false)}>
+                            <Trophy size={16} /> Institution Hub
+                          </Link>
+                        )}
                         <Link href="/settings" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>
-                          <FileText size={16} /> Settings
+                          <FileText size={16} /> Identity Settings
                         </Link>
                         <div className={styles.divider} />
                         <button className={`${styles.dropdownItem} ${styles.logout}`} onClick={() => { signOut(); setIsProfileOpen(false); }}>

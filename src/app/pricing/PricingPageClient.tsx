@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Check, Sparkles, Zap, Star } from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 const plans = [
   {
@@ -20,7 +23,8 @@ const plans = [
       '2 free course modules per course',
     ],
     cta: 'Get Started Free',
-    href: '/auth'
+    href: '/auth',
+    planId: null
   },
   {
     name: 'Pro Scholar',
@@ -41,7 +45,8 @@ const plans = [
       'Advanced analytics dashboard'
     ],
     cta: 'Upgrade to Pro',
-    href: '/auth'
+    href: '#',
+    planId: process.env.NEXT_PUBLIC_RAZORPAY_PRO_PLAN_ID || 'plan_Ovwxxx'
   },
   {
     name: 'Campus Pro',
@@ -59,8 +64,9 @@ const plans = [
       'Priority listing in mentor search',
       'Dedicated mentor support'
     ],
-    cta: 'Become a Mentor',
-    href: '/auth'
+    cta: 'Go Elite',
+    href: '#',
+    planId: process.env.NEXT_PUBLIC_RAZORPAY_ELITE_PLAN_ID || 'plan_Ovwyyy'
   }
 ];
 
@@ -72,6 +78,58 @@ const faqs = [
 ];
 
 export default function PricingPageClient() {
+  const router = useRouter();
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const handleCheckout = async (planId: string | null) => {
+    if (!planId) {
+      router.push('/auth');
+      return;
+    }
+    setLoading(planId);
+    try {
+      const res = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan_id: planId })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+            toast.error('Please login to upgrade');
+            router.push('/auth');
+            return;
+        }
+        throw new Error(data.error);
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        subscription_id: data.id,
+        name: 'SkillBridge',
+        description: 'Monthly Subscription',
+        handler: function (response: any) {
+          toast.success('Subscription successful! Your account is upgrading.');
+          router.push('/dashboard/billing');
+        },
+        theme: { color: '#6366f1' } // indigo-500
+      };
+
+      if ((window as any).Razorpay) {
+          const razorpay = new (window as any).Razorpay(options);
+          razorpay.open();
+      } else {
+          toast.error('Payment gateway not loaded yet. Please try again.');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to initiate checkout');
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#0d0d1a] text-white">
       {/* Hero */}
@@ -140,16 +198,30 @@ export default function PricingPageClient() {
               ))}
             </ul>
 
-            <Link
-              href={plan.href}
-              className={`block text-center py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
-                plan.highlight
-                  ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                  : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
-              }`}
-            >
-              {plan.cta}
-            </Link>
+            {plan.planId ? (
+              <button
+                onClick={() => handleCheckout(plan.planId)}
+                disabled={loading !== null}
+                className={`w-full block text-center py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+                  plan.highlight
+                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                    : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                }`}
+              >
+                {loading === plan.planId ? 'Processing...' : plan.cta}
+              </button>
+            ) : (
+              <Link
+                href={plan.href}
+                className={`block text-center py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${
+                  plan.highlight
+                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                    : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                }`}
+              >
+                {plan.cta}
+              </Link>
+            )}
           </motion.div>
         ))}
       </section>
@@ -182,6 +254,7 @@ export default function PricingPageClient() {
           ))}
         </div>
       </section>
+      <script src="https://checkout.razorpay.com/v1/checkout.js" async />
     </main>
   );
 }

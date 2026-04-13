@@ -32,7 +32,16 @@ export default function AuthPageClient() {
         showToast(err, 'error');
       }
     }
-  }, [searchParams, showToast]);
+
+    // Redirect if already logged in
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        router.push('/dashboard');
+      }
+    };
+    checkUser();
+  }, [searchParams, showToast, supabase, router]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();

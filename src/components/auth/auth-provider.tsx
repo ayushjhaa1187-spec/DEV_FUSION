@@ -38,17 +38,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentUser);
         if (currentUser) {
           try {
+            setLoading(true); // Ensure loading is true while fetching profile
             await fetchProfile(currentUser.id);
           } catch (e) {
             console.error("Profile fetch failed:", e);
+          } finally {
+            setLoading(false);
           }
         } else {
           setProfile(null);
+          setLoading(false);
         }
-        setLoading(false);
 
         // Award daily login points when user signs in
-        if (currentUser && _event === 'SIGNED_IN') {
+        if (currentUser && (_event === 'SIGNED_IN' || _event === 'USER_UPDATED')) {
           try {
             await fetch('/api/auth/daily-login', { method: 'POST' });
           } catch (err) {
@@ -58,10 +61,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      if (currentUser) fetchProfile(currentUser.id).catch(console.error);
+      if (currentUser) {
+        try {
+          await fetchProfile(currentUser.id);
+        } catch (e) {
+          console.error(e);
+        }
+      }
       setLoading(false);
     });
 
@@ -70,18 +79,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Clear data immediately for better UI feel
+      setLoading(true);
+      
+      // Perform global sign out to invalidate session on Supabase servers
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Clear local states
       setUser(null);
       setProfile(null);
       
-      // Perform sign out. Using local scope ensures we don't hang on global session issues.
-      await supabase.auth.signOut({ scope: 'local' });
+      // Clear persistence - crucial for "loophole" fix
+      localStorage.clear();
+      sessionStorage.clear();
       
-      // Hard redirect to clear any cached states/cookies
-      window.location.href = '/';
+      // Hard redirect to home to reset environment
+      window.location.replace('/');
     } catch (err) {
       console.error('Error signing out:', err);
-      window.location.href = '/';
+      window.location.replace('/');
     }
   };
 
