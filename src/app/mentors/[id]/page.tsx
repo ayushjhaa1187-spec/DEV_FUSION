@@ -109,18 +109,57 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
     
     setBookingLoading(true);
     try {
-      await bookingApi.create({ slot_id: selectedSlot });
-      setSuccess(true);
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#6366f1', '#10b981', '#ffffff']
+      // 1. Create Razorpay Order
+      const { order_id, amount, currency, key_id } = await mentorApi.createOrder(selectedSlot);
+
+      // 2. Open Razorpay Checkout Modal
+      const options = {
+        key: key_id,
+        amount,
+        currency,
+        name: "SkillBridge Mentorship",
+        description: `Session with ${profile?.full_name ?? 'Mentor'}`,
+        order_id,
+        handler: async (response: any) => {
+          try {
+            // 3. Verify Payment and Create Booking
+            await bookingApi.create({
+              slot_id: selectedSlot,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            setSuccess(true);
+            confetti({
+              particleCount: 150,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ['#6366f1', '#10b981', '#ffffff']
+            });
+            toast.success('Session booked successfully!');
+            setTimeout(() => window.location.href = '/dashboard/sessions', 2000);
+          } catch (err: any) {
+            toast.error(err.message || 'Payment verification failed');
+          }
+        },
+        prefill: {
+          name: user.user_metadata?.full_name || user.email,
+          email: user.email,
+        },
+        theme: {
+          color: "#6366f1", // indigo-600
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', (response: any) => {
+        toast.error('Payment failed: ' + response.error.description);
       });
-      toast.success('Session booked successfully!');
-      setTimeout(() => window.location.href = '/dashboard/sessions', 2000);
+      rzp.open();
+
     } catch (err: any) {
-      toast.error(err.message || 'Booking failed');
+      toast.error(err.message || 'Failed to initiate booking');
     } finally {
       setBookingLoading(false);
     }

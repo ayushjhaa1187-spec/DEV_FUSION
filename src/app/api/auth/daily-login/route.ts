@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { checkAndAwardBadges } from '@/lib/reputation/badges';
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
@@ -7,52 +8,32 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  const iKey  = `daily_login:${user.id}:${today}`;
+  const idempotencyKey = `daily_login:${user.id}:${today}`;
 
-  // award_points handles idempotency via CTE-locked insert
-  const { error } = await supabase.rpc('award_points', {
-    u_id:    user.id,
-    p_count: 2,
-    e_type:  'daily_login',
-    ent_id:  user.id,       // entity is the user themselves
-    i_key:   iKey
+  // 1. Award daily login points via the consolidated RPC (idempotent via idempotency_key)
+  //    Signature: update_reputation(p_user_id, p_action, p_entity_id, p_metadata, p_idempotency_key)
+  const { error: repError } = await supabase.rpc('update_reputation', {
+    p_user_id:         user.id,
+    p_action:          'daily_login',
+    p_entity_id:       null,
+    p_metadata:        {},
+    p_idempotency_key: idempotencyKey,
   });
 
-  if (error) {
-    console.error('Daily login award error:', error);
-    return NextResponse.json({ success: false, error: error.message });
+  if (repError) {
+    console.error('Daily login reputation error:', repError);
+    return NextResponse.json({ success: false, error: repError.message }, { status: 500 });
   }
 
-  // Update streak logic
-  await supabase.rpc('update_login_streak', { u_id: user.id });
-
-  // Check for Streak Master badge (distinct daily logins in last 7 days)
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-  const { count } = await supabase
-    .from('reputation_events')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .eq('event_type', 'daily_login')
-    .gte('created_at', sevenDaysAgo.toISOString());
-
-  if ((count ?? 0) >= 7) {
-    const { data: badge } = await supabase
-      .from('badges')
-      .select('id')
-      .eq('name', 'Streak Master')
-      .single();
-
-    if (badge) {
-      await supabase
-        .from('user_badges')
-        .upsert(
-          { user_id: user.id, badge_id: badge.id },
-          { onConflict: 'user_id,badge_id', ignoreDuplicates: true }
-        );
-    }
+  // 2. Update login streak (handles increment / reset + last_login_at)
+  const { error: streakError } = await supabase.rpc('update_login_streak', { u_id: user.id });
+  if (streakError) {
+    // Non-fatal: points were awarded, streak tracking is secondary
+    console.error('Streak update error:', streakError);
   }
+
+  // 3. Automated Badge Check
+  await checkAndAwardBadges(user.id);
 
   return NextResponse.json({ success: true });
 }

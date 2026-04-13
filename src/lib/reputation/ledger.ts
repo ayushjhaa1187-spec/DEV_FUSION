@@ -1,77 +1,54 @@
 import { createAdminClient } from '../supabase/admin';
 
+/**
+ * Reputation actions supported by the `update_reputation` DB function.
+ * Defined in migration 014_gamification_overhaul.sql.
+ */
 export type ReputationAction =
   | 'post_doubt'
-  | 'answer_upvoted'
-  | 'answer_accepted'
-  | 'test_passed'
-  | 'session_complete'
-  | 'mentor_rated_5';
+  | 'post_answer'
+  | 'accept_answer'
+  | 'vote_up'
+  | 'daily_login'
+  | 'complete_test'
+  | 'streak_bonus';
 
-const POINTS_MAP: Record<ReputationAction, number> = {
-  post_doubt: 5,
-  answer_upvoted: 10,
-  answer_accepted: 25,
-  test_passed: 15,
-  session_complete: 20,
-  mentor_rated_5: 30,
-};
-
+/**
+ * Award reputation points using the admin (service-role) client.
+ * Delegates entirely to the `update_reputation` SECURITY DEFINER function —
+ * no direct table inserts needed; the function handles ledger + profile update.
+ *
+ * Use this from server-side admin contexts (webhooks, cron jobs, etc.).
+ * For user-context server routes, use `addReputationEvent` from reputation-service.ts.
+ */
 export async function awardReputation(
   userId: string,
   action: ReputationAction,
-  referenceId?: string
-): Promise<{ points: number; newTotal: number; badgeUnlocked?: string }> {
+  referenceId?: string,
+  metadata?: Record<string, unknown>,
+): Promise<{ points: number }> {
   const admin = createAdminClient();
-  const points = POINTS_MAP[action];
 
-  // Append-only ledger insert
-  const { error: ledgerError } = await admin
-    .from('reputation_events')
-    .insert({
-      user_id: userId,
-      points_delta: points,
-      action_type: action,
-      reference_id: referenceId ?? null,
-    });
-
-  if (ledgerError) throw new Error(`Ledger insert failed: ${ledgerError.message}`);
-
-  // Atomic counter update via RPC
-  const { error: updateError } = await admin.rpc('update_reputation', {
-    p_user_id: userId,
-    p_action: action,
-    p_ref_id: referenceId ?? null,
+  const { error } = await admin.rpc('update_reputation', {
+    p_user_id:         userId,
+    p_action:          action,
+    p_entity_id:       referenceId ?? null,
+    p_metadata:        metadata ?? {},
+    p_idempotency_key: null,
   });
 
-  if (updateError) throw new Error(`Reputation update failed: ${updateError.message}`);
+  if (error) throw new Error(`Reputation update failed: ${error.message}`);
 
-  // Read updated profile for badge check
-  const { data: profile } = await admin
-    .from('users')
-    .select('reputation_points, badge_level')
-    .eq('id', userId)
-    .single();
+  // Points lookup mirrors the DB CASE block (informational only — DB is authoritative)
+  const POINTS_MAP: Record<ReputationAction, number> = {
+    post_doubt:    10,
+    post_answer:   15,
+    accept_answer: 25,
+    vote_up:       2,
+    daily_login:   5,
+    complete_test: (metadata?.points as number) || 10,
+    streak_bonus:  50,
+  };
 
-  const newTotal = (profile as { reputation_points: number; badge_level: string } | null)?.reputation_points ?? 0;
-  const currentBadge = (profile as { reputation_points: number; badge_level: string } | null)?.badge_level;
-  let badgeUnlocked: string | undefined;
-
-  const badges = [
-    { level: 'Newcomer', threshold: 0 },
-    { level: 'Helper', threshold: 100 },
-    { level: 'Expert', threshold: 500 },
-    { level: 'Legend', threshold: 1500 },
-  ];
-
-  const newBadge = [...badges].reverse().find((b) => newTotal >= b.threshold);
-  if (newBadge && newBadge.level !== currentBadge) {
-    await admin
-      .from('users')
-      .update({ badge_level: newBadge.level })
-      .eq('id', userId);
-    badgeUnlocked = newBadge.level;
-  }
-
-  return { points, newTotal, badgeUnlocked };
+  return { points: POINTS_MAP[action] };
 }

@@ -20,6 +20,8 @@ export interface MentorCardProps {
       bio?: string;
     };
     reputation_points?: number;
+    organization_name?: string;
+    organization_logo?: string;
   };
 }
 
@@ -49,6 +51,19 @@ const MentorCard = memo(function MentorCard({ mentor }: MentorCardProps) {
         </div>
         <span className="ml-auto text-xs text-yellow-400">★ {mentor.mentor_profiles?.rating || '5.0'}</span>
       </div>
+
+      {mentor.organization_name && (
+        <div className="flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-2 py-1 w-fit">
+          {mentor.organization_logo ? (
+            <img src={mentor.organization_logo} alt={mentor.organization_name} className="w-3 h-3 rounded-full" />
+          ) : (
+            <div className="w-3 h-3 bg-indigo-500 rounded-full" />
+          )}
+          <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter line-clamp-1 max-w-[120px]">
+            {mentor.organization_name}
+          </span>
+        </div>
+      )}
 
       <div className="flex gap-3 text-xs text-gray-400">
         <span>Sessions: {mentor.mentor_profiles?.sessions_completed || 0}+</span>

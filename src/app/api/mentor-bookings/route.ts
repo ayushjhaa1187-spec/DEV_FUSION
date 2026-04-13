@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import crypto from 'crypto';
+import { generateJitsiRoomName, getJitsiMeetUrl } from '@/lib/jitsi';
+import { sendBookingConfirmationEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
     // 1. Verify slot is available and get mentor pricing
     const { data: slot, error: slotError } = await supabase
       .from('mentor_slots')
-      .select('mentor_id, is_booked, start_time, mentor_profiles(price_per_session)')
+      .select('mentor_id, status, start_time, mentor_profiles(user_id, hourly_rate)')
       .eq('id', slot_id)
       .single();
 
@@ -22,12 +24,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Slot not found' }, { status: 404 });
     }
 
-    if (slot.is_booked) {
+    if (slot.status !== 'available') {
       return NextResponse.json({ error: 'Slot already booked' }, { status: 400 });
     }
 
     const mentorProfile = slot.mentor_profiles as any;
-    const sessionRate = mentorProfile?.price_per_session || 0;
+    const sessionRate = mentorProfile?.hourly_rate || 0;
 
     // 2. Enforce Razorpay Signature for paid sessions
     if (sessionRate > 0) {
@@ -48,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Create confirmed booking with Jitsi link
-    const meetingRoomId = `sb-${slot_id}-${Math.random().toString(36).substring(7)}`;
+    const jitsiRoomName = generateJitsiRoomName(slot_id + '-' + user.id);
     const { data: booking, error: bookingError } = await supabase
       .from('mentor_bookings')
       .insert({
@@ -56,9 +58,11 @@ export async function POST(req: NextRequest) {
         mentor_id: slot.mentor_id,
         slot_id: slot_id,
         status: 'confirmed', 
-        meeting_link: `https://meet.jit.si/${meetingRoomId}`,
+        jitsi_room_name: jitsiRoomName,
+        meeting_link: getJitsiMeetUrl(jitsiRoomName),
         payment_id: razorpay_payment_id || null,
-        payment_status: sessionRate > 0 ? 'completed' : 'pending'
+        payment_status: sessionRate > 0 ? 'completed' : 'pending',
+        amount_paid: sessionRate
       })
       .select()
       .single();
@@ -67,24 +71,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: bookingError.message }, { status: 500 });
     }
 
-    // 4. Record in transactions table
-    await supabase.from('transactions').insert({
-      user_id: user.id,
-      amount: sessionRate * 100, // stored in paise
-      status: 'completed',
-      type: 'session',
-      razorpay_order_id: razorpay_order_id || null,
-      razorpay_payment_id: razorpay_payment_id || null,
-      entity_id: slot_id
-    });
-
-    // 5. Mark slot as booked
+    // 4. Mark slot as booked
     await supabase
       .from('mentor_slots')
-      .update({ is_booked: true })
+      .update({ status: 'booked' })
       .eq('id', slot_id);
 
-    // 6. Notify mentor with student details
+    // 5. Notify mentor with student details
     const { data: studentProfile } = await supabase
       .from('profiles')
       .select('username, full_name')
@@ -96,13 +89,37 @@ export async function POST(req: NextRequest) {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
     });
 
-    await supabase.from('notifications').insert({
-      user_id: slot.mentor_id,
-      title: '📅 New Session Booking',
-      message: `📅 New booking from ${studentName} for ${slotTime}.`,
-      type: 'booking_confirmed',
       link: '/dashboard/sessions'
     });
+
+    // 6. Send Emails
+    const { data: mentorProfileData } = await supabase
+      .from('profiles')
+      .select('email, full_name, username')
+      .eq('id', slot.mentor_profiles.user_id)
+      .single();
+
+    if (mentorProfileData?.email) {
+      // Notify Mentor
+      await sendBookingConfirmationEmail({
+        to: mentorProfileData.email,
+        isMentor: true,
+        otherPartyName: studentName,
+        startTime: slotTime,
+        meetingUrl: booking.meeting_link
+      });
+    }
+
+    if (user.email) {
+       // Notify Student
+       await sendBookingConfirmationEmail({
+        to: user.email,
+        isMentor: false,
+        otherPartyName: mentorProfileData?.full_name || mentorProfileData?.username || 'Mentor',
+        startTime: slotTime,
+        meetingUrl: booking.meeting_link
+      });
+    }
 
     return NextResponse.json({ success: true, booking });
   } catch (error) {
@@ -110,3 +127,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to process booking' }, { status: 500 });
   }
 }
+

@@ -14,6 +14,7 @@ export default function AuthPageClient() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
+  const [isOrganization, setIsOrganization] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,7 +47,10 @@ export default function AuthPageClient() {
           email,
           password,
           options: {
-            data: { full_name: name },
+            data: { 
+              full_name: name,
+              role: isOrganization ? 'organization' : 'student'
+            },
             emailRedirectTo: `${window.location.origin}/auth/callback`
           },
         });
@@ -103,15 +107,42 @@ export default function AuthPageClient() {
 
         <form onSubmit={handleAuth} className="space-y-4">
           {!isLogin && (
-            <FormInput
-              id="name"
-              label="Full Name"
-              type="text"
-              placeholder="Your Name"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-            />
+            <>
+              <FormInput
+                id="name"
+                label={isOrganization ? "Organization Name" : "Full Name"}
+                type="text"
+                placeholder={isOrganization ? "SkillBridge University" : "Your Name"}
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+              />
+
+              <div className="flex p-1 bg-bg-secondary rounded-lg mb-4">
+                <button
+                  type="button"
+                  onClick={() => setIsOrganization(false)}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
+                    !isOrganization 
+                      ? 'bg-white text-primary shadow-sm' 
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsOrganization(true)}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
+                    isOrganization 
+                      ? 'bg-white text-primary shadow-sm' 
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  Organization
+                </button>
+              </div>
+            </>
           )}
 
           <FormInput

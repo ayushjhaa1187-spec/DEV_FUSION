@@ -18,6 +18,17 @@ export async function GET(
 
     const supabase = await createSupabaseServer();
 
+    // Resolve mentor_profiles.id from id (which could be user_id or mentor_profile.id)
+    const { data: mentorProfile } = await supabase
+      .from('mentor_profiles')
+      .select('id')
+      .or(`id.eq.${id},user_id.eq.${id}`)
+      .single();
+
+    if (!mentorProfile) {
+      return NextResponse.json({ reviews: [], total: 0 });
+    }
+
     // Fetch reviews from confirmed/completed bookings where review exists
     const { data, error, count } = await supabase
       .from('bookings')
@@ -32,7 +43,7 @@ export async function GET(
           avatar_url
         )
       `, { count: 'exact' })
-      .eq('mentor_id', id)
+      .eq('mentor_id', mentorProfile.id)
       .not('review_text', 'is', null)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);

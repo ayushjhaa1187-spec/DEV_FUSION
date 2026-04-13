@@ -39,21 +39,30 @@ export async function POST(
 
     const totalVotes = updatedAnswer?.votes ?? 0;
 
-    // Task 7: Notify Expert if upvoted
+    // Task 7: Notify Author if upvoted + Update Reputation
     if (vote_type === 'up') {
       const { data: authorData } = await supabase
         .from('answers')
-        .select('user_id, doubt_id, doubts(title)')
+        .select('author_id, doubt_id, doubts(title)')
         .eq('id', id)
         .single();
 
-      if (authorData && authorData.user_id !== user.id) {
+      if (authorData && authorData.author_id !== user.id) {
         const doubtTitle = (authorData.doubts as any)?.title || 'your post';
+        
+        // Update reputation via RPC
+        await supabase.rpc('update_reputation', {
+          p_user_id:   authorData.author_id,
+          p_action:    'vote_up',
+          p_entity_id: id,
+        });
+
+        // Send notification (Using reputation_gain as vote_up is not in the ENUM yet)
         await supabase.from('notifications').insert({
-          user_id: authorData.user_id,
+          user_id: authorData.author_id,
           title: '⭐ New Upvote!',
           message: `⭐ Your answer to "${doubtTitle}" received an upvote!`,
-          type: 'vote_up',
+          type: 'reputation_gain',
           link: `/doubts/${authorData.doubt_id}`
         });
       }

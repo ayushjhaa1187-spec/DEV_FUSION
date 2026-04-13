@@ -62,6 +62,8 @@ export const mentorApi = {
   getProfile: (id: string) => apiFetch(`/api/mentors/${id}`),
   getReviews: (id: string, limit = 5, offset = 0) => 
     apiFetch(`/api/mentors/${id}/reviews?limit=${limit}&offset=${offset}`),
+  createOrder: (slotId: string) => 
+    apiFetch('/api/payments/create-order', { method: 'POST', body: JSON.stringify({ slot_id: slotId }) }),
 };
 
 export const bookingApi = {

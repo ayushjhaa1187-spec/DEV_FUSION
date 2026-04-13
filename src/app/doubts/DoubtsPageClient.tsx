@@ -86,16 +86,15 @@ export default function DoubtsPageClient() {
       if (filterType === 'my-branch' && userProfile?.branch) params.branch = userProfile.branch;
       if (filterType === 'my-subjects' && userSubjects.length > 0) {
         params.filter = 'my_subjects';
-        params.user_subjects = userSubjects.join(',');
       }
-      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (searchQuery.trim()) params.q = searchQuery.trim();
 
-      const [doubtsData, subjectsData] = await Promise.all([
+      const [res, subjectsData] = await Promise.all([
         doubtApi.getDoubts(params),
         subjectApi.getSubjects()
       ]);
       
-      setDoubts(doubtsData || []);
+      setDoubts(res.doubts || []);
       if (subjectsData) setSubjects(subjectsData);
     } catch (err: any) {
       setError(err.message || 'Failed to load doubts');
@@ -127,25 +126,31 @@ export default function DoubtsPageClient() {
 
         if (error || !newDoubt) return;
 
-        // Check scroll position
-        const isAtTop = window.scrollY < 100;
+        // Check for duplicates
+        setDoubts(prev => {
+          if (prev.find(d => d.id === newDoubt.id)) return prev;
+          
+          // Check scroll position
+          const isAtTop = window.scrollY < 100;
 
-        if (isAtTop) {
-          setDoubts(prev => [newDoubt, ...prev]);
-        } else {
-          toast.info('New doubt posted!', {
-            action: {
-              label: 'View',
-              onClick: () => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setDoubts(prev => {
-                  if (prev.find(d => d.id === newDoubt.id)) return prev;
-                  return [newDoubt, ...prev];
-                });
+          if (isAtTop) {
+            return [newDoubt, ...prev];
+          } else {
+            toast.info('New doubt posted!', {
+              action: {
+                label: 'View',
+                onClick: () => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  setDoubts(current => {
+                    if (current.find(d => d.id === newDoubt.id)) return current;
+                    return [newDoubt, ...current];
+                  });
+                }
               }
-            }
-          });
-        }
+            });
+            return prev;
+          }
+        });
       })
       .on('postgres_changes', { 
         event: 'UPDATE', 
@@ -303,6 +308,12 @@ export default function DoubtsPageClient() {
                           Solved
                         </div>
                       )}
+                      {doubt.escalation_status === 'requested' && (
+                        <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500/10 text-red-400 text-[10px] font-black uppercase tracking-widest animate-pulse border border-red-500/20">
+                          <Sparkles size={12} className="text-red-500" />
+                          High Priority
+                        </div>
+                      )}
                       {doubt.votes > 0 && (
                         <span className="text-gray-600 text-[10px] font-black uppercase tracking-widest ml-auto">
                           {doubt.votes} VIBES
@@ -315,7 +326,7 @@ export default function DoubtsPageClient() {
                     </h3>
                     
                     <p className="text-gray-500 text-sm mb-12 line-clamp-3 leading-[1.6] font-medium">
-                      {doubt.content_text || 'Synthesizing conceptual breakdown... Click to explore detail.'}
+                      {doubt.content_markdown || doubt.content_text || 'Synthesizing conceptual breakdown... Click to explore detail.'}
                     </p>
 
                     <div className="mt-auto pt-8 border-t border-white/5 flex items-center justify-between">

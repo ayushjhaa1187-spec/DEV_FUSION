@@ -21,20 +21,25 @@ export async function GET(req: NextRequest) {
     const [
       { count: totalUsers },
       { count: totalDoubts },
-      { count: totalSessions },
+      { data: sessionData },
       { data: subjectsWithDoubts },
       { data: topMentors },
       { data: testPerformance },
-      { data: reportedContent }
+      { data: reportedContent },
+      { count: totalEscalated }
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('doubts').select('*', { count: 'exact', head: true }),
-      supabase.from('mentor_bookings').select('*', { count: 'exact', head: true }),
+      supabase.from('mentor_bookings').select('amount_paid'),
       supabase.from('doubts').select('subject_id, subjects(name)'),
       supabase.from('mentor_profiles').select('*, profiles(username, avatar_url)').order('sessions_completed', { ascending: false }).limit(5),
       supabase.from('test_results').select('score, subjects(name)'),
-      supabase.from('doubts').select('*, profiles(username)').eq('is_reported', true)
+      supabase.from('doubts').select('*, profiles(username)').eq('is_reported', true),
+      supabase.from('doubts').select('*', { count: 'exact', head: true }).eq('escalation_status', 'requested')
     ]);
+
+    const totalRevenue = sessionData?.reduce((acc, curr) => acc + (curr.amount_paid || 0), 0) || 0;
+    const totalSessions = sessionData?.length || 0;
 
     // Aggregate in JS for flexibility
     const subjectCounts: Record<string, number> = {};
@@ -56,6 +61,8 @@ export async function GET(req: NextRequest) {
         users: totalUsers,
         doubts: totalDoubts,
         sessions: totalSessions,
+        revenue: totalRevenue,
+        escalated: totalEscalated,
       },
       popularSubjects: Object.entries(subjectCounts).map(([name, count]) => ({ subject_name: name, count })),
       testPerformance: Object.entries(testScores).map(([name, val]) => ({ 

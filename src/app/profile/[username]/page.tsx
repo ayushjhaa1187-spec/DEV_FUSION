@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Edit2, BookOpen, MessageSquare, CalendarCheck, ClipboardList } from 'lucide-react';
+import { Edit2, BookOpen, MessageSquare, CalendarCheck, ClipboardList, Video, ArrowRight } from 'lucide-react';
 import { Metadata } from 'next';
+import PerformanceChart from './PerformanceChart';
 
 const BADGE_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
   Newcomer: { label: 'Newcomer', color: 'bg-gray-100 text-gray-700', emoji: '🌱' },
@@ -124,6 +125,25 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           <StatCard icon={<ClipboardList className="w-6 h-6 text-amber-500" />} label="Tests Taken" value={profile.tests_taken} />
           <StatCard icon={<CalendarCheck className="w-6 h-6 text-purple-500" />} label="Sessions Booked" value={profile.sessions_booked} />
         </div>
+
+        {/* Growth Curve */}
+        <PerformanceChart username={username} />
+
+        {/* Mentor CTA (If applicable) */}
+        {profile.id && profile.is_owner === false && (
+          <div className="bg-gradient-to-br from-indigo-600 to-purple-600 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-indigo-500/20">
+            <div>
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-2">Book a 1:1 Guided Session</h3>
+              <p className="text-indigo-100/70 text-sm font-medium">Get direct mentorship, resume reviews, or technical coaching from @{profile.username}.</p>
+            </div>
+            <Link 
+              href={`/mentors/${profile.id}/book`}
+              className="flex items-center gap-3 px-8 py-4 bg-white text-indigo-600 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition active:scale-95 shadow-lg"
+            >
+              <Video className="w-5 h-5" /> Book Now <ArrowRight size={16} />
+            </Link>
+          </div>
+        )}
 
         {/* Badges Earned */}
         {profile.badges_earned.length > 0 && (

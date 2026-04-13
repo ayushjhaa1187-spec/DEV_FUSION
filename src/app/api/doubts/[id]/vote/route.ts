@@ -63,9 +63,9 @@ export async function POST(
     // Optional: award points to doubt author for upvote (+2)
     if (vote_type === 1) {
       await supabase.rpc('update_reputation', {
-        p_user_id: doubt.author_id,
-        p_action: 'doubt_upvoted',
-        p_ref_id: id,
+        p_user_id:   doubt.author_id,
+        p_action:    'vote_up',
+        p_entity_id: id,
       }).then(({ error: repErr }) => {
         if (repErr) console.warn('[doubt-vote] Reputation failed:', repErr.message);
       });

@@ -28,13 +28,13 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [doubtData, answersData, recsData] = await Promise.all([
-        doubtApi.getDoubt(id),
-        answerApi.getAnswers(id),
-        fetch(`/api/doubts/${id}/recommendations`).then(res => res.json()).catch(() => [])
-      ]);
+      const doubtData = await doubtApi.getDoubt(id);
+      const recsData = await fetch(`/api/doubts/${id}/recommendations`)
+        .then(res => res.json())
+        .catch(() => []);
+      
       setDoubt(doubtData);
-      setAnswers(answersData || []);
+      setAnswers(doubtData.answers || []);
       setRecommendations(recsData || []);
     } catch (err) {
       console.error('Failed to load doubt details');
@@ -73,8 +73,7 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
     setPosting(true);
     try {
       await answerApi.postAnswer(id, { 
-        content: newAnswerJson,
-        content_text: newAnswerText 
+        content_markdown: newAnswerText 
       });
       setNewAnswerJson(null);
       setNewAnswerText('');
@@ -101,9 +100,9 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
   const handleVote = async (answerId: string, type: 'up' | 'down') => {
     if (!user) { alert('Please sign in to vote'); return; }
     try {
-      const { totalVotes } = await answerApi.vote(answerId, type);
+      const { totalVotes, userVote } = await answerApi.vote(answerId, type);
       setAnswers(answers.map(a =>
-        a.id === answerId ? { ...a, votes: totalVotes, user_vote: type } : a
+        a.id === answerId ? { ...a, net_votes: totalVotes, user_vote: userVote } : a
       ));
     } catch (err) {
       console.error('Vote failed');
@@ -194,7 +193,7 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
           </div>
 
           <div className="mb-12">
-            <RichTextRenderer content={doubt.content_jsonb || doubt.content} />
+            <RichTextRenderer content={doubt.content_markdown || doubt.content} />
           </div>
 
           <div className="flex items-center gap-4">
@@ -267,14 +266,14 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
                   </div>
 
                   <div className="mb-10">
-                    <RichTextRenderer content={answer.content_jsonb || answer.content} />
+                    <RichTextRenderer content={answer.content_markdown || answer.content} />
                   </div>
 
                   <div className="flex items-center gap-4">
                      <div className="flex items-center bg-white/5 p-1 rounded-2xl border border-white/5">
                         <button onClick={() => handleVote(answer.id, 'up')} className={`px-5 py-2.5 rounded-xl transition flex items-center gap-2 ${answer.user_vote === 'up' ? 'text-emerald-400 bg-emerald-400/5' : 'text-gray-500 hover:text-emerald-400'}`}>
                           <ThumbsUp size={14} />
-                          <span className="text-[10px] font-black">{answer.votes || 0}</span>
+                          <span className="text-[10px] font-black">{answer.net_votes || 0}</span>
                         </button>
                         <div className="w-px h-5 bg-white/5" />
                         <button onClick={() => handleVote(answer.id, 'down')} className={`px-5 py-2.5 rounded-xl transition ${answer.user_vote === 'down' ? 'text-red-400 bg-red-400/5' : 'text-gray-500 hover:text-red-400'}`}>

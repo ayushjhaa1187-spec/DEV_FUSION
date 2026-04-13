@@ -1,68 +1,45 @@
 import { createSupabaseServer } from './supabase/server';
 
-export type ReputationEventType = 
-  | 'answer_posted' 
-  | 'answer_accepted' 
-  | 'upvote_received' 
-  | 'downvote_received' 
-  | 'test_completed' 
-  | 'ai_resolution' 
-  | 'mentor_session_completed';
+/**
+ * Canonical action types that map to points inside the `update_reputation` DB function.
+ * Defined in migration 014_gamification_overhaul.sql CASE block.
+ */
+export type ReputationAction =
+  | 'post_doubt'       // 10 pts
+  | 'post_answer'      // 15 pts
+  | 'accept_answer'    // 25 pts
+  | 'vote_up'          // 2 pts
+  | 'daily_login'      // 5 pts
+  | 'complete_test'    // dynamic via p_metadata.points, default 10
+  | 'streak_bonus';    // 50 pts
 
-const REPUTATION_POINTS: Record<ReputationEventType, number> = {
-  answer_posted: 10,
-  answer_accepted: 25,
-  upvote_received: 5,
-  downvote_received: -2,
-  test_completed: 15,
-  ai_resolution: 5,
-  mentor_session_completed: 20,
-};
-
+/**
+ * Award reputation by delegating entirely to the `update_reputation` SECURITY DEFINER
+ * function, which handles idempotency, ledger insert, and profile update atomically.
+ *
+ * @param userId         - Target user UUID
+ * @param action         - Reputation action key (must exist in DB CASE block)
+ * @param entityId       - Optional reference entity UUID
+ * @param metadata       - Optional extra metadata (e.g. { points: 20 } for complete_test)
+ * @param idempotencyKey - Optional dedup key; if provided, duplicate calls are a no-op
+ */
 export async function addReputationEvent(
-  userId: string, 
-  eventType: ReputationEventType, 
-  entityId?: string
+  userId: string,
+  action: ReputationAction,
+  entityId?: string,
+  metadata?: Record<string, unknown>,
+  idempotencyKey?: string,
 ) {
   const supabase = await createSupabaseServer();
-  const pointsDelta = REPUTATION_POINTS[eventType];
-  
-  // award_points RPC handles the insert into reputation_events AND the update to profiles
-  const { error } = await supabase.rpc('award_points', {
-    u_id: userId,
-    p_count: pointsDelta,
-    e_type: eventType,
-    ent_id: entityId,
-    i_key: `${eventType}:${userId}:${entityId || Date.now()}`
+
+  const { error } = await supabase.rpc('update_reputation', {
+    p_user_id:         userId,
+    p_action:          action,
+    p_entity_id:       entityId ?? null,
+    p_metadata:        metadata ?? {},
+    p_idempotency_key: idempotencyKey ?? null,
   });
 
-  if (error) throw error;
-
-  // Still check for badges manually for now if the trigger isn't reliable
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('reputation_points')
-    .eq('id', userId)
-    .single();
-
-  const newScore = profile?.reputation_points || 0;
-  await checkBadgeUnlocks(userId, newScore);
-  
-  return { success: true, pointsDelta, newScore };
+  if (error) throw new Error(`Reputation award failed: ${error.message}`);
+  return { success: true };
 }
-
-async function checkBadgeUnlocks(userId: string, currentScore: number) {
-  const supabase = await createSupabaseServer();
-  const { data: badges } = await supabase
-    .from('badges')
-    .select('*')
-    .lte('requirement_points', currentScore);
-  if (!badges) return;
-  for (const badge of badges) {
-    await supabase
-      .from('user_badges')
-      .upsert({ user_id: userId, badge_id: badge.id }, { onConflict: 'user_id,badge_id' });
-  }
-}
-
-

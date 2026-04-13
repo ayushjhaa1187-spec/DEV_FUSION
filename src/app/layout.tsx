@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 
 import { Suspense } from "react";
 import DailyStreakTracker from "@/components/auth/DailyStreakTracker";
+import Script from "next/script";
 
 export default function RootLayout({
   children,
@@ -33,6 +34,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`dark ${spaceGrotesk.variable} ${instrumentSerif.variable}`} style={{ colorScheme: 'dark' }}>
+      <head>
+        <Script 
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body>
         <Providers>
           <Suspense fallback={null}>

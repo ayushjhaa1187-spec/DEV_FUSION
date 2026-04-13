@@ -68,9 +68,9 @@ export async function POST(
 
   // 6. Award reputation to the answerer (+25 for accepted answer)
   await supabase.rpc('update_reputation', {
-    p_user_id: answer.author_id,
-    p_action: 'answer_accepted',
-    p_ref_id: id,
+    p_user_id:   answer.author_id,
+    p_action:    'accept_answer',
+    p_entity_id: id,
   }).then(({ error: repErr }) => {
     if (repErr) console.warn('[accept] Reputation award failed (non-fatal):', repErr.message);
   });

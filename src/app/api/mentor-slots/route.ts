@@ -8,11 +8,21 @@ export async function GET(req: NextRequest) {
 
   if (!mentorId) return NextResponse.json({ error: 'Mentor ID is required' }, { status: 400 });
 
+  // Resolve mentor_profiles.id from profiles.id if necessary
+  // (Assuming frontend might pass the user's UUID)
+  const { data: mentorProfile } = await supabase
+    .from('mentor_profiles')
+    .select('id')
+    .or(`id.eq.${mentorId},user_id.eq.${mentorId}`)
+    .single();
+
+  if (!mentorProfile) return NextResponse.json({ data: [] });
+
   const { data, error } = await supabase
     .from('mentor_slots')
     .select('*')
-    .eq('mentor_id', mentorId)
-    .eq('is_booked', false)
+    .eq('mentor_id', mentorProfile.id)
+    .eq('status', 'available')
     .gt('start_time', new Date().toISOString())
     .order('start_time', { ascending: true });
 
@@ -41,9 +51,10 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase
       .from('mentor_slots')
       .insert({
-        mentor_id: user.id,
+        mentor_id: mentor.id,
         start_time,
-        end_time
+        end_time,
+        status: 'available'
       })
       .select()
       .single();

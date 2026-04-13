@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (!isTimeBased) {
-    // All-time leaderboard
+    // All-time leaderboard: sort by reputation_points on profiles table
     const { data, error } = await profileQuery
       .order('reputation_points', { ascending: false })
       .limit(limit);
@@ -63,13 +63,13 @@ export async function GET(req: NextRequest) {
     const entries = (data as ProfileRow[] || []).map((p, i) => toEntry(p, i + 1));
     return NextResponse.json({ entries, currentUser: undefined });
   } else {
-    // Time-based query using reputation_events table
+    // Time-based: query reputation_history (new consolidated table)
     const days = isWeekly ? 7 : 30;
     const since = new Date();
     since.setDate(since.getDate() - days);
 
     const { data: events, error: eventError } = await supabase
-      .from('reputation_events')
+      .from('reputation_history')
       .select('user_id, points')
       .gte('created_at', since.toISOString());
 

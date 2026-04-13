@@ -10,9 +10,10 @@ export async function GET(req: NextRequest) {
   const limit  = parseInt(searchParams.get('limit')  || '20');
   const offset = parseInt(searchParams.get('offset') || '0');
 
+  // reputation_history is the canonical table (reputation_events was dropped in migration 014)
   const { data, error, count } = await supabase
-    .from('reputation_events')
-    .select('*', { count: 'exact' })
+    .from('reputation_history')
+    .select('id, action, points, entity_id, metadata, created_at', { count: 'exact' })
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -26,15 +27,15 @@ export async function PATCH(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data: events, error: eventError } = await supabase
-    .from('reputation_events')
-    .select('type, count')
+  // Recalculate total from the source-of-truth table and sync to profile
+  const { data: history, error: historyError } = await supabase
+    .from('reputation_history')
+    .select('points')
     .eq('user_id', user.id);
 
-  if (eventError) return NextResponse.json({ error: eventError.message }, { status: 500 });
+  if (historyError) return NextResponse.json({ error: historyError.message }, { status: 500 });
 
-  const { calculateReputation } = await import('@/lib/reputation-utils');
-  const totalPoints = calculateReputation(events || []);
+  const totalPoints = (history || []).reduce((sum, row) => sum + (row.points || 0), 0);
 
   const { error: updateError } = await supabase
     .from('profiles')
@@ -43,14 +44,18 @@ export async function PATCH(req: NextRequest) {
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
-  const { BADGE_THRESHOLDS } = await import('@/lib/reputation-utils');
-  for (const t of BADGE_THRESHOLDS) {
-    if (totalPoints >= t.min) {
-      const { data: badge } = await supabase.from('badges').select('id').eq('name', t.badge).single();
-      if (badge) {
-        await supabase.from('user_badges').upsert({ user_id: user.id, badge_id: badge.id });
-      }
-    }
+  // Auto-award any threshold-based badges the user now qualifies for
+  const { data: allBadges } = await supabase
+    .from('badges')
+    .select('id, name, criteria_value')
+    .eq('criteria_type', 'reputation_points')
+    .lte('criteria_value', totalPoints);
+
+  if (allBadges?.length) {
+    await supabase.from('user_badges').upsert(
+      allBadges.map((b) => ({ user_id: user.id, badge_id: b.id })),
+      { onConflict: 'user_id,badge_id', ignoreDuplicates: true }
+    );
   }
 
   return NextResponse.json({ success: true, newReputation: totalPoints });

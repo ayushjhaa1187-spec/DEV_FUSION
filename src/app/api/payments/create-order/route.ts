@@ -1,60 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Razorpay from 'razorpay';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { razorpay } from '@/lib/razorpay';
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID || '',
-    key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-  });
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { amount, type, entityId } = await req.json();
+    const { slot_id } = await req.json();
 
-    if (!amount || amount <= 0) {
-      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+    if (!slot_id) {
+      return NextResponse.json({ error: 'Slot ID is required' }, { status: 400 });
     }
 
+    // 1. Fetch slot details and mentor price
+    const { data: slot, error: slotError } = await supabase
+      .from('mentor_slots')
+      .select(`
+        id,
+        status,
+        mentor_profiles (
+          id,
+          hourly_rate
+        )
+      `)
+      .eq('id', slot_id)
+      .single();
+
+    if (slotError || !slot) {
+      return NextResponse.json({ error: 'Slot not found' }, { status: 404 });
+    }
+
+    if (slot.status !== 'available') {
+      return NextResponse.json({ error: 'Slot is no longer available' }, { status: 400 });
+    }
+
+    const mentorProfile = slot.mentor_profiles as any;
+    const amount = (mentorProfile?.hourly_rate || 250) * 100; // Razorpay expects amount in paise
+
+    // 2. Create Razorpay order
     const options = {
-      amount: amount * 100, // Razorpay expects paise
-      currency: 'INR',
-      receipt: `receipt_${Date.now()}`,
+      amount,
+      currency: "INR",
+      receipt: `receipt_${slot_id}_${user.id.substring(0, 8)}`,
       notes: {
-        userId: user.id,
-        type,
-        entityId
+        slot_id,
+        student_id: user.id
       }
     };
 
     const order = await razorpay.orders.create(options);
 
-    // Initial transaction record
-    const { error: txError } = await supabase.from('transactions').insert({
-      user_id: user.id,
-      amount: amount * 100,
-      currency: 'INR',
-      status: 'pending',
-      type,
-      razorpay_order_id: order.id,
-      entity_id: type === 'session' ? entityId : null
+    return NextResponse.json({
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
     });
 
-    if (txError) {
-      console.error('Failed to create transaction record:', txError);
-      // We still return the order, but verification might fail if record is missing.
-      // In a real app, you'd want this to be atomic or handle retries.
-    }
-
-    return NextResponse.json(order);
   } catch (error: any) {
-    console.error('Razorpay Order Error:', error);
-    return NextResponse.json({ error: error.message || 'Payment service error' }, { status: 500 });
+    console.error('[Create Order Error]:', error);
+    return NextResponse.json({ error: error.message || 'Failed to create payment order' }, { status: 500 });
   }
 }

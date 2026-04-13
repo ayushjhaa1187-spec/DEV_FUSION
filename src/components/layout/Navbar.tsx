@@ -27,6 +27,7 @@ export default function Navbar() {
     { name: 'Community', href: '/community' },
     { name: 'Practice', href: '/tests' },
     { name: 'Leaderboard', href: '/leaderboard' },
+    { name: 'Organizations', href: '/organizations' },
   ];
 
   // Cmd+K search listener

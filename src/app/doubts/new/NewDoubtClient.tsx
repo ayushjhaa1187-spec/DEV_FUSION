@@ -43,8 +43,7 @@ export default function NewDoubtClient({ subjects }: NewDoubtClientProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
-          content, // The JSON from Tiptap
-          content_text: contentText,
+          content_markdown: contentText, // MDEditor provides markdown in contentText
           subject_id: subjectId || null,
           semester: parseInt(semester),
           ai_attempted: aiAttempted,

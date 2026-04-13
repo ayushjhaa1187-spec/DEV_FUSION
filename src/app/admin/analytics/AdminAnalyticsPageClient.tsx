@@ -48,10 +48,10 @@ export default function AdminAnalyticsPageClient() {
   );
 
   const cardStats = [
-    { label: 'Total Learners', value: data.stats.users, icon: Users, color: '#6366f1' },
-    { label: 'Doubts Resolved', value: data.stats.doubts, icon: MessageSquare, color: '#8b5cf6' },
-    { label: 'Live Sessions', value: data.stats.sessions, icon: Video, color: '#10b981' },
-    { label: 'Avg Rating', value: '4.9', icon: Star, color: '#f59e0b' },
+    { label: 'Total Revenue', value: `₹${data.stats.revenue}`, icon: BarChart3, color: '#10b981' },
+    { label: 'Active Sessions', value: data.stats.sessions, icon: Video, color: '#6366f1' },
+    { label: 'Escalations', value: data.stats.escalated, icon: AlertTriangle, color: '#ef4444' },
+    { label: 'Avg Rating', value: '4.8', icon: Star, color: '#f59e0b' },
   ];
 
   const COLORS = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];

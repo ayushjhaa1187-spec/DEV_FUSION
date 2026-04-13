@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Code2, Sparkles, Copy, Check, Terminal } from 'lucide-react';
+import { Code2, Sparkles, Copy, Check, Terminal, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CodeExplainerPage() {
@@ -132,6 +132,23 @@ export default function CodeExplainerPage() {
                       ))}
                     </div>
                   )}
+
+                  <div className="pt-8 border-t border-gray-800">
+                    <p className="text-sm text-gray-500 mb-6 font-medium italic">
+                      Still feeling stuck? You can post this code snippets to the community to get help from your peers and mentors.
+                    </p>
+                    <button
+                      onClick={() => {
+                        const params = new URLSearchParams();
+                        params.set('title', 'Explain this code: ' + (code.split('\n')[0].slice(0, 50) || 'Doubt'));
+                        params.set('content', code);
+                        window.location.href = `/doubts/ask?${params.toString()}`;
+                      }}
+                      className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 hover:border-indigo-500/50 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
+                    >
+                      Post to Community Hub <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </motion.div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center opacity-40">

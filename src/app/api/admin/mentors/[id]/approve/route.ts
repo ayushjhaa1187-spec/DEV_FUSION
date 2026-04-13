@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { logAuditEvent } from '@/lib/audit';
+import { sendMentorStatusEmail } from '@/lib/email';
 
 export async function POST(
   req: NextRequest,
@@ -28,6 +28,17 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
+    // 1. Fetch application details to get expertise/bio
+    const { data: appData, error: appFetchError } = await supabase
+      .from('mentor_applications')
+      .select('*')
+      .eq('user_id', id)
+      .single();
+
+    if (appFetchError || !appData) {
+      return NextResponse.json({ error: 'Application documentation not found' }, { status: 404 });
+    }
+
     // 2. Update Application Status
     const { error: appError } = await supabase
       .from('mentor_applications')
@@ -36,24 +47,59 @@ export async function POST(
 
     if (appError) throw appError;
 
-    // 3. If approved, update profile role to 'mentor'
+    // 3. If approved, update profile role to 'mentor' and initialize mentor_profile
     if (status === 'approved') {
       await supabase
         .from('profiles')
         .update({ role: 'mentor' })
         .eq('id', id);
 
+      // Initialize/Update mentor profile with data from application
+      const { error: mentorProfileError } = await supabase
+        .from('mentor_profiles')
+        .upsert({
+          id: id,
+          specialty: appData.expertise?.[0] || 'Domain Expert',
+          bio: appData.bio,
+          linkedin_url: appData.linkedin_url,
+          github_url: appData.github_url,
+          availability: appData.availability_type || 'weekdays',
+          is_verified: true,
+          hourly_rate: 0, // Default to 0, mentor can update later
+          rating: 5.0
+        });
+
+      if (mentorProfileError) {
+        console.error('Error upserting mentor profile:', mentorProfileError);
+      }
+
       // Notify User
       await supabase.from('notifications').insert({
         user_id: id,
-        title: 'Application Approved! 🎉',
-        message: 'Congratulations, you are now a verified mentor on SkillBridge.',
-        type: 'badge_earned',
+        title: 'Mentor Application Approved! 🎉',
+        message: 'Congratulations, you are now a verified mentor. Your public profile has been initialized.',
+        type: 'mentor_approved',
         link: '/mentors/profile'
       });
     }
 
-    // 4. Audit log: mentor_approved or mentor_rejected
+    // 4. Send Email Notification (Resend)
+    const { data: applicantProfile } = await supabase
+      .from('profiles')
+      .select('email, full_name, username')
+      .eq('id', id)
+      .single();
+
+    if (applicantProfile?.email) {
+      await sendMentorStatusEmail({
+        to: applicantProfile.email,
+        status: status as 'approved' | 'rejected',
+        mentorName: applicantProfile.full_name || applicantProfile.username || 'Mentor',
+        dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+      });
+    }
+
+    // 5. Audit log
     await logAuditEvent(
       user!.id,
       status === 'approved' ? 'mentor_approved' : 'mentor_rejected',

@@ -7,6 +7,8 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StreakHeatmap } from '@/components/dashboard/StreakHeatmap';
+import OrganizationView from '@/components/dashboard/OrganizationView';
+import { SessionsWidget } from '@/components/dashboard/SessionsWidget';
 import {
   Trophy,
   Zap,
@@ -30,6 +32,7 @@ import {
 } from 'lucide-react';
 import { authApi, doubtApi } from '@/lib/api';
 import styles from './dashboard.module.css';
+import { BadgeUnlockModal } from '@/components/dashboard/BadgeUnlockModal';
 
 function PriorityLearningWidget() {
   const [weakAreas, setWeakAreas] = useState<any[]>([]);
@@ -46,31 +49,62 @@ function PriorityLearningWidget() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="h-40 bg-white/5 rounded-3xl p-8 border border-white/5 animate-pulse" />
+  );
 
   return (
     <div className={styles.sectionCard}>
-      <h3 className={styles.sectionTitle}>
-        <BrainCircuit className="w-5 h-5 text-cyan-400" />
-        Concept Review Queue
-      </h3>
+      <div className="flex items-center justify-between mb-6">
+        <h3 className={styles.sectionTitle + " mb-0"}>
+          <BrainCircuit className="w-5 h-5 text-cyan-400" />
+          Concept Review Queue
+        </h3>
+        {weakAreas.length > 0 && (
+          <Link href="/tests" className="text-[10px] font-black text-cyan-400 hover:text-cyan-300 uppercase tracking-widest bg-cyan-400/10 px-2 py-1 rounded">
+             Rapid Practise
+          </Link>
+        )}
+      </div>
       {!Array.isArray(weakAreas) || weakAreas.length === 0 ? (
         <div className="text-center py-8 text-gray-400">
           <div className="text-4xl mb-2">✨</div>
-          Absolute Mastery. You've cleared your review queue!
+          <div className="font-bold text-white mb-1">Absolute Mastery</div>
+          <p className="text-xs">You've cleared your high-priority review queue!</p>
         </div>
       ) : (
-        weakAreas.map((area, idx) => (
-          <div key={idx} className={styles.reviewItem}>
-            <div className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">
-              Priority Topic
+        <div className="space-y-4">
+          {weakAreas.map((area, idx) => (
+            <div key={idx} className={styles.reviewItem}>
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">
+                    Priority Topic
+                  </div>
+                  <h4 className="font-bold text-white mb-1">{area.name}</h4>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-cyan-400 transition-all duration-1000" 
+                        style={{ width: `${area.avg}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-gray-400">{area.avg}% Mastery</span>
+                  </div>
+                </div>
+                <Link 
+                  href={`/tests?subject=${area.id}`}
+                  className="p-2 bg-white/5 rounded-xl border border-white/5 hover:border-cyan-400/50 text-cyan-400 transition-all"
+                >
+                  <Rocket size={16} />
+                </Link>
+              </div>
             </div>
-            <h4 className="font-semibold text-white mb-1">{area.name}</h4>
-            <p className="text-sm text-gray-400">
-              Avg Score: {area.avg}% • Accuracy Gap Detected
-            </p>
-          </div>
-        ))
+          ))}
+          <Link href="/tests" className="block text-center text-[10px] font-bold text-gray-500 hover:text-white transition-colors pt-2 uppercase tracking-widest">
+            View All Performance Logs
+          </Link>
+        </div>
       )}
     </div>
   );
@@ -139,7 +173,10 @@ export default function DashboardPageClient() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [answers, setAnswers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('questions');
+  const [activeTab, setActiveTab] = useState(user?.user_metadata?.role === 'organization' ? 'organization' : 'questions');
+  const [newlyUnlockedBadge, setNewlyUnlockedBadge] = useState<any>(null);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [activity, setActivity] = useState({ doubts: 0, tests: 0, answers: 0 });
 
   const supabase = createSupabaseBrowser();
 
@@ -153,10 +190,11 @@ export default function DashboardPageClient() {
   const fetchData = useCallback(async () => {
     if (!user) return;
     try {
-      const [profileRes, questionsRes, answersRes] = await Promise.allSettled([
+      const [profileRes, questionsRes, answersRes, activityRes] = await Promise.allSettled([
         authApi.getMyProfile(),
         doubtApi.getDoubts({ author_id: user.id }),
         authApi.getMyAnswers(),
+        fetch('/api/analytics/activity').then(r => r.json()),
       ]);
       
       if (profileRes.status === 'fulfilled') {
@@ -167,7 +205,19 @@ export default function DashboardPageClient() {
           accepted: profileData.stats?.accepted ?? 0,
           doubts: profileData.stats?.doubts ?? 0,
         });
-        setBadges(profileData.badges || []);
+
+        const newBadges = profileData.badges || [];
+        
+        // Show modal only if not first load and badges increased
+        if (!isFirstLoad && newBadges.length > badges.length) {
+          const addedBadge = newBadges.find((nb: any) => 
+            !badges.some((ob: any) => ob.badge_id === nb.badge_id)
+          );
+          if (addedBadge) setNewlyUnlockedBadge(addedBadge);
+        }
+
+        setBadges(newBadges);
+        setIsFirstLoad(false);
       }
       
       if (questionsRes.status === 'fulfilled') {
@@ -176,6 +226,9 @@ export default function DashboardPageClient() {
       
       if (answersRes.status === 'fulfilled') {
         setAnswers(Array.isArray(answersRes.value) ? answersRes.value : []);
+      }
+      if (activityRes.status === 'fulfilled') {
+        setActivity(activityRes.value);
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -231,6 +284,10 @@ export default function DashboardPageClient() {
 
   return (
     <div className={styles.dashboardContainer}>
+      <BadgeUnlockModal 
+        badge={newlyUnlockedBadge} 
+        onClose={() => setNewlyUnlockedBadge(null)} 
+      />
       <header className={styles.headerCard}>
         <div className={styles.headerContent}>
           <div className={styles.avatarLarge}>{initials}</div>
@@ -274,23 +331,27 @@ export default function DashboardPageClient() {
         {[
           { label: 'Doubts Asked', value: stats.doubts ?? 0, icon: MessageSquare, color: 'purple' },
           { label: 'Answers Given', value: stats.answers ?? 0, icon: Award, color: 'blue' },
-          { label: 'Accepted', value: stats.accepted ?? 0, icon: Check, color: 'green' },
+          { label: 'Learning Momentum', value: `+${activity.doubts + activity.tests + activity.answers}`, icon: Zap, color: 'emerald' },
           { label: 'Global Rank', value: '#124', icon: TrendingUp, color: 'amber' },
         ].map((stat, i) => (
           <div key={i} className={styles.statCard}>
             <div className={`p-2 rounded-lg bg-white/5 w-fit mx-auto mb-3 text-gray-400`}>
-              <stat.icon />
+              <stat.icon size={20} />
             </div>
-            <div className={`${styles.statValue}${styles[stat.color]}`}>
+            <div className={`${styles.statValue} ${styles[stat.color]}`}>
               {stat.value}
             </div>
             <div className={styles.statLabel}>{stat.label}</div>
+            {stat.label === 'Learning Momentum' && (
+              <div className="text-[10px] text-emerald-400/60 font-bold mt-1">LAST 7 DAYS</div>
+            )}
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
+           <SessionsWidget />
            <div className={styles.sectionCard}>
             <h3 className={styles.sectionTitle}>
               <Flame className="w-5 h-5 text-orange-400" />
@@ -300,10 +361,22 @@ export default function DashboardPageClient() {
           </div>
 
           <div className={styles.sectionCard}>
-            <div className="flex gap-4 border-b border-white/10 pb-4 mb-6">
+            <div className="flex gap-4 border-b border-white/10 pb-4 mb-6 overflow-x-auto">
+              {profile?.role === 'organization' && (
+                <button
+                  onClick={() => setActiveTab('organization')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
+                    activeTab === 'organization'
+                      ? 'bg-white/10 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Organization Hub
+                </button>
+              )}
               <button
                 onClick={() => setActiveTab('questions')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
                   activeTab === 'questions'
                     ? 'bg-white/10 text-white'
                     : 'text-gray-400 hover:text-white'
@@ -313,7 +386,7 @@ export default function DashboardPageClient() {
               </button>
               <button
                 onClick={() => setActiveTab('answers')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
                   activeTab === 'answers'
                     ? 'bg-white/10 text-white'
                     : 'text-gray-400 hover:text-white'
@@ -322,6 +395,11 @@ export default function DashboardPageClient() {
                 Contributions ({answers.length})
               </button>
             </div>
+
+            {activeTab === 'organization' && profile?.id && (
+              <OrganizationView orgId={profile.id} />
+            )}
+
             {activeTab === 'questions' ? (
               questions.length > 0 ? (
                 questions.map((item, idx) => (

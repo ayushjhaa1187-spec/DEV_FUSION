@@ -1,18 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { doubtApi, aiApi, subjectApi } from '@/lib/api';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import './doubts-ask.css';
 
 export default function AskDoubtPageClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [subjects, setSubjects] = useState<any[]>([]);
   const [formData, setFormData] = useState({
-    title: '',
-    content: null as any,
-    subject_id: '',
+    title: searchParams.get('title') || '',
+    content: searchParams.get('content') || null,
+    subject_id: searchParams.get('subject_id') || '',
     branch: '',
     semester: '',
   });
@@ -25,6 +26,15 @@ export default function AskDoubtPageClient() {
   useEffect(() => {
     subjectApi.getSubjects().then(setSubjects).catch(console.error);
   }, []);
+
+  // Sync content if it comes as a string from searchParams
+  useEffect(() => {
+    const content = searchParams.get('content');
+    if (content && !formData.content) {
+      // If it's plain text, we might want to wrap it in a basic TipTap JSON structure or just leave it for the editor to handle
+      setFormData(prev => ({ ...prev, content }));
+    }
+  }, [searchParams]);
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();

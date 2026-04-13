@@ -32,26 +32,38 @@ export async function POST(
   }
 
   try {
-    const { content } = await req.json();
+    const { content_markdown } = await req.json();
 
-    const { data, error } = await supabase
+    if (!content_markdown || content_markdown.length < 10) {
+      return NextResponse.json({ error: 'Answer content is too short' }, { status: 400 });
+    }
+
+    const { data: answer, error } = await supabase
       .from('answers')
       .insert({
         doubt_id: id,
         author_id: user.id,
-        content
+        content: content_markdown, // legacy redundancy
+        content_markdown,
       })
-      .select()
+      .select(`
+        *,
+        profiles:author_id (
+          username,
+          avatar_url,
+          reputation_points
+        )
+      `)
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    const answer = data;
+
 
     // Award reputation for posting an answer
     await supabase.rpc('update_reputation', {
-      p_user_id: user.id,
-      p_action: 'post_answer',
-      p_ref_id: answer.id,
+      p_user_id:   user.id,
+      p_action:    'post_answer',
+      p_entity_id: answer.id,
     }).then(({ error: repErr }) => {
       if (repErr) console.warn('Reputation award failed (non-fatal):', repErr.message);
     });
@@ -75,12 +87,16 @@ export async function POST(
         user_id: doubt.author_id,
         type: 'answer_posted',
         title: 'New Answer Received',
-        message: `${profile?.username ?? 'Someone'} answered your doubt: "${doubt.title?.slice(0, 60)}"`,
+        message: `${profile?.username ?? 'Someone'} answered your doubt`,
+        metadata: {
+          doubt_title: doubt.title,
+          answer_id: answer.id
+        },
         link: `/doubts/${id}`
       });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(answer);
   } catch (error) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
   }
