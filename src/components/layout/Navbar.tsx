@@ -15,7 +15,6 @@ import styles from './Navbar.module.css';
 export default function Navbar() {
   const { user, profile, signOut } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);

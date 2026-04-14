@@ -27,7 +27,38 @@ export default async function ProfilePage() {
   if (role === 'organization' || role === 'campus_admin') {
     redirect('/organization/dashboard');
   }
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error('Profile query failed:', profileError.message);
+  }
+
+  let ensuredProfile = profile;
+  if (!ensuredProfile) {
+    const { data: createdProfile, error: upsertError } = await supabase
+      .from('profiles')
+      .upsert(
+        {
+          id: user.id,
+          full_name: user.user_metadata?.full_name || '',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' },
+      )
+      .select('*')
+      .single();
+
+    if (upsertError) {
+      console.error('Profile upsert failed:', upsertError.message);
+    } else {
+      ensuredProfile = createdProfile;
+    }
+  }
 
   const { data: badges } = await supabase
     .from('user_badges')
@@ -36,7 +67,7 @@ export default async function ProfilePage() {
 
   return (
     <Suspense fallback={<Loading />}>
-      <ProfilePageClient user={user} initialProfile={profile} initialBadges={badges || []} />
+      <ProfilePageClient user={user} initialProfile={ensuredProfile} initialBadges={badges || []} />
     </Suspense>
   );
 }

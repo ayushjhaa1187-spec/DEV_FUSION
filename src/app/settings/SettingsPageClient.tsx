@@ -15,6 +15,7 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import AvailabilityGrid from '@/components/settings/AvailabilityGrid';
+import { toast } from 'sonner';
 
 type ProfileFormData = {
   full_name: string;
@@ -112,9 +113,9 @@ export default function SettingsPageClient() {
         .eq('id', user.id);
 
       if (updateError) throw updateError;
-      alert('Avatar updated!');
+      toast.success('Avatar updated!');
     } catch (err: any) {
-      alert(`Upload failed: ${err.message}`);
+      toast.error(`Upload failed: ${err.message}`);
     } finally {
       setUploading(false);
     }
@@ -142,9 +143,9 @@ export default function SettingsPageClient() {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error('Failed to update');
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setSaving(false);
     }
@@ -159,9 +160,9 @@ export default function SettingsPageClient() {
         .eq('id', user?.id);
       
       if (error) throw error;
-      alert('Availability schedule updated!');
+      toast.success('Availability schedule updated!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }

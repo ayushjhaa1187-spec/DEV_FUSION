@@ -28,3 +28,5 @@ export async function createSupabaseServer() {
 export async function createServerClientWrapper() {
   return createSupabaseServer();
 }
+
+export const createServerClientAlias = createSupabaseServer;
