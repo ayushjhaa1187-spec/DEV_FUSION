@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }, { apiVersion: 'v1' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = `You are an expert academic mentor for college students.\nSubject: ${subject || 'General'}\nStudent's doubt: ${question}\n\nProvide a clear, structured answer with:\n1. Core Concept\n2. Step-by-step Solution\n3. Key Points to Remember\n4. Related Topics\n\nKeep the tone friendly and encouraging.`;
 

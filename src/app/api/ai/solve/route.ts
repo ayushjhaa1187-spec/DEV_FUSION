@@ -1,7 +1,7 @@
 /**
  * /api/ai/solve/route.ts
  *
- * Streams a Gemini 1.5 Pro answer for a user's doubt.
+ * Streams a Gemini 2.0 Flash answer for a user's doubt.
  * Gating order:
  *   1. Auth check
  *   2. Daily free limit (Free tier: 5/day at no credit cost)
@@ -118,8 +118,8 @@ export async function POST(req: NextRequest) {
   // 4. Stream from Gemini
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
-  }, { apiVersion: 'v1' });
+    model: "gemini-2.0-flash",
+  });
 
   const prompt = `${buildSystemPrompt(subject, difficulty)}\n\n---\nStudent Query: ${queryText}`;
 
