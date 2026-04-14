@@ -97,6 +97,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
           setLoading(false);
         }
+
+        if (event === 'SIGNED_OUT') {
+          router.replace('/');
+          router.refresh();
+        }
       } else {
         setProfile(null);
         setLoading(false);
@@ -122,11 +127,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [router, supabase]);
 
   const signOut = async () => {
-    await supabase.auth.signOut({ scope: 'global' });
-    setUser(null);
-    setProfile(null);
-    router.replace('/');
-    router.refresh();
+    try {
+      setLoading(true);
+
+      await supabase.auth.signOut({ scope: 'global' });
+
+      setUser(null);
+      setProfile(null);
+      router.replace('/');
+      router.refresh();
+    } catch (err) {
+      console.error('Error signing out:', err);
+      router.replace('/');
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
   };
 
   return <AuthContext.Provider value={{ user, profile, loading, signOut }}>{children}</AuthContext.Provider>;

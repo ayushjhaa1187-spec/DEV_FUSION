@@ -6,12 +6,14 @@ const PROTECTED_ROUTES = [
   '/profile',
   '/settings',
   '/doubts/new',
+  '/doubts/ask',
   '/mentors/book',
   '/sessions',
   '/tests',
   '/admin',
   '/onboarding',
   '/ai-tools',
+  '/organization/dashboard',
 ];
 
 const AUTH_ROUTES = ['/auth', '/auth/login', '/auth/register', '/auth/signup'];
@@ -59,7 +61,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isAuthRoute && session && !path.startsWith('/auth/callback')) {
+  if (isAuthRoute && !path.startsWith('/auth/callback') && session) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -67,5 +69,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|public|api/public).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api/public|public).*)',
+  ],
 };
