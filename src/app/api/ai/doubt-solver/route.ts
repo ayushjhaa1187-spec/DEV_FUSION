@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    let model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    let model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `You are an expert academic mentor for college students.\nSubject: ${subject || 'General'}\nStudent's doubt: ${question}\n\nProvide a clear, structured answer with:\n1. Core Concept\n2. Step-by-step Solution\n3. Key Points to Remember\n4. Related Topics\n\nKeep the tone friendly and encouraging.`;
 
@@ -23,9 +23,9 @@ export async function POST(req: NextRequest) {
     try {
       const result = await model.generateContent(prompt);
       text = result.response.text();
-    } catch (modelErr) {
-      console.warn("[doubt-solver] Gemini 2.0 failed, falling back to 1.5:", modelErr);
-      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    } catch (modelErr: any) {
+      console.warn("[doubt-solver] Gemini 2.5 failed, falling back to flash-latest:", modelErr.message);
+      model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
       const result = await model.generateContent(prompt);
       text = result.response.text();
     }

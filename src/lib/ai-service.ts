@@ -11,8 +11,8 @@ const API_KEY = getGeminiApiKey();
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Direct and stable model selection with fallback
-export const MODEL_NAME = 'gemini-2.0-flash';
-export const FALLBACK_MODEL = 'gemini-1.5-flash';
+export const MODEL_NAME = 'gemini-2.5-flash';
+export const FALLBACK_MODEL = 'gemini-flash-latest';
 
 /**
  * Robustly gets a generative model with fallback capability

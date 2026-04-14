@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     let model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     });
 
@@ -34,10 +34,10 @@ export async function POST(req: NextRequest) {
     try {
       const result = await model.generateContent(prompt);
       text = result.response.text();
-    } catch (modelErr) {
-      console.warn("[quiz-generator] Gemini 2.0 failed, falling back to 1.5:", modelErr);
+    } catch (modelErr: any) {
+      console.warn("[quiz-generator] Gemini 2.5 failed, falling back to flash-latest:", modelErr.message);
       model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-flash-latest',
         generationConfig: { responseMimeType: 'application/json' },
       });
       const result = await model.generateContent(prompt);

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(apiKey);
-    let model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    let model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `You are a college-level teaching assistant. Explain the following student's doubt step by step.
 Follow this specific structure:
@@ -42,11 +42,9 @@ Doubt Content: ${typeof content === 'string' ? content : JSON.stringify(content)
     let streamResult;
     try {
       streamResult = await model.generateContentStream(prompt);
-      // Small check to see if the stream actually starts (throws if model unavailable)
-      await streamResult.response;
     } catch (modelErr: any) {
-      console.warn("[solve-doubt] Gemini 2.0 failed, falling back to 1.5:", modelErr.message);
-      model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      console.warn("[solve-doubt] Gemini 2.5 failed, falling back to flash-latest:", modelErr.message);
+      model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
       streamResult = await model.generateContentStream(prompt);
     }
 
