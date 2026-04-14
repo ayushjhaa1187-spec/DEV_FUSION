@@ -9,7 +9,8 @@ interface ReputationBadgeProps {
   showBadges?: boolean;
 }
 
-export default function ReputationBadge({ points, showBadges = false }: ReputationBadgeProps) {
+export default function ReputationBadge({ points: rawPoints, showBadges = false }: ReputationBadgeProps) {
+  const points = Number(rawPoints) || 0;
   const rank = getRank(points);
   const unlockedBadges = getUnlockedBadges(points);
 
