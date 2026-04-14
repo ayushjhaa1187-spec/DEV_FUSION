@@ -5,8 +5,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { FormInput } from '@/components/ui/FormInput';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
+
+type SignupRole = 'student' | 'mentor' | 'organization';
+
+function getRoleRedirect(role?: string | null) {
+  if (role === 'mentor') return '/mentors/dashboard';
+  if (role === 'organization' || role === 'campus_admin') return '/organization/dashboard';
+  return '/dashboard';
+}
 
 export default function AuthPageClient() {
   const [email, setEmail] = useState('');
@@ -14,7 +22,7 @@ export default function AuthPageClient() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
-  const [isOrganization, setIsOrganization] = useState(false);
+  const [role, setRole] = useState<SignupRole>('student');
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -33,13 +41,14 @@ export default function AuthPageClient() {
       }
     }
 
-    // Redirect if already logged in
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        router.push('/dashboard');
-      }
+      if (!user) return;
+
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      router.push(getRoleRedirect(profile?.role));
     };
+
     checkUser();
   }, [searchParams, showToast, supabase, router]);
 
@@ -51,29 +60,37 @@ export default function AuthPageClient() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
+        const { data: authState } = await supabase.auth.getUser();
+        const userId = authState.user?.id;
+
+        if (userId) {
+          await supabase.rpc('process_login_streak', { p_user_id: userId });
+          const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle();
+          router.push(getRoleRedirect(profile?.role));
+        } else {
+          router.push('/dashboard');
+        }
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { 
+            data: {
               full_name: name,
-              role: isOrganization ? 'organization' : 'student'
+              role,
             },
-            emailRedirectTo: `${window.location.origin}/auth/callback`
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
+
         if (error) throw error;
         showToast('Check your email for the confirmation link.', 'info');
         return;
       }
-      
-      // Attempt login streak tracking on successful login
-      await supabase.rpc('process_login_streak', { p_user_id: (await supabase.auth.getUser()).data.user?.id });
-      
-      router.push('/dashboard');
-    } catch (err: any) {
-      showToast(err.message || 'Authentication failed', 'error');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Authentication failed';
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }
@@ -83,7 +100,7 @@ export default function AuthPageClient() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { 
+        options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
@@ -92,15 +109,17 @@ export default function AuthPageClient() {
         },
       });
       if (error) throw error;
-    } catch (err: any) {
-      console.error('Google Auth Error:', err);
-      if (err.message?.includes('provider') || err.message?.includes('not enabled') || err.message?.includes('unsupported')) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Google Auth failed';
+      if (message.includes('provider') || message.includes('not enabled') || message.includes('unsupported')) {
         showToast('Google sign-in is not enabled in your Supabase Dashboard.', 'error');
       } else {
-        showToast(err.message || 'Google Auth failed', 'error');
+        showToast(message, 'error');
       }
     }
   };
+
+  const isOrganization = role === 'organization';
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -119,37 +138,27 @@ export default function AuthPageClient() {
             <>
               <FormInput
                 id="name"
-                label={isOrganization ? "Organization Name" : "Full Name"}
+                label={isOrganization ? 'Organization Name' : 'Full Name'}
                 type="text"
-                placeholder={isOrganization ? "SkillBridge University" : "Your Name"}
+                placeholder={isOrganization ? 'SkillBridge University' : 'Your Name'}
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={(e) => setName(e.target.value)}
                 required
               />
 
-              <div className="flex p-1 bg-bg-secondary rounded-lg mb-4">
-                <button
-                  type="button"
-                  onClick={() => setIsOrganization(false)}
-                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
-                    !isOrganization 
-                      ? 'bg-white text-primary shadow-sm' 
-                      : 'text-text-secondary hover:text-text-primary'
-                  }`}
-                >
-                  Student
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsOrganization(true)}
-                  className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
-                    isOrganization 
-                      ? 'bg-white text-primary shadow-sm' 
-                      : 'text-text-secondary hover:text-text-primary'
-                  }`}
-                >
-                  Organization
-                </button>
+              <div className="grid grid-cols-3 gap-2 p-1 bg-bg-secondary rounded-lg mb-4">
+                {(['student', 'mentor', 'organization'] as SignupRole[]).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRole(r)}
+                    className={`py-2 text-sm font-semibold rounded-md transition-all ${
+                      role === r ? 'bg-white text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
+                    }`}
+                  >
+                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  </button>
+                ))}
               </div>
             </>
           )}
@@ -160,7 +169,7 @@ export default function AuthPageClient() {
             type="email"
             placeholder="you@college.edu"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
 
@@ -171,7 +180,7 @@ export default function AuthPageClient() {
               type="password"
               placeholder="••••••••"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
             {isLogin && (
@@ -200,9 +209,9 @@ export default function AuthPageClient() {
         </form>
 
         <div className="my-6 flex items-center gap-4">
-          <div className="h-px bg-border-color flex-1"></div>
+          <div className="h-px bg-border-color flex-1" />
           <span className="text-xs text-text-secondary font-medium uppercase tracking-widest">Or</span>
-          <div className="h-px bg-border-color flex-1"></div>
+          <div className="h-px bg-border-color flex-1" />
         </div>
 
         <Button
@@ -212,10 +221,10 @@ export default function AuthPageClient() {
           className="w-full flex items-center justify-center gap-3 bg-bg-secondary hover:bg-bg-tertiary"
           icon={
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
-              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
-              <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+              <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853" />
+              <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05" />
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335" />
             </svg>
           }
         >
