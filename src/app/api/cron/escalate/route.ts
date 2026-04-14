@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function GET(req: NextRequest) {
   // Optional: Verify a cron secret to prevent abuse
@@ -48,7 +47,7 @@ export async function GET(req: NextRequest) {
       // 4. Send email notifications
       for (const mentor of mentors) {
         try {
-          await resend.emails.send({
+          await sendEmail({
             from: process.env.RESEND_FROM_EMAIL || 'SkillBridge <notifications@skillbridge.edu>',
             to: (mentor.profiles as any).email,
             subject: `🚨 Priority Escalation: ${doubt.title}`,

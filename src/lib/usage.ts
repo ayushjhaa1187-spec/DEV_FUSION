@@ -147,3 +147,72 @@ export async function incrementDailyUsage(
     p_date: today,
   });
 }
+
+
+// Backward-compatible helper used by existing quiz routes
+export async function checkAndIncrementUsage(userId: string, _bucket: string): Promise<{ allowed: boolean; remaining: number }> {
+  const DAILY_LIMIT = 10;
+  const { withinLimit, usedToday } = await checkDailyFreeLimit(userId, 'ai_test_generate', DAILY_LIMIT);
+  if (!withinLimit) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  await incrementDailyUsage(userId, 'ai_test_generate');
+  return { allowed: true, remaining: Math.max(0, DAILY_LIMIT - usedToday - 1) };
+}
+
+
+export async function getUserPlan(userId: string): Promise<string> {
+  const supabase = await createSupabaseServer();
+  const { data } = await supabase
+    .from('subscriptions')
+    .select('plan')
+    .eq('user_id', userId)
+    .in('status', ['active', 'authenticated'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data?.plan ?? 'free';
+}
+
+export async function enforcePlanLimit(
+  userId: string,
+  action: 'ai_doubt_solve' | 'ai_test_generate',
+  limits: { free: number; pro: number; elite: number | null },
+  period: 'daily' | 'weekly'
+): Promise<{ allowed: boolean; remaining: number | null; plan: string }> {
+  const supabase = await createSupabaseServer();
+  const plan = await getUserPlan(userId);
+
+  const planLimit = plan === 'elite' ? limits.elite : plan === 'pro' ? limits.pro : limits.free;
+  if (planLimit === null) {
+    return { allowed: true, remaining: null, plan };
+  }
+
+  const now = new Date();
+  const periodStart = period === 'weekly'
+    ? new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    : new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const { count } = await supabase
+    .from('rate_limit_windows')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('action', action)
+    .gte('window_start', periodStart.toISOString());
+
+  const used = count ?? 0;
+  if (used >= planLimit) {
+    return { allowed: false, remaining: 0, plan };
+  }
+
+  await supabase.from('rate_limit_windows').insert({
+    user_id: userId,
+    action,
+    window_start: now.toISOString(),
+    request_count: 1,
+  });
+
+  return { allowed: true, remaining: Math.max(0, planLimit - used - 1), plan };
+}
