@@ -1,13 +1,21 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import type { User } from '@supabase/supabase-js';
 
+type Profile = {
+  id: string;
+  full_name?: string | null;
+  username?: string | null;
+  avatar_url?: string | null;
+  role?: string | null;
+};
+
 interface AuthContextType {
   user: User | null;
-  profile: Record<string, unknown> | null;
+  profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -21,10 +29,10 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createSupabaseBrowser();
+  const supabase = useMemo(() => createSupabaseBrowser(), []);
 
   const fetchProfile = async (authUser: User) => {
     const { data, error } = await supabase
@@ -114,14 +122,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [router, supabase]);
 
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } finally {
-      setUser(null);
-      setProfile(null);
-      router.replace('/');
-      router.refresh();
-    }
+    await supabase.auth.signOut({ scope: 'global' });
+    setUser(null);
+    setProfile(null);
+    router.replace('/');
+    router.refresh();
   };
 
   return <AuthContext.Provider value={{ user, profile, loading, signOut }}>{children}</AuthContext.Provider>;

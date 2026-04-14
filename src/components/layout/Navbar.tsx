@@ -192,7 +192,7 @@ export default function Navbar() {
               <div className={styles.mobileDrawerContent}>
                 <div className={styles.mobileUserInfo}>
                   <div className={styles.mobileAvatarLarge}>
-                    {profile?.avatar_url ? <Image src={profile.avatar_url} alt="Profile avatar" width={64} height={64} loading="lazy" /> : profile?.full_name?.[0]}
+                    {profile?.avatar_url ? <Image src={profile.avatar_url} alt="Profile avatar" width={40} height={40} loading="lazy" /> : profile?.full_name?.[0]}
                   </div>
                   <div>
                     <h3 className="font-black text-white">{profile?.full_name || 'Student'}</h3>

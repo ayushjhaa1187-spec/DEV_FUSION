@@ -14,7 +14,7 @@ const PROTECTED_ROUTES = [
   '/ai-tools',
 ];
 
-const AUTH_ROUTES = ['/auth/login', '/auth/register', '/auth/signup', '/auth'];
+const AUTH_ROUTES = ['/auth', '/auth/login', '/auth/register', '/auth/signup'];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isAuthRoute && session) {
+  if (isAuthRoute && session && !path.startsWith('/auth/callback')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
