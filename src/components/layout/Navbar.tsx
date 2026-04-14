@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/auth-provider';
-import { Bell, Menu, X, MessageSquare, Trophy, AtSign, FileText, ChevronRight, Check, User, Search, Command } from 'lucide-react';
-import { createSupabaseBrowser } from '@/lib/supabase/client';
+import { Menu, X, Trophy, FileText, ChevronRight, User, Search, Command, ShieldAlert } from 'lucide-react';
 import { NotificationBell } from './NotificationBell';
 import SearchModal from './SearchModal';
 import styles from './Navbar.module.css';
@@ -14,7 +14,6 @@ import styles from './Navbar.module.css';
 export default function Navbar() {
   const { user, profile, signOut } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -121,7 +120,7 @@ export default function Navbar() {
                   <button className={styles.avatarBtn} onClick={() => { setIsProfileOpen(!isProfileOpen); }}>
                     <div className={styles.avatar}>
                       {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt="" />
+                        <Image src={profile.avatar_url} alt="Profile avatar" width={36} height={36} />
                       ) : (
                         <span>{profile?.full_name?.[0] || 'U'}</span>
                       )}
@@ -191,7 +190,7 @@ export default function Navbar() {
               <div className={styles.mobileDrawerContent}>
                 <div className={styles.mobileUserInfo}>
                   <div className={styles.mobileAvatarLarge}>
-                    {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : profile?.full_name?.[0]}
+                    {profile?.avatar_url ? <Image src={profile.avatar_url} alt="Profile avatar" width={72} height={72} /> : profile?.full_name?.[0]}
                   </div>
                   <div>
                     <h3 className="font-black text-white">{profile?.full_name || 'Student'}</h3>

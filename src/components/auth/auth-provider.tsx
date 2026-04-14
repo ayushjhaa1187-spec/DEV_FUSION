@@ -33,7 +33,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          router.replace('/');
+          router.refresh();
+          return;
+        }
+
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
@@ -51,7 +60,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         // Award daily login points when user signs in
-        if (currentUser && (_event === 'SIGNED_IN' || _event === 'USER_UPDATED')) {
+        if (currentUser && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
           try {
             await fetch('/api/auth/daily-login', { method: 'POST' });
           } catch (err) {
@@ -75,28 +84,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router, supabase.auth]);
 
   const signOut = async () => {
     try {
-      setLoading(true);
-      
-      // Perform global sign out to invalidate session on Supabase servers
-      await supabase.auth.signOut({ scope: 'global' });
-      
-      // Clear local states
+      await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
-      
-      // Clear persistence - crucial for "loophole" fix
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Hard redirect to home to reset environment
-      window.location.replace('/');
+      router.replace('/');
+      router.refresh();
     } catch (err) {
       console.error('Error signing out:', err);
-      window.location.replace('/');
+      router.replace('/');
+      router.refresh();
     }
   };
 

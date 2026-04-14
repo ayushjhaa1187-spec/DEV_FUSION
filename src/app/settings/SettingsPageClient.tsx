@@ -15,6 +15,7 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import AvailabilityGrid from '@/components/settings/AvailabilityGrid';
+import { toast } from 'sonner';
 
 type ProfileFormData = {
   full_name: string;
@@ -112,9 +113,9 @@ export default function SettingsPageClient() {
         .eq('id', user.id);
 
       if (updateError) throw updateError;
-      alert('Avatar updated!');
+      toast.success('Avatar updated!');
     } catch (err: any) {
-      alert(`Upload failed: ${err.message}`);
+      toast.error(`Upload failed: ${err.message}`);
     } finally {
       setUploading(false);
     }
@@ -142,9 +143,9 @@ export default function SettingsPageClient() {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error('Failed to update');
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message);
     } finally {
       setSaving(false);
     }
@@ -159,9 +160,9 @@ export default function SettingsPageClient() {
         .eq('id', user?.id);
       
       if (error) throw error;
-      alert('Availability schedule updated!');
+      toast.success('Availability schedule updated!');
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
@@ -223,7 +224,7 @@ export default function SettingsPageClient() {
                     <div className="relative group">
                       <div className="w-32 h-32 rounded-3xl bg-white/10 overflow-hidden ring-4 ring-white/5 group-hover:ring-indigo-500/30 transition-all">
                         {avatarUrl ? (
-                          <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                          <Image src={avatarUrl} alt="Avatar" width={128} height={128} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full bg-indigo-500/20 flex items-center justify-center text-3xl font-black">{watchedFields.full_name?.[0] || 'U'}</div>
                         )}
@@ -406,7 +407,7 @@ export default function SettingsPageClient() {
             <div className="relative z-10 flex flex-col items-center text-center">
               <div className="w-24 h-24 rounded-[2rem] bg-indigo-500/20 overflow-hidden mb-4 ring-4 ring-white/5 group-hover:scale-105 transition-all">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                  <Image src={avatarUrl} alt="Avatar preview" width={80} height={80} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white/20">{watchedFields.full_name?.[0] || 'U'}</div>
                 )}
