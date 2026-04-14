@@ -14,9 +14,10 @@ const PROTECTED_ROUTES = [
   '/onboarding',
   '/ai-tools',
   '/organization/dashboard',
+  '/billing',
 ];
 
-const AUTH_ROUTES = ['/auth', '/auth/login', '/auth/register', '/auth/signup'];
+const AUTH_ROUTES = ['/auth/login', '/auth/register', '/auth/signup', '/auth'];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -69,7 +70,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/public|public).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|public|api/public).*)'],
 };

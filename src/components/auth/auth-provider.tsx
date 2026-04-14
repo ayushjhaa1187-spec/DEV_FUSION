@@ -62,11 +62,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', authUser.id)
         .maybeSingle();
 
-      setProfile((createdProfile as Record<string, unknown>) ?? null);
+      setProfile((createdProfile as Profile) ?? null);
       return;
     }
 
-    setProfile(data as Record<string, unknown>);
+    setProfile(data as Profile);
   };
 
   useEffect(() => {
@@ -97,11 +97,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
           setLoading(false);
         }
-
-        if (event === 'SIGNED_OUT') {
-          router.replace('/');
-          router.refresh();
-        }
       } else {
         setProfile(null);
         setLoading(false);
@@ -129,9 +124,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       setLoading(true);
-
       await supabase.auth.signOut({ scope: 'global' });
-
       setUser(null);
       setProfile(null);
       router.replace('/');

@@ -20,6 +20,13 @@ export default async function ProfilePage() {
     redirect('/auth/login');
   }
 
+  const role = user.user_metadata?.role;
+  if (role === 'mentor') {
+    redirect('/mentors/dashboard');
+  }
+  if (role === 'organization' || role === 'campus_admin') {
+    redirect('/organization/dashboard');
+  }
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
   const { data: badges } = await supabase

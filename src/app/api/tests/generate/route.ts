@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { generatePracticeQuiz } from '@/lib/ai-service';
 import { checkRateLimit } from '@/lib/rate-limiter';
-import { checkAndIncrementUsage } from '@/lib/usage';
+import { enforcePlanLimit } from '@/lib/usage';
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
@@ -31,12 +31,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Subject and Topic are required' }, { status: 400 });
     }
 
-    // Check usage limits
-    const { allowed, remaining } = await checkAndIncrementUsage(user.id, 'question');
-    if (!allowed) {
-      return NextResponse.json({ 
-        error: 'Free tier limit reached (10 questions/day). Upgrade to Pro for unlimited access!',
-        limitReached: true 
+    const limit = await enforcePlanLimit(user.id, 'ai_test_generate', { free: 3, pro: 20, elite: null }, 'weekly');
+    if (!limit.allowed) {
+      return NextResponse.json({
+        error: `Weekly quiz generation limit reached for ${limit.plan} plan.`,
+        limitReached: true,
       }, { status: 403 });
     }
 
@@ -88,7 +87,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ...test,
       questions: storedQuestions,
-      remaining,
+      remaining: limit.remaining,
       rateLimitRemaining: rateCheck.remaining,
     });
   } catch (error: any) {

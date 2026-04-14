@@ -13,8 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import {
   consumeCredit,
-  checkDailyFreeLimit,
-  incrementDailyUsage,
+  enforcePlanLimit,
 } from "@/lib/usage";
 import { z } from "zod";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -75,44 +74,28 @@ export async function POST(req: NextRequest) {
 
   const { subject, difficulty } = body;
 
-  // 3. Check daily free limit
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("plan")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const plan = sub?.plan ?? "free";
-
-  if (plan === "free") {
-    const { withinLimit } = await checkDailyFreeLimit(
-      user.id,
-      "ai_doubt_solve",
-      FREE_DAILY_SOLVES
+    // 3. Plan-aware limit check
+  const limit = await enforcePlanLimit(user.id, 'ai_doubt_solve', { free: 5, pro: 50, elite: null }, 'daily');
+  if (!limit.allowed) {
+    return NextResponse.json(
+      {
+        error: 'limit_reached',
+        message: `Daily limit reached for ${limit.plan} plan.`,
+        upgradeUrl: '/billing/plans',
+      },
+      { status: 402 }
     );
+  }
 
-    if (!withinLimit) {
-      const creditResult = await consumeCredit(user.id, "ai_doubt_solve", supabase);
-      if (!creditResult.allowed) {
-        return NextResponse.json(
-          {
-            error: "limit_reached",
-            message: "You've used all your free daily solves. Upgrade to Pro or purchase credits.",
-            upgradeUrl: "/billing/plans",
-            creditsUrl: "/billing/credits",
-          },
-          { status: 402 }
-        );
-      }
-    } else {
-      await incrementDailyUsage(user.id, "ai_doubt_solve");
+  // Optional credit deduction for free-tier overflow scenarios
+  if (limit.plan === 'free') {
+    const creditResult = await consumeCredit(user.id, 'ai_doubt_solve', supabase);
+    if (!creditResult.allowed && (creditResult.reason === 'insufficient_credits' || creditResult.reason === 'no_wallet')) {
+      return NextResponse.json(
+        { error: 'insufficient_credits', message: 'No credits available. Buy a pack to continue.', creditsUrl: '/billing/credits' },
+        { status: 402 }
+      );
     }
-  } else {
-      // For non-free plans, consumeCredit handles bypass (and potential quota checks)
-      await consumeCredit(user.id, "ai_doubt_solve", supabase);
   }
 
   // 4. Stream from Gemini

@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
         message: 'The AI provided a response that could not be parsed as a quiz. Please try again.'
       }, { status: 500 });
     }
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'AI service unavailable';
     console.error('AI quiz-generator error:', error);
