@@ -143,7 +143,7 @@ export default function OnboardingClient({ user, subjects }: { user: any, subjec
                       placeholder="e.g. Stanford University"
                       value={formData.college}
                       onChange={handleChange}
-                      required
+                      required={!isOrg}
                     />
                     <FormInput
                       id="branch"
@@ -151,7 +151,7 @@ export default function OnboardingClient({ user, subjects }: { user: any, subjec
                       placeholder="e.g. Computer Science"
                       value={formData.branch}
                       onChange={handleChange}
-                      required
+                      required={!isOrg}
                     />
                     <FormInput
                       id="semester"
@@ -162,7 +162,7 @@ export default function OnboardingClient({ user, subjects }: { user: any, subjec
                       placeholder="e.g. 5"
                       value={formData.semester}
                       onChange={handleChange}
-                      required
+                      required={!isOrg}
                     />
                     <FormInput
                       id="linkedin"

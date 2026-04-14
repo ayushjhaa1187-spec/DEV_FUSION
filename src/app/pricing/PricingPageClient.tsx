@@ -80,6 +80,31 @@ const faqs = [
 export default function PricingPageClient() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      toast.success(data.message);
+      router.push('/dashboard/billing');
+      router.refresh();
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to apply coupon');
+    } finally {
+      setCouponLoading(null as any);
+      setCouponLoading(false);
+    }
+  };
 
   const handleCheckout = async (planId: string | null) => {
     if (!planId) {
@@ -224,6 +249,34 @@ export default function PricingPageClient() {
             )}
           </motion.div>
         ))}
+      </section>
+
+      {/* Coupon Section */}
+      <section className="max-w-xl mx-auto px-4 pb-20">
+        <div className="bg-[#13132b] border border-indigo-500/20 rounded-[32px] p-8 text-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50" />
+          <h3 className="text-xl font-black mb-2 flex items-center justify-center gap-2">
+            <Sparkles className="w-5 h-5 text-indigo-400" />
+            Have a Promo Code?
+          </h3>
+          <p className="text-gray-400 text-sm mb-6">Enter your campus partner or special deal code below.</p>
+          <div className="flex gap-2 max-w-md mx-auto">
+            <input 
+              type="text" 
+              placeholder="Enter Code (e.g. AYUSH_DEAL26)" 
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 text-sm focus:outline-none focus:border-indigo-500 transition-colors uppercase tracking-widest font-black"
+            />
+            <button 
+              onClick={handleApplyCoupon}
+              disabled={couponLoading}
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-500/20"
+            >
+              {couponLoading ? 'Verifying...' : 'Apply Code'}
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* FAQ */}

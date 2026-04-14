@@ -160,6 +160,7 @@ export async function checkAndIncrementUsage(userId: string, _bucket: string): P
   await incrementDailyUsage(userId, 'ai_test_generate');
   return { allowed: true, remaining: Math.max(0, DAILY_LIMIT - usedToday - 1) };
 }
+
 export async function getUserPlan(userId: string): Promise<string> {
   const supabase = await createSupabaseServer();
   const { data } = await supabase

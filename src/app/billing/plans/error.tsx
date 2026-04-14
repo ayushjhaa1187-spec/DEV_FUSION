@@ -1,4 +1,5 @@
 'use client';
+'use client';
 
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return (

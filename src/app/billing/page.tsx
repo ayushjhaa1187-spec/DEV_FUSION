@@ -56,16 +56,9 @@ export default async function BillingPage() {
 
   return (
     <main className="min-h-screen bg-[#0a0612] p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-black text-white mb-6">Billing Overview</h1>
-        <Suspense fallback={<div className="h-40 rounded-2xl bg-white/5 animate-pulse" />}>
-          <BillingOverview />
-        </Suspense>
-      </div>
+      <Suspense fallback={<div className="h-40 rounded-2xl bg-white/5 animate-pulse" />}>
+        <BillingContent />
+      </Suspense>
     </main>
   );
-=======
-export default function BillingPage() {
-  return <Suspense fallback={<div className="p-10 text-white">Loading billing…</div>}><BillingContent /></Suspense>;
->>>>>>> origin/codex/fix-critical-bugs-for-skillbridge-project-hkfauw
 }
