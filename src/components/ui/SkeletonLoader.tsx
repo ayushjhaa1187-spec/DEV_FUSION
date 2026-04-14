@@ -7,10 +7,14 @@ export default function SkeletonLoader({
 }) {
   if (rows) {
     return (
-      <div className={`space-y-4 animate-pulse ${className}`}>
-        <div className="h-8 rounded-xl bg-white/10" />
+      <div className={`space-y-4 ${className}`}>
+        <div className="h-8 rounded-xl bg-white/10 animate-pulse" />
         {Array.from({ length: rows }).map((_, index) => (
-          <div key={index} className="h-24 rounded-2xl bg-white/5" />
+          <div 
+            key={index} 
+            className="h-24 rounded-2xl bg-gradient-to-r from-white/5 via-white/10 to-white/5 bg-[length:300%_100%] animate-pulse" 
+            style={{ animationDuration: '1.2s' }}
+          />
         ))}
       </div>
     );
@@ -22,7 +26,5 @@ export default function SkeletonLoader({
       style={{ animationDuration: '1.2s' }}
       aria-hidden
     />
-  );
-}
   );
 }

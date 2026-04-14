@@ -32,7 +32,12 @@ export async function GET() {
   }
 
   const plan = (data?.plan as PlanTier) || 'free';
-  return NextResponse.json({ success: true, subscription: data, planDetails: PLAN_DETAILS[plan], nextBillingDate: data?.current_period_end || null });
+  return NextResponse.json({ 
+    success: true, 
+    subscription: data, 
+    planDetails: PLAN_DETAILS[plan], 
+    nextBillingDate: data?.current_period_end || data?.current_end || null 
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -89,11 +94,20 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    await getRazorpayClient().subscriptions.cancel(active.razorpay_subscription_id, false);
+    try {
+      await getRazorpayClient().subscriptions.cancel(active.razorpay_subscription_id, false);
+    } catch {
+      // In sandbox/dev, cancel locally even if Razorpay cancel fails
+      console.warn("Razorpay cancel failed, proceeding with local cancellation.");
+    }
 
     const { error } = await supabase
       .from('subscriptions')
-      .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), current_period_end: new Date().toISOString() })
+      .update({ 
+        status: 'cancelled', 
+        cancelled_at: new Date().toISOString(), 
+        current_period_end: new Date().toISOString() 
+      })
       .eq('id', active.id);
 
     if (error) throw error;

@@ -1,26 +1,49 @@
 import { Suspense } from 'react';
-import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
-async function BillingOverview() {
-  const base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const [subRes, walletRes] = await Promise.all([
-    fetch(`${base}/api/subscriptions`, { cache: 'no-store' }),
-    fetch(`${base}/api/credits/balance`, { cache: 'no-store' }),
+async function BillingContent() {
+  const supabase = await createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/auth/login');
+
+  const [{ data: subscription }, { data: wallet }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('credit_wallets')
+      .select('balance, lifetime_purchased')
+      .eq('user_id', user.id)
+      .maybeSingle(),
   ]);
 
-  const sub = await subRes.json();
-  const wallet = await walletRes.json();
+  const plan = subscription?.plan || subscription?.plan_id || 'free';
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-white/10 p-6 bg-white/5">
-        <h2 className="text-xl font-bold text-white">Current Plan</h2>
-        <p className="text-gray-300 mt-2">{sub?.subscription?.plan || 'free'} · Next billing: {sub?.nextBillingDate || 'N/A'}</p>
+    <div className="max-w-5xl mx-auto px-6 py-10 space-y-6 text-white text-center sm:text-left">
+      <h1 className="text-3xl font-black mb-8">Billing Dashboard</h1>
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+          <p className="text-xs text-indigo-400 font-bold uppercase tracking-wider">Current Plan</p>
+          <p className="text-3xl font-black mt-2 capitalize">{plan}</p>
+          <p className="text-sm text-gray-400 mt-2">Next billing: {subscription?.current_end || subscription?.current_period_end ? new Date(subscription.current_end || subscription.current_period_end!).toLocaleDateString() : 'N/A'}</p>
+        </div>
+        <div className="p-6 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+          <p className="text-xs text-indigo-400 font-bold uppercase tracking-wider">Credit Wallet</p>
+          <p className="text-3xl font-black mt-2">{wallet?.balance ?? 0}<span className="text-lg font-medium ml-2 text-gray-400">credits</span></p>
+          <p className="text-sm text-gray-400 mt-2">Lifetime purchased: {wallet?.lifetime_purchased ?? 0}</p>
+        </div>
       </div>
-      <div className="rounded-2xl border border-white/10 p-6 bg-white/5">
-        <h2 className="text-xl font-bold text-white">Credit Wallet</h2>
-        <p className="text-gray-300 mt-2">Balance: {wallet?.wallet?.balance ?? 0} credits</p>
+      <div className="flex gap-4 flex-wrap justify-center sm:justify-start mt-8 pt-6 border-t border-white/5">
+        <Link href="/billing/plans" className="px-6 py-3 rounded-xl bg-white text-black font-bold hover:bg-gray-200 transition-colors">Manage Plans</Link>
+        <Link href="/billing/credits" className="px-6 py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-colors">Buy Credits</Link>
+        <Link href="/billing/history" className="px-6 py-3 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-colors">Billing History</Link>
       </div>
     </div>
   );
@@ -41,4 +64,8 @@ export default async function BillingPage() {
       </div>
     </main>
   );
+=======
+export default function BillingPage() {
+  return <Suspense fallback={<div className="p-10 text-white">Loading billing…</div>}><BillingContent /></Suspense>;
+>>>>>>> origin/codex/fix-critical-bugs-for-skillbridge-project-hkfauw
 }

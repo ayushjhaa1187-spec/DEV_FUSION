@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ answer: text });
-  } catch (error: any) {
-    const message = error.message || 'AI service unavailable';
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'AI service unavailable';
     console.error('AI doubt-solver error:', error);
     return NextResponse.json({ error: message }, { status: 500 });
   }

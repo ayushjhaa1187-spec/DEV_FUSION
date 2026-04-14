@@ -24,7 +24,6 @@ export default async function SettingsPage() {
   if (!user) {
     redirect('/auth?redirectTo=/settings');
   }
-
   return (
     <Suspense fallback={<Loading />}>
       <SettingsPageClient />
