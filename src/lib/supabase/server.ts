@@ -22,9 +22,15 @@ export async function createSupabaseServer() {
           }
         },
       },
-
-    }
-  );
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        } catch {
+          // ignored in Server Components where cookies are read-only
+        }
+      },
+    },
+  });
 }
 
 export async function createServerClient() {

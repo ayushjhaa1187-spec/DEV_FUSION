@@ -16,7 +16,7 @@ const PROTECTED_ROUTES = [
   '/organization/dashboard',
 ];
 
-const AUTH_ROUTES = ['/auth'];
+const AUTH_ROUTES = ['/auth', '/auth/login', '/auth/register', '/auth/signup'];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -34,38 +34,14 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
+          request.cookies.set({ name, value, ...options });
+          response = NextResponse.next({ request: { headers: request.headers } });
+          response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          });
+          request.cookies.set({ name, value: '', ...options });
+          response = NextResponse.next({ request: { headers: request.headers } });
+          response.cookies.set({ name, value: '', ...options });
         },
       },
     }
@@ -80,7 +56,7 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = AUTH_ROUTES.some((route) => path === route || path.startsWith(`${route}/`));
 
   if (isProtected && !session) {
-    const redirectUrl = new URL('/auth', request.url);
+    const redirectUrl = new URL('/auth/login', request.url);
     redirectUrl.searchParams.set('redirectTo', path);
     return NextResponse.redirect(redirectUrl);
   }

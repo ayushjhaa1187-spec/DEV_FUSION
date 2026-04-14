@@ -1,11 +1,26 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Support both common environment variable names for flexibility
-const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
+export const getGeminiApiKey = () => 
+  process.env.GEMINI_API_KEY || 
+  process.env.GOOGLE_GENERATIVE_AI_API_KEY || 
+  process.env.GOOGLE_AI_API_KEY || 
+  '';
+
+const API_KEY = getGeminiApiKey();
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// Direct and stable model selection
-const MODEL_NAME = 'gemini-1.5-flash';
+// Direct and stable model selection with fallback
+export const MODEL_NAME = 'gemini-2.5-flash';
+export const FALLBACK_MODEL = 'gemini-flash-latest';
+
+/**
+ * Robustly gets a generative model with fallback capability
+ */
+export function getModel(specifiedModel?: string) {
+  const modelId = specifiedModel || MODEL_NAME;
+  return genAI.getGenerativeModel({ model: modelId });
+}
 
 export interface AIDoubtResponse {
   explanation: string;
@@ -56,10 +71,10 @@ export async function askAIDoubt(question: string, context?: string): Promise<AI
   };
 
   if (!API_KEY) {
-    console.error('[AI Service] GEMINI_API_KEY or GOOGLE_AI_API_KEY is not set');
+    console.error('[AI Service] GOOGLE_GENERATIVE_AI_API_KEY/GEMINI_API_KEY/GOOGLE_AI_API_KEY is not set');
     return {
         ...fallback,
-        explanation: "API configuration missing. Please set GEMINI_API_KEY in your environment."
+        explanation: "API configuration missing. Please set GOOGLE_GENERATIVE_AI_API_KEY in your environment."
     };
   }
 
@@ -83,10 +98,7 @@ Response format (Strict valid JSON ONLY):
 }`;
 
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: MODEL_NAME,
-      generationConfig: { temperature: 0.7, topP: 0.9, topK: 40 } 
-    }, { apiVersion: 'v1' });
+    const model = getModel();
     
     const result = await model.generateContent(prompt);
     const text = result.response.text();
@@ -96,7 +108,7 @@ Response format (Strict valid JSON ONLY):
     
     // Fallback attempt with a different model if flash fails
     try {
-      const stableModel = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' }, { apiVersion: 'v1' });
+      const stableModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const stableResult = await stableModel.generateContent(prompt);
       return extractJSON<AIDoubtResponse>(stableResult.response.text(), fallback);
     } catch (innerError: any) {
@@ -138,10 +150,7 @@ Respond ONLY with a valid JSON array of objects:
 ]`;
 
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: MODEL_NAME,
-      generationConfig: { temperature: 0.8, topP: 0.9 } 
-    }, { apiVersion: 'v1' });
+    const model = getModel();
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     const questions = extractJSON<any[]>(text, []);
@@ -177,7 +186,7 @@ export async function getFollowUpQuestions(question: string, answer: string): Pr
   Format: ["Question 1", "Question 2", "Question 3"]`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME }, { apiVersion: 'v1' });
+    const model = getModel();
     const result = await model.generateContent(prompt);
     return extractJSON<string[]>(result.response.text(), []);
   } catch (error) {

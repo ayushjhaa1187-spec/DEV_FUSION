@@ -2,20 +2,26 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { sendOrganizationApplicationEmail } from '@/lib/email';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error('Supabase admin environment variables are missing');
+  }
+
+  return createClient(url, key);
+}
 
 export async function POST(req: Request) {
   try {
+    const supabaseAdmin = getSupabaseAdminClient();
     const { orgId, userId } = await req.json();
 
     if (!orgId || !userId) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
-    // 1. Get Applicant Profile
     const { data: profile, error: pError } = await supabaseAdmin
       .from('profiles')
       .select('*')
@@ -24,7 +30,6 @@ export async function POST(req: Request) {
 
     if (pError) throw pError;
 
-    // 2. Get Organization Email and Requirements
     const { data: org, error: oError } = await supabaseAdmin
       .from('organizations')
       .select('name, owner_id, min_reputation')
@@ -33,32 +38,27 @@ export async function POST(req: Request) {
 
     if (oError) throw oError;
 
-    // Server-side Reputation Check
     const requiredRep = org.min_reputation || 50;
     if ((profile?.reputation_points || 0) < requiredRep) {
-      return NextResponse.json({ 
-        error: `Insufficient reputation. This organization requires ${requiredRep} points.` 
-      }, { status: 403 });
+      return NextResponse.json(
+        {
+          error: `Insufficient reputation. This organization requires ${requiredRep} points.`,
+        },
+        { status: 403 }
+      );
     }
 
-    const { data: owner, error: owError } = await supabaseAdmin
+    const { data: owner } = await supabaseAdmin
       .from('profiles')
       .select('email')
       .eq('id', org.owner_id)
       .single();
 
-    // Note: If profile.email is not available in 'profiles' table, we might need to get it from auth.users (requires service role)
-    // For this hackathon, we assume the owner's email is either in profiles or we use a fallback.
-    // In many Supabase setups, public.profiles matches auth.users email via a trigger.
-    
-    // 3. Create Membership
-    const { error: mError } = await supabaseAdmin
-      .from('organization_memberships')
-      .insert({
-        organization_id: orgId,
-        user_id: userId,
-        status: 'pending'
-      });
+    const { error: mError } = await supabaseAdmin.from('organization_memberships').insert({
+      organization_id: orgId,
+      user_id: userId,
+      status: 'pending',
+    });
 
     if (mError) {
       if (mError.code === '23505') {
@@ -67,20 +67,20 @@ export async function POST(req: Request) {
       throw mError;
     }
 
-    // 4. Send Email
     if (owner?.email) {
       await sendOrganizationApplicationEmail({
         to: owner.email,
         organizationName: org.name,
         applicantName: profile.full_name || profile.username || 'A Student',
         applicantReputation: profile.reputation_points || 0,
-        dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+        dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
       });
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Application API Error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
