@@ -7,7 +7,7 @@ import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
-  profile: any | null;
+  profile: Record<string, unknown> | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -21,90 +21,110 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createSupabaseBrowser();
 
-  const fetchProfile = async (uid: string) => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', uid).single();
-    setProfile(data);
+  const fetchProfile = async (authUser: User) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      const { error: upsertError } = await supabase.from('profiles').upsert(
+        {
+          id: authUser.id,
+          email: authUser.email,
+          full_name: authUser.user_metadata?.full_name || '',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+
+      if (upsertError) throw upsertError;
+
+      const { data: createdProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      setProfile((createdProfile as Record<string, unknown>) ?? null);
+      return;
+    }
+
+    setProfile(data as Record<string, unknown>);
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) {
-          try {
-            setLoading(true); // Ensure loading is true while fetching profile
-            await fetchProfile(currentUser.id);
-          } catch (e) {
-            console.error("Profile fetch failed:", e);
-          } finally {
-            setLoading(false);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setLoading(false);
+        router.replace('/');
+        router.refresh();
+        return;
+      }
+
+      if (currentUser) {
+        try {
+          setLoading(true);
+          await fetchProfile(currentUser);
+
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+            await fetch('/api/auth/daily-login', { method: 'POST' });
           }
-        } else {
-          setProfile(null);
+        } catch (e) {
+          console.error('Profile fetch failed:', e);
+        } finally {
           setLoading(false);
         }
-
-        // Award daily login points when user signs in
-        if (currentUser && (_event === 'SIGNED_IN' || _event === 'USER_UPDATED')) {
-          try {
-            await fetch('/api/auth/daily-login', { method: 'POST' });
-          } catch (err) {
-            // Non-blocking catch
-          }
-        }
+      } else {
+        setProfile(null);
+        setLoading(false);
       }
-    );
+    });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
+
       if (currentUser) {
         try {
-          await fetchProfile(currentUser.id);
+          await fetchProfile(currentUser);
         } catch (e) {
-          console.error(e);
+          console.error('Initial profile fetch failed:', e);
         }
       }
+
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router, supabase]);
 
   const signOut = async () => {
     try {
-      setLoading(true);
-      
-      // Perform global sign out to invalidate session on Supabase servers
-      await supabase.auth.signOut({ scope: 'global' });
-      
-      // Clear local states
+      await supabase.auth.signOut();
+    } finally {
       setUser(null);
       setProfile(null);
-      
-      // Clear persistence - crucial for "loophole" fix
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Hard redirect to home to reset environment
-      window.location.replace('/');
-    } catch (err) {
-      console.error('Error signing out:', err);
-      window.location.replace('/');
+      router.replace('/');
+      router.refresh();
     }
   };
 
-  return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, profile, loading, signOut }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);

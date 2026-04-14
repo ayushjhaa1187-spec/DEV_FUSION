@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    const subscription = await razorpay.subscriptions.create(options);
+    const subscription = await getRazorpayClient().subscriptions.create(options);
     
     // Store pending subscription in database mapping it to user
     const { error: dbError } = await supabase

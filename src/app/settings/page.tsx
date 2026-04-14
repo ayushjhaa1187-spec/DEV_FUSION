@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import SettingsPageClient from './SettingsPageClient';
+import Loading from './loading';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -7,10 +9,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Settings | DEV_FUSION',
     description: 'Manage your account settings and preferences.',
-    type: 'website'
-  }
+    type: 'website',
+  },
 };
 
 export default function SettingsPage() {
-  return <SettingsPageClient />;
+  return (
+    <Suspense fallback={<Loading />}>
+      <SettingsPageClient />
+    </Suspense>
+  );
 }
