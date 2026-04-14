@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/auth-provider';
 import { doubtApi, answerApi } from '@/lib/api';
@@ -173,7 +174,7 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
 
           <div className="flex items-center gap-4 mb-12 pb-8 border-b border-white/5">
              {doubt.profiles?.avatar_url ? (
-                <img src={doubt.profiles.avatar_url} alt="" className="w-12 h-12 rounded-2xl object-cover ring-2 ring-white/5" />
+                <Image src={doubt.profiles.avatar_url} alt="Author avatar" width={48} height={48} loading="lazy" className="w-12 h-12 rounded-2xl object-cover ring-2 ring-white/5" />
               ) : (
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center text-white text-xs font-black ring-2 ring-white/5">
                   {doubt.profiles?.username?.[0] || 'L'}
@@ -246,7 +247,7 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
 
                   <div className="flex items-center gap-4 mb-8">
                      {answer.profiles?.avatar_url ? (
-                        <img src={answer.profiles.avatar_url} alt="" className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white/5" />
+                        <Image src={answer.profiles.avatar_url} alt="Responder avatar" width={40} height={40} loading="lazy" className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white/5" />
                       ) : (
                         <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-gray-500 text-[10px] font-black">
                           {answer.profiles?.username?.[0] || 'S'}

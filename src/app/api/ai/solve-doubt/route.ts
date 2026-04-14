@@ -17,17 +17,14 @@ export async function POST(req: NextRequest) {
        return new Response('Title is required', { status: 400 });
     }
 
-    const API_KEY = process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY;
-    const MODEL = process.env.GROQ_API_KEY 
-      ? 'llama-3.1-8b-instant' 
-      : 'meta-llama/llama-3.1-8b-instruct';
-    const URL = process.env.GROQ_API_KEY 
-      ? 'https://api.groq.com/openai/v1/chat/completions' 
-      : 'https://openrouter.ai/api/v1/chat/completions';
-
-    if (!API_KEY) {
-      return new Response('AI API Key not configured', { status: 500 });
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) {
+      return new Response(JSON.stringify({ message: 'AI API Key not configured' }), { status: 500 });
     }
+
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(apiKey);
+    let model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const prompt = `You are a college-level teaching assistant. Explain the following student's doubt step by step.
 Follow this specific structure:
@@ -42,68 +39,30 @@ Doubt Title: ${title}
 Doubt Content: ${typeof content === 'string' ? content : JSON.stringify(content)}
 `;
 
-    const response = await fetch(URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-        ...(process.env.OPENROUTER_API_KEY ? {
-          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-          'X-Title': 'SkillBridge',
-        } : {}),
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        stream: true,
-        temperature: 0.7,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('AI Provider Error:', error);
-      return new Response('AI failed to respond', { status: 502 });
+    let streamResult;
+    try {
+      streamResult = await model.generateContentStream(prompt);
+    } catch (modelErr: any) {
+      console.warn("[solve-doubt] Gemini 2.5 failed, falling back to flash-latest:", modelErr.message);
+      model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+      streamResult = await model.generateContentStream(prompt);
     }
 
     // Proxy the stream
     const stream = new ReadableStream({
       async start(controller) {
-        const reader = response.body?.getReader();
-        if (!reader) {
-          controller.close();
-          return;
-        }
-
-        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
         try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') break;
-                try {
-                  const json = JSON.parse(data);
-                  const content = json.choices[0]?.delta?.content;
-                  if (content) {
-                    controller.enqueue(new TextEncoder().encode(content));
-                  }
-                } catch (e) {
-                  // Ignore non-json chunks
-                }
-              }
+          for await (const chunk of streamResult.stream) {
+            const text = chunk.text();
+            if (text) {
+              controller.enqueue(encoder.encode(text));
             }
           }
-        } catch (error) {
-          controller.error(error);
-        } finally {
           controller.close();
+        } catch (error: any) {
+          console.error("[solve-doubt] Stream error:", error);
+          controller.error(error);
         }
       },
     });
@@ -111,7 +70,8 @@ Doubt Content: ${typeof content === 'string' ? content : JSON.stringify(content)
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff'
       },
     });
 

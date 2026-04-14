@@ -34,18 +34,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowser(), []);
 
-  const fetchProfile = async (uid: string) => {
+  const fetchProfile = async (authUser: User) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, username, avatar_url, role')
-      .eq('id', uid)
-      .single();
+      .select('*')
+      .eq('id', authUser.id)
+      .maybeSingle();
 
-    if (error) {
-      throw error;
+    if (error) throw error;
+
+    if (!data) {
+      const { error: upsertError } = await supabase.from('profiles').upsert(
+        {
+          id: authUser.id,
+          email: authUser.email,
+          full_name: authUser.user_metadata?.full_name || '',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+
+      if (upsertError) throw upsertError;
+
+      const { data: createdProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      setProfile((createdProfile as Record<string, unknown>) ?? null);
+      return;
     }
 
-    setProfile(data as Profile);
+    setProfile(data as Record<string, unknown>);
   };
 
   useEffect(() => {
@@ -66,10 +87,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (currentUser) {
         try {
           setLoading(true);
-          await fetchProfile(currentUser.id);
+          await fetchProfile(currentUser);
+
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+            await fetch('/api/auth/daily-login', { method: 'POST' });
+          }
         } catch (e) {
           console.error('Profile fetch failed:', e);
-          setProfile(null);
         } finally {
           setLoading(false);
         }
@@ -77,26 +101,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setProfile(null);
         setLoading(false);
       }
-
-      if (currentUser && (event === 'SIGNED_IN' || event === 'USER_UPDATED')) {
-        try {
-          await fetch('/api/auth/daily-login', { method: 'POST' });
-        } catch {
-          // intentionally ignored
-        }
-      }
     });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
+
       if (currentUser) {
         try {
-          await fetchProfile(currentUser.id);
+          await fetchProfile(currentUser);
         } catch (e) {
-          console.error('Profile preload failed:', e);
+          console.error('Initial profile fetch failed:', e);
         }
       }
+
       setLoading(false);
     });
 
@@ -111,11 +129,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     router.refresh();
   };
 
-  return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, profile, loading, signOut }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);

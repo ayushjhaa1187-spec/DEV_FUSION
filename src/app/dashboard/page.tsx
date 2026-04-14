@@ -1,6 +1,8 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import DashboardPageClient from './DashboardPageClient';
+import Loading from './loading';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -10,10 +12,12 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/auth');
+    redirect('/auth/login');
   }
 
   const role = user.user_metadata?.role;
@@ -26,6 +30,9 @@ export default async function DashboardPage() {
     redirect('/organization/dashboard');
   }
 
-  return <DashboardPageClient />;
+  return (
+    <Suspense fallback={<Loading />}>
+      <DashboardPageClient />
+    </Suspense>
+  );
 }
-

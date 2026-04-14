@@ -147,3 +147,16 @@ export async function incrementDailyUsage(
     p_date: today,
   });
 }
+
+
+// Backward-compatible helper used by existing quiz routes
+export async function checkAndIncrementUsage(userId: string, _bucket: string): Promise<{ allowed: boolean; remaining: number }> {
+  const DAILY_LIMIT = 10;
+  const { withinLimit, usedToday } = await checkDailyFreeLimit(userId, 'ai_test_generate', DAILY_LIMIT);
+  if (!withinLimit) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  await incrementDailyUsage(userId, 'ai_test_generate');
+  return { allowed: true, remaining: Math.max(0, DAILY_LIMIT - usedToday - 1) };
+}
