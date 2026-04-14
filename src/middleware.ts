@@ -48,21 +48,28 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  let session = null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    session = data.session;
+  } catch (e) {
+    console.error('Middleware session fetch failed:', e);
+    session = null;
+  }
 
   const path = request.nextUrl.pathname;
   const isProtected = PROTECTED_ROUTES.some((route) => path.startsWith(route));
   const isAuthRoute = AUTH_ROUTES.some((route) => path === route || path.startsWith(`${route}/`));
 
-  if (isProtected && !session) {
-    const redirectUrl = new URL('/auth/login', request.url);
-    redirectUrl.searchParams.set('redirectTo', path);
-    return NextResponse.redirect(redirectUrl);
+  if (isProtected) {
+    if (!session) {
+      const redirectUrl = new URL('/auth/login', request.url);
+      redirectUrl.searchParams.set('redirectTo', path);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
-  if (isAuthRoute && !path.startsWith('/auth/callback') && session) {
+  if (isAuthRoute && session && !path.startsWith('/auth/callback')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 

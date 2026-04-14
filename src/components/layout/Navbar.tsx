@@ -145,13 +145,18 @@ export default function Navbar() {
                           <Trophy size={16} /> My Dashboard
                         </Link>
                         {profile?.role === 'admin' && (
-                          <Link href="/admin" className={`${styles.dropdownItem} text-amber-400`} onClick={() => setIsProfileOpen(false)}>
+                          <Link href="/admin" className={`${styles.dropdownItem} text-amber-100 hover:text-amber-400`} onClick={() => setIsProfileOpen(false)}>
                             <ShieldAlert size={16} /> Admin Command Hub
                           </Link>
                         )}
                         {(profile?.role === 'organization' || profile?.role === 'campus_admin') && (
-                          <Link href="/organization/dashboard" className={`${styles.dropdownItem} text-indigo-400`} onClick={() => setIsProfileOpen(false)}>
-                            <Trophy size={16} /> Institution Hub
+                          <Link href="/organization/dashboard" className={`${styles.dropdownItem} text-indigo-100 hover:text-indigo-400`} onClick={() => setIsProfileOpen(false)}>
+                            <School size={16} /> Institution Hub
+                          </Link>
+                        )}
+                        {profile?.role === 'mentor' && (
+                          <Link href="/mentors/dashboard" className={`${styles.dropdownItem} text-amber-100 hover:text-amber-400`} onClick={() => setIsProfileOpen(false)}>
+                            <Trophy size={16} /> Expert Hub
                           </Link>
                         )}
                         <Link href="/settings" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>

@@ -1,13 +1,28 @@
 export async function apiFetch(endpoint: string, options: RequestInit = {}) {
-  const response = await fetch(endpoint, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'API error' }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const response = await fetch(endpoint, {
+      ...options,
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+    });
+    
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'API error' }));
+      throw new Error(error.message || `HTTP ${response.status}`);
+    }
+    return response.json();
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection.');
+    }
+    throw err;
   }
-  return response.json();
 }
 
 export const authApi = {

@@ -251,15 +251,15 @@ export default function DashboardPageClient() {
     }
   }, [user, authLoading, router, fetchData]);
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className={styles.dashboardContainer}>
         <header className={styles.headerCard}>
           <div className="flex items-center gap-4">
-            <div className={styles.avatarLarge}>Loading</div>
-            <div>
-              <div className={styles.name}>Loading...</div>
-              <div className={styles.bio}>Please wait</div>
+            <Skeleton className="w-16 h-16 rounded-2xl" />
+            <div className="space-y-2">
+              <Skeleton className="w-48 h-8 rounded-lg" />
+              <Skeleton className="w-32 h-4 rounded-lg" />
             </div>
           </div>
         </header>
@@ -267,17 +267,6 @@ export default function DashboardPageClient() {
           {[1, 2, 3, 4].map((i) => (
             <Skeleton key={i} className="w-full h-[120px] rounded-xl" />
           ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-          <div className="lg:col-span-2 flex flex-col gap-8">
-            <Skeleton className="w-full h-[200px] rounded-xl" />
-            <Skeleton className="w-full h-[300px] rounded-xl" />
-          </div>
-          <div className="flex flex-col gap-8">
-            <Skeleton className="w-full h-[200px] rounded-xl" />
-            <Skeleton className="w-full h-[200px] rounded-xl" />
-            <Skeleton className="w-full h-[200px] rounded-xl" />
-          </div>
         </div>
       </div>
     );
@@ -295,14 +284,27 @@ export default function DashboardPageClient() {
       />
       <header className={styles.headerCard}>
         <div className={styles.headerContent}>
-          <div className={styles.avatarLarge}>{initials}</div>
+          {profile ? (
+            <div className={styles.avatarLarge}>{initials}</div>
+          ) : (
+            <Skeleton className="w-16 h-16 rounded-2xl" />
+          )}
           <div className={styles.headerInfo}>
-            <h1 className={styles.name}>
-              {profile?.full_name || user.email?.split('@')[0]}
-            </h1>
-            <p className={styles.bio}>
-              {profile?.bio || 'SkillBridge member since 2024.'}
-            </p>
+            {profile ? (
+              <>
+                <h1 className={styles.name}>
+                  {profile?.full_name || user.email?.split('@')[0]}
+                </h1>
+                <p className={styles.bio}>
+                  {profile?.bio || 'SkillBridge member since 2024.'}
+                </p>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <Skeleton className="w-48 h-8 rounded-lg" />
+                <Skeleton className="w-32 h-4 rounded-lg" />
+              </div>
+            )}
             <div className="flex flex-wrap gap-3 mt-4">
               <div className={styles.reputation}>
                 <Trophy />
@@ -333,25 +335,31 @@ export default function DashboardPageClient() {
       </header>
 
       <div className={styles.statsRow}>
-        {[
-          { label: 'Doubts Asked', value: stats.doubts ?? 0, icon: MessageSquare, color: 'purple' },
-          { label: 'Answers Given', value: stats.answers ?? 0, icon: Award, color: 'blue' },
-          { label: 'Learning Momentum', value: `+${activity.doubts + activity.tests + activity.answers}`, icon: Zap, color: 'emerald' },
-          { label: 'Global Rank', value: '#124', icon: TrendingUp, color: 'amber' },
-        ].map((stat, i) => (
-          <div key={i} className={styles.statCard}>
-            <div className={`p-2 rounded-lg bg-white/5 w-fit mx-auto mb-3 text-gray-400`}>
-              <stat.icon size={20} />
+        {loading ? (
+          [1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="w-full h-[120px] rounded-xl" />
+          ))
+        ) : (
+          [
+            { label: 'Doubts Asked', value: stats.doubts ?? 0, icon: MessageSquare, color: 'purple' },
+            { label: 'Answers Given', value: stats.answers ?? 0, icon: Award, color: 'blue' },
+            { label: 'Learning Momentum', value: `+${activity.doubts + activity.tests + activity.answers}`, icon: Zap, color: 'emerald' },
+            { label: 'Global Rank', value: '#124', icon: TrendingUp, color: 'amber' },
+          ].map((stat, i) => (
+            <div key={i} className={styles.statCard}>
+              <div className={`p-2 rounded-lg bg-white/5 w-fit mx-auto mb-3 text-gray-400`}>
+                <stat.icon size={20} />
+              </div>
+              <div className={`${styles.statValue} ${styles[stat.color]}`}>
+                {stat.value}
+              </div>
+              <div className={styles.statLabel}>{stat.label}</div>
+              {stat.label === 'Learning Momentum' && (
+                <div className="text-[10px] text-emerald-400/60 font-bold mt-1">LAST 7 DAYS</div>
+              )}
             </div>
-            <div className={`${styles.statValue} ${styles[stat.color]}`}>
-              {stat.value}
-            </div>
-            <div className={styles.statLabel}>{stat.label}</div>
-            {stat.label === 'Learning Momentum' && (
-              <div className="text-[10px] text-emerald-400/60 font-bold mt-1">LAST 7 DAYS</div>
-            )}
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -362,7 +370,7 @@ export default function DashboardPageClient() {
               <Flame className="w-5 h-5 text-orange-400" />
               Activity Pulse
             </h3>
-            <StreakHeatmap events={questions} />
+            {loading ? <Skeleton className="w-full h-40 rounded-xl" /> : <StreakHeatmap events={questions} />}
           </div>
 
           <div className={styles.sectionCard}>
@@ -387,7 +395,7 @@ export default function DashboardPageClient() {
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                My Questions ({questions.length})
+                My Questions ({loading ? '...' : questions.length})
               </button>
               <button
                 onClick={() => setActiveTab('answers')}
@@ -397,71 +405,80 @@ export default function DashboardPageClient() {
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                Contributions ({answers.length})
+                Contributions ({loading ? '...' : answers.length})
               </button>
             </div>
 
-            {activeTab === 'organization' && profile?.id && (
-              <OrganizationView orgId={profile.id} />
-            )}
-
-            {activeTab === 'questions' ? (
-              questions.length > 0 ? (
-                questions.map((item, idx) => (
-                  <div key={idx} className={styles.activityItem}>
-                    <h4 className="font-semibold text-white mb-2">{item.title}</h4>
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        item.status === 'answered' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {item.status}
-                      </span>
-                      <span className="text-gray-400">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </span>
-                      <span className="text-gray-400">
-                        {item.answer_count || 0} answers
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  No questions asked yet.
-                </div>
-              )
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="w-full h-24 rounded-xl" />
+                <Skeleton className="w-full h-24 rounded-xl" />
+              </div>
             ) : (
-              answers.length > 0 ? (
-                answers.map((item, idx) => (
-                  <div key={idx} className={styles.activityItem}>
-                    <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">
-                      Response to:
+              <>
+                {activeTab === 'organization' && profile?.id && (
+                  <OrganizationView orgId={profile.id} />
+                )}
+
+                {activeTab === 'questions' ? (
+                  questions.length > 0 ? (
+                    questions.map((item, idx) => (
+                      <div key={idx} className={styles.activityItem}>
+                        <h4 className="font-semibold text-white mb-2">{item.title}</h4>
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            item.status === 'answered' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                          }`}>
+                            {item.status}
+                          </span>
+                          <span className="text-gray-400">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </span>
+                          <span className="text-gray-400">
+                            {item.answer_count || 0} answers
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      No questions asked yet.
                     </div>
-                    <h4 className="font-semibold text-white mb-2">
-                      {item.doubts?.title || 'Untitled Doubt'}
-                    </h4>
-                    <p className="text-sm text-gray-400 line-clamp-2 mb-3">
-                      {item.content}
-                    </p>
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="text-gray-400">
-                        {item.votes ?? 0} votes
-                      </span>
-                      {item.is_accepted && (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
-                          ACCEPTED
-                        </span>
-                      )}
+                  )
+                ) : (
+                  answers.length > 0 ? (
+                    answers.map((item, idx) => (
+                      <div key={idx} className={styles.activityItem}>
+                        <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">
+                          Response to:
+                        </div>
+                        <h4 className="font-semibold text-white mb-2">
+                          {item.doubts?.title || 'Untitled Doubt'}
+                        </h4>
+                        <p className="text-sm text-gray-400 line-clamp-2 mb-3">
+                          {item.content}
+                        </p>
+                        <div className="flex items-center gap-3 text-sm">
+                          <span className="text-gray-400">
+                            {item.votes ?? 0} votes
+                          </span>
+                          {item.is_accepted && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
+                              ACCEPTED
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      No contributions yet.
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400">
-                  <Award className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  No contributions yet.
-                </div>
-              )
+                  )
+                )}
+              </>
             )}
           </div>
         </div>
@@ -498,7 +515,12 @@ export default function DashboardPageClient() {
               <Trophy className="w-5 h-5 text-amber-400" />
               Top Badges
             </h3>
-            {badges.length > 0 ? (
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="w-full h-16 rounded-xl" />
+                <Skeleton className="w-full h-16 rounded-xl" />
+              </div>
+            ) : badges.length > 0 ? (
               badges.slice(0, 3).map((badge, idx) => (
                 <div key={idx} className={styles.badgeItem}>
                   <div className="w-12 h-12 bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-400 mx-auto">

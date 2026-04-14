@@ -52,8 +52,9 @@ export default function SettingsPageClient() {
   const watchedFields = watch();
 
   useEffect(() => {
+    let isMounted = true;
     async function loadProfile() {
-      if (!user) return;
+      if (!user || profileData?.id === user.id) return;
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -61,7 +62,7 @@ export default function SettingsPageClient() {
           .eq('id', user.id)
           .single();
         
-        if (data) {
+        if (data && isMounted) {
           setProfileData(data);
           setAvatarUrl(data.avatar_url);
           reset({
@@ -80,11 +81,12 @@ export default function SettingsPageClient() {
       } catch (e) {
         console.error('Settings load failed:', e);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     loadProfile();
-  }, [user, reset, supabase]);
+    return () => { isMounted = false; };
+  }, [user, reset, supabase, profileData?.id]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -124,13 +124,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       setLoading(true);
+      // Clear Supabase session
       await supabase.auth.signOut({ scope: 'global' });
+      
+      // Explicitly clear any remaining auth-related storage
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+        // Clear cookies that might be lingering
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+      }
+
       setUser(null);
       setProfile(null);
+      
+      // Force immediate navigation and refresh
       router.replace('/');
       router.refresh();
     } catch (err) {
       console.error('Error signing out:', err);
+      setUser(null);
+      setProfile(null);
       router.replace('/');
       router.refresh();
     } finally {
