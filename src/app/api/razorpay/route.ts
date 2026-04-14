@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    const order = await razorpay.orders.create(options);
+    const order = await getRazorpayClient().orders.create(options);
 
     return NextResponse.json(order);
   } catch (error: any) {

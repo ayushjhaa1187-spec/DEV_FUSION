@@ -5,9 +5,8 @@
  * All emails are plain HTML (no external template engine) for hackathon speed.
  */
 
-import { Resend } from "resend";
+import { sendEmail } from "@/lib/resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
 const FROM = process.env.RESEND_FROM_EMAIL || "SkillBridge <noreply@skillbridge.edu>";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -146,7 +145,7 @@ export async function sendSubscriptionConfirmationEmail(args: SubscriptionConfir
     <div class="footer">SkillBridge · Because every doubt deserves an answer.</div>
   `);
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to: args.email,
     subject: `✅ SkillBridge ${args.plan} — Payment Confirmed`,
@@ -170,7 +169,7 @@ export async function sendPaymentFailedEmail(args: PaymentFailedArgs) {
     <div class="footer">SkillBridge · Need help? Contact support@skillbridge.edu</div>
   `);
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to: args.email,
     subject: "⚠️ SkillBridge — Payment Failed",
@@ -195,7 +194,7 @@ export async function sendCreditPurchaseEmail(args: CreditPurchaseArgs) {
     <div class="footer">Credits never expire. Use them anytime.</div>
   `);
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to: args.email,
     subject: `🪙 +${args.creditsAdded} AI Credits Added to Your SkillBridge Wallet`,
@@ -222,7 +221,7 @@ export async function sendMentorPayoutEmail(args: MentorPayoutArgs) {
     <div class="footer">SkillBridge Mentor Programme · Thank you for teaching!</div>
   `);
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to: args.mentorEmail,
     subject: `💸 SkillBridge — ₹${args.mentorPayout.toFixed(2)} Earnings Recorded`,
@@ -231,7 +230,7 @@ export async function sendMentorPayoutEmail(args: MentorPayoutArgs) {
 }
 
 export async function sendGenericEmail(to: string, subject: string, html: string) {
-  return resend.emails.send({ from: FROM, to, subject, html });
+  return sendEmail({ from: FROM, to, subject, html });
 }
 
 export async function sendOrganizationApplicationEmail(args: OrganizationApplicationArgs) {
@@ -250,7 +249,7 @@ export async function sendOrganizationApplicationEmail(args: OrganizationApplica
     <div class="footer">SkillBridge Organization Portal</div>
   `);
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to: args.to,
     subject: `🏢 New Application for ${args.organizationName}`,
@@ -276,7 +275,7 @@ export async function sendBookingConfirmationEmail(args: BookingConfirmationArgs
     <div class="footer">SkillBridge · Because every doubt deserves an answer.</div>
   `);
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to: args.to,
     subject: `📅 SkillBridge Session Confirmed: ${args.startTime}`,
@@ -300,7 +299,7 @@ export async function sendMentorStatusEmail(args: MentorStatusArgs) {
     <div class="footer">SkillBridge Mentor Program</div>
   `);
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to: args.to,
     subject: `✅ SkillBridge Mentor Application: ${args.status.toUpperCase()}`,
@@ -323,7 +322,7 @@ export async function sendCertificateEmail(args: CertificateEmailArgs) {
     <div class="footer">SkillBridge · Validating Your Potential</div>
   `);
 
-  return resend.emails.send({
+  return sendEmail({
     from: FROM,
     to: args.to,
     subject: `🏆 Certificate Earned: ${args.subject}`,
