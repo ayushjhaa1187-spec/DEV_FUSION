@@ -25,19 +25,34 @@ export async function POST(req: NextRequest) {
     const prompt = `Create ${count} MCQ questions for college students.\nSubject: ${subject}, Topic: ${topic}, Difficulty: ${difficulty || 'medium'}\n\nReturn ONLY valid JSON array in this format:\n[{"id":1,"question":"...","options":["A) ...","B) ...","C) ...","D) ..."],"correct_answer":"A","explanation":"..."}]`;
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
+    let model = genAI.getGenerativeModel({
       model: 'gemini-2.0-flash',
       generationConfig: { responseMimeType: 'application/json' },
     });
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    let text;
+    try {
+      const result = await model.generateContent(prompt);
+      text = result.response.text();
+    } catch (modelErr) {
+      console.warn("[quiz-generator] Gemini 2.0 failed, falling back to 1.5:", modelErr);
+      model = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        generationConfig: { responseMimeType: 'application/json' },
+      });
+      const result = await model.generateContent(prompt);
+      text = result.response.text();
+    }
 
     try {
       const questions = JSON.parse(text) as QuizQuestion[];
       return NextResponse.json({ questions });
-    } catch {
-      return NextResponse.json({ error: 'Failed to parse quiz' }, { status: 500 });
+    } catch (parseErr) {
+      console.error("[quiz-generator] JSON parse error:", text);
+      return NextResponse.json({ 
+        error: 'Failed to parse quiz response',
+        message: 'The AI provided a response that could not be parsed as a quiz. Please try again.'
+      }, { status: 500 });
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'AI service unavailable';

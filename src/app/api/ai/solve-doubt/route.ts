@@ -17,13 +17,14 @@ export async function POST(req: NextRequest) {
        return new Response('Title is required', { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
-      return new Response('AI API Key not configured', { status: 500 });
+      return new Response(JSON.stringify({ message: 'AI API Key not configured' }), { status: 500 });
     }
 
-    const genAI = new (await import('@google/generative-ai')).GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(apiKey);
+    let model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = `You are a college-level teaching assistant. Explain the following student's doubt step by step.
 Follow this specific structure:
@@ -38,21 +39,31 @@ Doubt Title: ${title}
 Doubt Content: ${typeof content === 'string' ? content : JSON.stringify(content)}
 `;
 
-    const result = await model.generateContentStream(prompt);
+    let streamResult;
+    try {
+      streamResult = await model.generateContentStream(prompt);
+      // Small check to see if the stream actually starts (throws if model unavailable)
+      await streamResult.response;
+    } catch (modelErr: any) {
+      console.warn("[solve-doubt] Gemini 2.0 failed, falling back to 1.5:", modelErr.message);
+      model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      streamResult = await model.generateContentStream(prompt);
+    }
 
     // Proxy the stream
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
         try {
-          for await (const chunk of result.stream) {
+          for await (const chunk of streamResult.stream) {
             const text = chunk.text();
             if (text) {
               controller.enqueue(encoder.encode(text));
             }
           }
           controller.close();
-        } catch (error) {
+        } catch (error: any) {
+          console.error("[solve-doubt] Stream error:", error);
           controller.error(error);
         }
       },
@@ -62,6 +73,7 @@ Doubt Content: ${typeof content === 'string' ? content : JSON.stringify(content)
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff'
       },
     });
 

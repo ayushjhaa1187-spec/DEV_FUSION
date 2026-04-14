@@ -116,15 +116,31 @@ export async function POST(req: NextRequest) {
   }
 
   // 4. Stream from Gemini
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.0-flash",
-  });
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+  if (!apiKey) {
+    console.error("[ai/solve] No Gemini API key found in environment variables.");
+    return NextResponse.json({ 
+      error: "ai_config_missing", 
+      message: "AI configuration is missing on the server. Please check environment variables." 
+    }, { status: 500 });
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  let model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = `${buildSystemPrompt(subject, difficulty)}\n\n---\nStudent Query: ${queryText}`;
 
   try {
-    const streamResult = await model.generateContentStream(prompt);
+    let streamResult;
+    try {
+      streamResult = await model.generateContentStream(prompt);
+      // Small check to see if the stream actually starts (throws if model unavailable)
+      await streamResult.response;
+    } catch (modelErr: any) {
+      console.warn("[ai/solve] Gemini 2.0 Flash failed, falling back to 1.5:", modelErr.message);
+      model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      streamResult = await model.generateContentStream(prompt);
+    }
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -151,8 +167,11 @@ export async function POST(req: NextRequest) {
         "X-Accel-Buffering": "no",
       },
     });
-  } catch (err) {
-    console.error("[ai/solve] Gemini error:", err);
-    return NextResponse.json({ error: "AI service unavailable" }, { status: 503 });
+  } catch (err: any) {
+    console.error("[ai/solve] Gemini execution error:", err);
+    return NextResponse.json({ 
+      error: "AI service unavailable",
+      message: err.message || "The AI encountered an error. This may be due to quota limits or regional restrictions."
+    }, { status: 503 });
   }
 }
