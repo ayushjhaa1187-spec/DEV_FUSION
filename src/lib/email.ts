@@ -46,6 +46,14 @@ interface MentorPayoutArgs {
   bookingId: string;
 }
 
+interface OrganizationApplicationArgs {
+  to: string;
+  organizationName: string;
+  applicantName: string;
+  applicantReputation: number;
+  dashboardUrl: string;
+}
+
 // ─── Shared HTML shell ────────────────────────────────────────────────────────
 function emailShell(content: string): string {
   return `<!DOCTYPE html>
@@ -202,4 +210,28 @@ export async function sendMentorPayoutEmail(args: MentorPayoutArgs) {
 
 export async function sendGenericEmail(to: string, subject: string, html: string) {
   return resend.emails.send({ from: FROM, to, subject, html });
+}
+
+export async function sendOrganizationApplicationEmail(args: OrganizationApplicationArgs) {
+  const html = emailShell(`
+    <div class="header" style="background:linear-gradient(135deg,#047857,#0f766e);">
+      <h1>🏢 New Organization Application</h1>
+      <p>Someone wants to join your organization</p>
+    </div>
+    <div class="body">
+      <p>Hi there,</p>
+      <p><strong>${args.applicantName}</strong> has just applied to join <strong>${args.organizationName}</strong>.</p>
+      <div class="row"><span class="label">Applicant Reputation</span><span class="value badge">${args.applicantReputation} pts</span></div>
+      <p style="margin-top:20px">Please review their application in your dashboard.</p>
+      <a href="${args.dashboardUrl}" class="cta">Go to Dashboard →</a>
+    </div>
+    <div class="footer">SkillBridge Organization Portal</div>
+  `);
+
+  return resend.emails.send({
+    from: FROM,
+    to: args.to,
+    subject: `🏢 New Application for ${args.organizationName}`,
+    html,
+  });
 }
