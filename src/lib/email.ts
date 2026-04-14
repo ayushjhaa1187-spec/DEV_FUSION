@@ -54,6 +54,28 @@ interface OrganizationApplicationArgs {
   dashboardUrl: string;
 }
 
+interface BookingConfirmationArgs {
+  to: string;
+  isMentor: boolean;
+  otherPartyName: string;
+  startTime: string;
+  meetingUrl: string;
+}
+
+interface MentorStatusArgs {
+  to: string;
+  name: string;
+  status: 'approved' | 'rejected' | 'pending';
+  reason?: string;
+}
+
+interface CertificateEmailArgs {
+  to: string;
+  name: string;
+  subject: string;
+  certificateUrl: string;
+}
+
 // ─── Shared HTML shell ────────────────────────────────────────────────────────
 function emailShell(content: string): string {
   return `<!DOCTYPE html>
@@ -232,6 +254,79 @@ export async function sendOrganizationApplicationEmail(args: OrganizationApplica
     from: FROM,
     to: args.to,
     subject: `🏢 New Application for ${args.organizationName}`,
+    html,
+  });
+}
+
+export async function sendBookingConfirmationEmail(args: BookingConfirmationArgs) {
+  const role = args.isMentor ? "Mentor" : "Student";
+  const html = emailShell(`
+    <div class="header" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);">
+      <h1>📅 Session Confirmed!</h1>
+      <p>Your SkillBridge mentorship session is booked</p>
+    </div>
+    <div class="body">
+      <p>Hi there,</p>
+      <p>The session between you and <strong>${args.otherPartyName}</strong> has been confirmed.</p>
+      <div class="row"><span class="label">Time</span><span class="value">${args.startTime}</span></div>
+      <div class="row"><span class="label">Your Role</span><span class="value banner">${role}</span></div>
+      <p style="margin-top:20px">You can join the session using the button below at the scheduled time.</p>
+      <a href="${args.meetingUrl}" class="cta">Join Session →</a>
+    </div>
+    <div class="footer">SkillBridge · Because every doubt deserves an answer.</div>
+  `);
+
+  return resend.emails.send({
+    from: FROM,
+    to: args.to,
+    subject: `📅 SkillBridge Session Confirmed: ${args.startTime}`,
+    html,
+  });
+}
+
+export async function sendMentorStatusEmail(args: MentorStatusArgs) {
+  const isApproved = args.status === 'approved';
+  const html = emailShell(`
+    <div class="header" style="background:${isApproved ? 'linear-gradient(135deg,#059669,#10b981)' : 'linear-gradient(135deg,#dc2626,#ef4444)'};">
+      <h1>${isApproved ? '🎊 Application Approved!' : 'Application Update'}</h1>
+      <p>Your mentor application status has been updated</p>
+    </div>
+    <div class="body">
+      <p>Hi ${args.name},</p>
+      <p>Your application to become a verified mentor on SkillBridge has been <strong>${args.status}</strong>.</p>
+      ${args.reason ? `<p style="color:#fca5a5"><strong>Reason:</strong> ${args.reason}</p>` : ''}
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/mentors/dashboard" class="cta">Go to Mentor Dashboard →</a>
+    </div>
+    <div class="footer">SkillBridge Mentor Program</div>
+  `);
+
+  return resend.emails.send({
+    from: FROM,
+    to: args.to,
+    subject: `✅ SkillBridge Mentor Application: ${args.status.toUpperCase()}`,
+    html,
+  });
+}
+
+export async function sendCertificateEmail(args: CertificateEmailArgs) {
+  const html = emailShell(`
+    <div class="header" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);">
+      <h1>🏆 You've Earned a Certificate!</h1>
+      <p>Congratulations on completing the assessment</p>
+    </div>
+    <div class="body">
+      <p>Hi ${args.name},</p>
+      <p>Well done! You have successfully completed the <strong>${args.subject}</strong> assessment and earned your official SkillBridge certificate.</p>
+      <p style="margin-top:20px">You can view, download, and share your verified certificate below.</p>
+      <a href="${args.certificateUrl}" class="cta">View Certificate →</a>
+    </div>
+    <div class="footer">SkillBridge · Validating Your Potential</div>
+  `);
+
+  return resend.emails.send({
+    from: FROM,
+    to: args.to,
+    subject: `🏆 Certificate Earned: ${args.subject}`,
     html,
   });
 }

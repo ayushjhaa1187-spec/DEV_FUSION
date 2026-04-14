@@ -89,6 +89,10 @@ export async function POST(req: NextRequest) {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
     });
 
+    console.log('Notifying mentor for session:', {
+      mentor_id: slot.mentor_id,
+      student_name: studentName,
+      time: slotTime,
       link: '/dashboard/sessions'
     });
 
