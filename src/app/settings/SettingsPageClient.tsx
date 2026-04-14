@@ -223,7 +223,7 @@ export default function SettingsPageClient() {
                     <div className="relative group">
                       <div className="w-32 h-32 rounded-3xl bg-white/10 overflow-hidden ring-4 ring-white/5 group-hover:ring-indigo-500/30 transition-all">
                         {avatarUrl ? (
-                          <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                          <Image src={avatarUrl} alt="Avatar" width={128} height={128} loading="lazy" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full bg-indigo-500/20 flex items-center justify-center text-3xl font-black">{watchedFields.full_name?.[0] || 'U'}</div>
                         )}
@@ -406,7 +406,7 @@ export default function SettingsPageClient() {
             <div className="relative z-10 flex flex-col items-center text-center">
               <div className="w-24 h-24 rounded-[2rem] bg-indigo-500/20 overflow-hidden mb-4 ring-4 ring-white/5 group-hover:scale-105 transition-all">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                  <Image src={avatarUrl} alt="User avatar" width={96} height={96} loading="lazy" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-3xl font-black text-white/20">{watchedFields.full_name?.[0] || 'U'}</div>
                 )}
