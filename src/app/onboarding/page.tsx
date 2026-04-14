@@ -4,25 +4,32 @@ import OnboardingClient from './OnboardingClient';
 
 export default async function OnboardingPage() {
   const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect('/auth');
   }
 
-  // Check if they already have onboarding completed (has branch and college)
   const { data: profile } = await supabase
     .from('profiles')
-    .select('college, branch')
+    .select('role, college, branch')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (profile?.college && profile?.branch) {
-     // Already onboarded
-     redirect('/dashboard');
+  const role = profile?.role || user.user_metadata?.role || 'student';
+
+  // Organization users should not be blocked by student academic fields.
+  if (role === 'organization' || role === 'campus_admin') {
+    redirect('/organization/dashboard');
   }
 
-  // Provide subjects for the multi-select
+  // Student/Mentor onboarding complete check.
+  if (profile?.college && profile?.branch) {
+    redirect(role === 'mentor' ? '/mentors/dashboard' : '/dashboard');
+  }
+
   const { data: subjects } = await supabase.from('subjects').select('id, name');
 
   return <OnboardingClient user={user} subjects={subjects || []} />;

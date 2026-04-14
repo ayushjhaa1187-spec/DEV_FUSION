@@ -1,61 +1,126 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Razorpay from 'razorpay';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { getRazorpayClient } from '@/lib/razorpay';
+import { PLAN_DETAILS, type PlanTier } from '@/lib/plans';
 
-export async function POST(req: NextRequest) {
+function getPlanFromPlanId(planId: string): PlanTier {
+  if (planId.toLowerCase().includes('elite')) return 'elite';
+  if (planId.toLowerCase().includes('pro')) return 'pro';
+  return 'free';
+}
+
+async function getCurrentUser() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
+  return { supabase, user };
+}
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+export async function GET() {
+  const { supabase, user } = await getCurrentUser();
+  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
   }
 
-  const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID || '',
-    key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-  });
+  const plan = (data?.plan as PlanTier) || 'free';
+  return NextResponse.json({ success: true, subscription: data, planDetails: PLAN_DETAILS[plan], nextBillingDate: data?.current_period_end || null });
+}
 
-  if (!process.env.RAZORPAY_KEY_ID) {
-    console.error('RAZORPAY_KEY_ID is missing');
-    return NextResponse.json({ error: 'Payment gateway configuration error' }, { status: 500 });
-  }
+export async function POST(req: NextRequest) {
+  const { supabase, user } = await getCurrentUser();
+  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
 
   try {
     const { plan_id } = await req.json();
-
     if (!plan_id) {
-      return NextResponse.json({ error: 'Missing plan_id' }, { status: 400 });
+      return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Missing plan_id' } }, { status: 400 });
     }
 
-    const options = {
+    const subscription = await getRazorpayClient().subscriptions.create({
       plan_id,
       customer_notify: 1,
-      total_count: 120, // max billing cycles
-      notes: {
-        user_id: user.id
-      }
-    };
+      total_count: 120,
+      notes: { user_id: user.id },
+    });
 
-    const subscription = await razorpay.subscriptions.create(options);
-    
-    // Store pending subscription in database mapping it to user
-    const { error: dbError } = await supabase
-      .from('subscriptions')
-      .upsert({
-        user_id: user.id,
-        razorpay_subscription_id: subscription.id,
-        plan_id: plan_id,
-        status: subscription.status,
-      }, { onConflict: 'user_id' });
+    const plan = getPlanFromPlanId(plan_id);
+    const { error: dbError } = await supabase.from('subscriptions').upsert({
+      user_id: user.id,
+      razorpay_subscription_id: subscription.id,
+      razorpay_plan_id: plan_id,
+      plan,
+      status: subscription.status,
+      current_period_start: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
 
-    if (dbError) {
-        console.error('Database Error storing subscription:', dbError);
-        return NextResponse.json({ error: 'Could not record subscription in database' }, { status: 500 });
-    }
+    if (dbError) throw dbError;
 
-    return NextResponse.json(subscription);
-  } catch (error: any) {
-    console.error('Razorpay Subscription Error:', error);
-    return NextResponse.json({ error: error.message || 'Payment service error' }, { status: 500 });
+    return NextResponse.json({ success: true, subscription });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Payment service error';
+    return NextResponse.json({ success: false, error: { code: 'SUBSCRIPTION_CREATE_FAILED', message } }, { status: 500 });
   }
+}
+
+export async function PATCH(req: NextRequest) {
+  const { supabase, user } = await getCurrentUser();
+  if (!user) return NextResponse.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } }, { status: 401 });
+
+  const { data: active } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('user_id', user.id)
+    .in('status', ['active', 'authenticated', 'created'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!active?.razorpay_subscription_id) {
+    return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'No active subscription found' } }, { status: 404 });
+  }
+
+  try {
+    await getRazorpayClient().subscriptions.cancel(active.razorpay_subscription_id, false);
+
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), current_period_end: new Date().toISOString() })
+      .eq('id', active.id);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to cancel subscription';
+    return NextResponse.json({ success: false, error: { code: 'SUBSCRIPTION_CANCEL_FAILED', message } }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const { supabase } = await getCurrentUser();
+  const body = await req.json().catch(() => ({}));
+  const subscriptionId = body?.subscription_id as string | undefined;
+
+  if (!subscriptionId) {
+    return NextResponse.json({ success: false, error: { code: 'BAD_REQUEST', message: 'subscription_id is required' } }, { status: 400 });
+  }
+
+  const { error } = await supabase
+    .from('subscriptions')
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+    .eq('razorpay_subscription_id', subscriptionId);
+
+  if (error) {
+    return NextResponse.json({ success: false, error: { code: 'DB_ERROR', message: error.message } }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }

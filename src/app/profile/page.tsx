@@ -1,6 +1,8 @@
+import { Suspense } from 'react';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import ProfilePageClient from './ProfilePageClient';
+import Loading from './loading';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -10,24 +12,33 @@ export const metadata: Metadata = {
 
 export default async function ProfilePage() {
   const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/auth');
+    redirect('/auth/login');
   }
 
-  // Fetch full profile and reputation data
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+
+  const role = user.user_metadata?.role;
+  if (role === 'mentor') {
+    redirect('/mentors/dashboard');
+  }
+  if (role === 'organization' || role === 'campus_admin') {
+    redirect('/organization/dashboard');
+  }
+
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
 
   const { data: badges } = await supabase
     .from('user_badges')
     .select('unlocked_at, badges(*)')
     .eq('user_id', user.id);
 
-  return <ProfilePageClient user={user} initialProfile={profile} initialBadges={badges || []} />;
+  return (
+    <Suspense fallback={<Loading />}>
+      <ProfilePageClient user={user} initialProfile={profile} initialBadges={badges || []} />
+    </Suspense>
+  );
 }
-
