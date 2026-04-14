@@ -116,7 +116,9 @@ export async function POST(req: NextRequest) {
   }
 
   // 4. Stream from Gemini
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+  const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+  if (!geminiKey) return NextResponse.json({ error: "Gemini API key missing" }, { status: 500 });
+  const genAI = new GoogleGenerativeAI(geminiKey);
   const model = genAI.getGenerativeModel({ 
     model: "gemini-1.5-flash",
   }, { apiVersion: 'v1' });

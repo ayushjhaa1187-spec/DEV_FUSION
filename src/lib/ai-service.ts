@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Support both common environment variable names for flexibility
-const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
+const API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Direct and stable model selection
@@ -56,10 +56,10 @@ export async function askAIDoubt(question: string, context?: string): Promise<AI
   };
 
   if (!API_KEY) {
-    console.error('[AI Service] GEMINI_API_KEY or GOOGLE_AI_API_KEY is not set');
+    console.error('[AI Service] GOOGLE_GENERATIVE_AI_API_KEY/GEMINI_API_KEY/GOOGLE_AI_API_KEY is not set');
     return {
         ...fallback,
-        explanation: "API configuration missing. Please set GEMINI_API_KEY in your environment."
+        explanation: "API configuration missing. Please set GOOGLE_GENERATIVE_AI_API_KEY in your environment."
     };
   }
 
