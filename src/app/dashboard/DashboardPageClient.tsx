@@ -8,7 +8,7 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { 
   Trophy, MessageSquare, Flame, ArrowRight, Target, 
   Settings, LogOut, Award, History, LayoutDashboard,
-  Brain, Sparkles
+  Brain, Sparkles, User
 } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';

@@ -53,8 +53,21 @@ export default function AIFloatingAssistant() {
         return;
       }
 
-      // Add the AI message from response
-      const aiContent = resData.data.answer || resData.data.response || 'No response generated.';
+      // Add the AI message from response - handling structured output from ai-service
+      const data = resData.data;
+      let aiContent = '';
+      
+      if (typeof data === 'string') {
+        aiContent = data;
+      } else if (data.explanation) {
+        aiContent = data.explanation;
+        if (data.steps && data.steps.length > 0) {
+          aiContent += '\n\n**Resolution Steps:**\n' + data.steps.map((s: string, i: number) => `${i + 1}. ${s}`).join('\n');
+        }
+      } else {
+        aiContent = 'No response generated.';
+      }
+
       setMessages(prev => [...prev, { role: 'ai', content: aiContent }]);
     } catch (err) {
       console.error('AI Fetch Error:', err);

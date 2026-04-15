@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { 
   Save, AlertTriangle, Upload, Github, Linkedin, 
@@ -33,7 +33,7 @@ type ProfileFormData = {
 
 export default function SettingsPageClient() {
   const { user, loading: authLoading } = useAuth();
-  const supabase = createSupabaseBrowser();
+  const supabase = useMemo(() => createSupabaseBrowser(), []);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,7 +91,7 @@ export default function SettingsPageClient() {
     }
     loadProfile();
     return () => { isMounted = false; };
-  }, [user, authLoading, reset, supabase, profileData?.id, router]);
+  }, [user, authLoading, reset, router]); // Removed profileData dependency
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
