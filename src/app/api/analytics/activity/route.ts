@@ -14,11 +14,11 @@ export async function GET(req: NextRequest) {
 
     // 1. Fetch Daily Activity for Heatmap (365 Days)
     const { data: log, error: logError } = await supabase
-      .from('daily_activity_log')
-      .select('activity_date, actions_count')
-      .eq('student_id', user.id)
-      .gte('activity_date', oneYearAgo.toISOString().split('T')[0])
-      .order('activity_date', { ascending: true });
+      .from('usage_daily_log') // Updated to match Master Prompt
+      .select('date, count') // Updated to match schema
+      .eq('user_id', user.id)
+      .gte('date', oneYearAgo.toISOString().split('T')[0])
+      .order('date', { ascending: true });
 
     if (logError) throw logError;
 
@@ -29,20 +29,20 @@ export async function GET(req: NextRequest) {
     fourteenDaysAgo.setDate(now.getDate() - 14);
 
     const { data: momentumData, error: momError } = await supabase
-      .from('daily_activity_log')
-      .select('activity_date, actions_count')
-      .eq('student_id', user.id)
-      .gte('activity_date', fourteenDaysAgo.toISOString().split('T')[0]);
+      .from('usage_daily_log')
+      .select('date, count')
+      .eq('user_id', user.id)
+      .gte('date', fourteenDaysAgo.toISOString().split('T')[0]);
 
     if (momError) throw momError;
 
     const currentPeriod = momentumData
-      ?.filter(d => new Date(d.activity_date) >= sevenDaysAgo)
-      .reduce((acc, d) => acc + d.actions_count, 0) || 0;
+      ?.filter(d => new Date(d.date) >= sevenDaysAgo)
+      .reduce((acc, d) => acc + d.count, 0) || 0;
 
     const priorPeriod = momentumData
-      ?.filter(d => new Date(d.activity_date) < sevenDaysAgo)
-      .reduce((acc, d) => acc + d.actions_count, 0) || 0;
+      ?.filter(d => new Date(d.date) < sevenDaysAgo)
+      .reduce((acc, d) => acc + d.count, 0) || 0;
 
     const momentum = priorPeriod === 0 
       ? (currentPeriod > 0 ? 100 : 0) 
