@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { mentorApi, authApi } from '@/lib/api';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
+import EmptyState from '@/components/ui/EmptyState';
 import { Search, Filter, Star, Users, ArrowRight, ShieldCheck, Sparkles, GraduationCap, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

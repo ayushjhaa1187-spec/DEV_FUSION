@@ -63,7 +63,7 @@ export const doubtApi = {
 
 export const answerApi = {
   getAnswers: (doubtId: string) => apiFetch(`/api/doubts/${doubtId}/answers`),
-  postAnswer: (doubtId: string, data: unknown) => apiFetch(`/api/doubts/${doubtId}/answers', { method: 'POST', body: JSON.stringify(data) }),
+  postAnswer: (doubtId: string, data: unknown) => apiFetch(`/api/doubts/${doubtId}/answers`, { method: 'POST', body: JSON.stringify(data) }),
   acceptAnswer: (doubtId: string, answerId: string) => apiFetch(`/api/doubts/${doubtId}/accept/${answerId}`, { method: 'PATCH' }),
   vote: (answerId: string, vote_type: 'up' | 'down') => apiFetch(`/api/answers/${answerId}/vote`, { method: 'POST', body: JSON.stringify({ vote_type }) }),
 };

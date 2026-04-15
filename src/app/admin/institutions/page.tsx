@@ -15,7 +15,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
-import { createSupabaseClient } from '@/lib/supabase/client';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
 interface Organization {
@@ -48,7 +48,7 @@ export default function AdminInstitutionsPage() {
   }, [user, profile, authLoading, router]);
 
   const fetchOrgs = async () => {
-    const supabase = createSupabaseClient();
+    const supabase = createSupabaseBrowser();
     const { data, error } = await supabase
       .from('organizations')
       .select(`
@@ -74,7 +74,7 @@ export default function AdminInstitutionsPage() {
   };
 
   const toggleVerification = async (orgId: string, currentStatus: boolean) => {
-    const supabase = createSupabaseClient();
+    const supabase = createSupabaseBrowser();
     const { error } = await supabase
       .from('organizations')
       .update({ is_verified: !currentStatus })

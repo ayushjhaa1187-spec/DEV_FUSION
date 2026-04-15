@@ -233,14 +233,14 @@ export default function DoubtsPageClient() {
                           <div className="w-10 h-10 rounded-2xl bg-violet-600 flex items-center justify-center text-[10px] font-black text-white shadow-lg overflow-hidden">
                              {doubt.profiles?.avatar_url ? (
                                <img src={doubt.profiles.avatar_url} className="w-full h-full object-cover" />
-                             ) : initials}
+                             ) : (doubt.profiles?.username?.substring(0, 2).toUpperCase() || 'US')}
                           </div>
                           <div>
                             <p className="text-xs font-black m-0 uppercase tracking-tighter text-white">{doubt.profiles?.username || 'Learner'}</p>
                             <p className="text-[10px] m-0 text-gray-600 font-black uppercase tracking-tighter opacity-70">{new Date(doubt.created_at).toLocaleDateString()}</p>
                           </div>
                        </div>
-                       <ArrowRight size={18} className="text-gray-800 group-hover:text-violet-400 group-hover:translate-x-1 transition-all" />
+                       <ChevronRight size={18} className="text-gray-800 group-hover:text-violet-400 group-hover:translate-x-1 transition-all" />
                     </div>
                   </Link>
                 </motion.div>
@@ -258,7 +258,5 @@ export default function DoubtsPageClient() {
         )}
       </div>
     </div>
-  );
-}
   );
 }
