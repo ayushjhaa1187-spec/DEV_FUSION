@@ -1,51 +1,36 @@
-import React from 'react';
-import { cn } from './Button';
-import { Button } from './Button';
+'use client';
 
-export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
-  icon?: React.ReactNode;
+import { motion } from 'framer-motion';
+import { LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+
+interface EmptyStateProps {
+  icon: LucideIcon;
   title: string;
   description: string;
-  actionLabel?: string;
-  onAction?: () => void;
-  actionIcon?: React.ReactNode;
+  actionText?: string;
+  actionHref?: string;
 }
 
-export const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(({ 
-  icon, 
-  title, 
-  description, 
-  actionLabel, 
-  onAction,
-  actionIcon,
-  className,
-  ...props
-}, ref) => {
+export default function EmptyState({ icon: Icon, title, description, actionText, actionHref }: EmptyStateProps) {
   return (
-    <div 
-      ref={ref}
-      className={cn(
-        "flex flex-col w-full min-h-[300px] items-center justify-center p-8 text-center rounded-3xl border border-dashed border-border-color bg-bg-secondary/50",
-        className
-      )}
-      {...props}
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="flex flex-col items-center justify-center p-12 text-center sb-glass py-20"
     >
-      {icon && (
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-bg-tertiary mb-6 text-text-secondary">
-          {icon}
-        </div>
+      <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center mb-6 border border-white/5 shadow-inner">
+        <Icon size={40} className="text-violet-500 opacity-80" />
+      </div>
+      <h3 className="text-xl font-black mb-2 tracking-tight">{title}</h3>
+      <p className="text-sm text-gray-500 max-w-xs mx-auto mb-8 font-medium leading-relaxed">
+        {description}
+      </p>
+      {actionText && actionHref && (
+        <Link href={actionHref} className="sb-btn-primary scale-110">
+          {actionText}
+        </Link>
       )}
-      <h3 className="text-xl font-heading font-bold text-text-primary mb-2 mt-0">{title}</h3>
-      <p className="text-sm text-text-secondary max-w-sm mx-auto mb-8 leading-relaxed">{description}</p>
-      
-      {actionLabel && onAction && (
-        <Button variant="primary" onClick={onAction} icon={actionIcon}>
-          {actionLabel}
-        </Button>
-      )}
-    </div>
+    </motion.div>
   );
-});
-
-EmptyState.displayName = 'EmptyState';
-
+}

@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { z } from 'zod';
+
+const AnswerSchema = z.object({
+  content_markdown: z.string().min(10).max(5000),
+});
 
 /**
  * /api/doubts/[id]/answers
  * Handles community answers for a specific doubt.
- * Reputation for posting/accepting is handled by DB triggers.
+ * Reputation for posting/accepting is handled by API calls (Migration 025/026).
  */
 export async function GET(
   req: NextRequest,
@@ -37,19 +42,16 @@ export async function POST(
   }
 
   try {
-    const { content_markdown } = await req.json();
-
-    if (!content_markdown || content_markdown.length < 10) {
-      return NextResponse.json({ success: false, error: 'Answer content is too short' }, { status: 400 });
-    }
+    const raw = await req.json();
+    const parsed = AnswerSchema.parse(raw);
 
     const { data: answer, error } = await supabase
       .from('answers')
       .insert({
         doubt_id: id,
         author_id: user.id,
-        content: content_markdown,
-        content_markdown,
+        content: parsed.content_markdown,
+        content_markdown: parsed.content_markdown,
       })
       .select(`
         *,
@@ -59,10 +61,10 @@ export async function POST(
 
     if (error) throw error;
 
-    // 2. Award Reputation (using 'answer_upvoted' as requested in prompt for posting an answer)
+    // 2. Award Reputation (Action Key synced to CASE 'post_answer')
     await supabase.rpc('update_reputation', {
       p_user_id: user.id,
-      p_action: 'answer_upvoted',
+      p_action: 'post_answer',
       p_entity_id: answer.id
     });
 

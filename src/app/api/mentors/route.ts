@@ -3,6 +3,12 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const specialty = searchParams.get('specialty');
   const branch = searchParams.get('branch');
@@ -41,9 +47,20 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
+    // 1. Role Verification: Only mentors or admins can instantiate profiles
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || (profile.role !== 'mentor' && profile.role !== 'admin')) {
+      return NextResponse.json({ error: 'Only approved mentors can create a profile' }, { status: 403 });
+    }
+
     const { specialty, price_per_session } = await req.json();
 
-    // Check if mentor profile already exists
+    // 2. Check if mentor profile already exists
     const { data: existing } = await supabase
       .from('mentor_profiles')
       .select('id')
@@ -61,7 +78,7 @@ export async function POST(req: NextRequest) {
         specialty,
         price_per_session: price_per_session || 0,
       })
-      .select('*, profiles!id(username, avatar_url, full_name)')
+      .select('*, profiles:id(username, avatar_url, full_name)')
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

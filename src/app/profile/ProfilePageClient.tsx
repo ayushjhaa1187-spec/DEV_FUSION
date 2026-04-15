@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
@@ -13,7 +13,6 @@ import { AchievementCard } from '@/components/ui/AchievementCard';
 import { Modal } from '@/components/ui/Modal';
 import { Tabs } from '@/components/ui/Tabs';
 import { Trophy, Flame, Target, MessageSquare, Briefcase, Eye, Link as LinkIcon, Edit3 } from 'lucide-react';
-import { SubjectSelector } from '@/components/profile/SubjectSelector';
 
 export default function ProfilePageClient({ user, initialProfile, initialBadges }: { user: any, initialProfile: any, initialBadges: any[] }) {
   const router = useRouter();
@@ -23,6 +22,8 @@ export default function ProfilePageClient({ user, initialProfile, initialBadges 
   const [profile, setProfile] = useState(initialProfile);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -43,8 +44,23 @@ export default function ProfilePageClient({ user, initialProfile, initialBadges 
     showSocialLinks: true,
     showActivity: true
   });
-  
-  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function fetchActivity() {
+      try {
+        const res = await fetch('/api/dashboard/stats');
+        const data = await res.json();
+        if (data.success) {
+          setActivities(data.data.recent_activity || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile activity:', err);
+      } finally {
+        setLoadingActivity(false);
+      }
+    }
+    fetchActivity();
+  }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +79,7 @@ export default function ProfilePageClient({ user, initialProfile, initialBadges 
       if (error) throw error;
       showToast('Profile updated strictly to specs!', 'success');
       setIsEditOpen(false);
-      router.refresh(); // Server triggers refetch
+      router.refresh();
     } catch (err: any) {
       showToast(err.message, 'error');
     } finally {
@@ -113,8 +129,8 @@ export default function ProfilePageClient({ user, initialProfile, initialBadges 
                 
                 <div className="flex flex-wrap gap-4 mt-4 text-sm font-medium text-text-tertiary">
                    {profile?.college && <span className="flex items-center gap-1.5"><Briefcase size={16}/> {profile.college}</span>}
-                   {profile?.social_links?.github && <a href={profile.social_links.github} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary hover:underline"><LinkIcon size={16}/> GitHub</a>}
-                   {profile?.social_links?.linkedin && <a href={profile.social_links.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#0077b5] hover:underline"><LinkIcon size={16}/> LinkedIn</a>}
+                   {profile?.social_links?.github && <a href={formData.github} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary hover:underline"><LinkIcon size={16}/> GitHub</a>}
+                   {profile?.social_links?.linkedin && <a href={formData.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#0077b5] hover:underline"><LinkIcon size={16}/> LinkedIn</a>}
                 </div>
              </div>
              
@@ -170,9 +186,13 @@ export default function ProfilePageClient({ user, initialProfile, initialBadges 
               <CardContent className="pt-6">
                 <Tabs 
                    tabs={[
-                      { id: 'activity', label: 'Recent Activity', content: <div className="py-8 text-center text-text-tertiary border-2 border-dashed border-border-color rounded-2xl">Activity feed goes here based on selected scope.</div> },
-                      { id: 'doubts', label: 'Doubts Asked', content: <div className="py-8 text-center text-text-tertiary border-2 border-dashed border-border-color rounded-2xl">Doubts asked block.</div> },
-                      { id: 'answers', label: 'Answers', content: <div className="py-8 text-center text-text-tertiary border-2 border-dashed border-border-color rounded-2xl">Answers block.</div> }
+                      { 
+                        id: 'activity', 
+                        label: 'Recent Activity', 
+                        content: <ActivityList activities={activities} loading={loadingActivity} /> 
+                      },
+                      { id: 'doubts', label: 'Doubts Asked', content: <div className="py-8 text-center text-text-tertiary border-2 border-dashed border-border-color rounded-2xl">Your doubts will appear here in the next phase.</div> },
+                      { id: 'answers', label: 'Answers', content: <div className="py-8 text-center text-text-tertiary border-2 border-dashed border-border-color rounded-2xl">Your contributions will appear here in the next phase.</div> }
                    ]}
                 />
               </CardContent>
@@ -220,3 +240,39 @@ export default function ProfilePageClient({ user, initialProfile, initialBadges 
   );
 }
 
+function ActivityList({ activities, loading }: { activities: any[], loading: boolean }) {
+  if (loading) return (
+    <div className="space-y-4">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="h-20 bg-black/5 animate-pulse rounded-2xl" />
+      ))}
+    </div>
+  );
+
+  if (activities.length === 0) return (
+    <div className="py-12 text-center text-text-tertiary border-2 border-dashed border-border-color rounded-2xl">
+      <MessageSquare className="mx-auto mb-4 opacity-20" size={48} />
+      <p className="font-bold">No Neural Activity Detected</p>
+      <p className="text-sm">Contribute to the ecosystem to see your trail here.</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {activities.map((act, i) => (
+        <div key={i} className="p-4 bg-bg-secondary border border-border-color rounded-2xl flex items-center justify-between hover:border-primary/30 transition-all group">
+          <div className="flex items-center gap-4">
+            <div className={`p-3 rounded-xl ${act.type === 'doubt' ? 'bg-indigo-500/10 text-indigo-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+              {act.type === 'doubt' ? <Target size={20} /> : <MessageSquare size={20} />}
+            </div>
+            <div>
+              <p className="font-bold text-text-primary text-sm group-hover:text-primary transition-colors">{act.title}</p>
+              <p className="text-xs text-text-tertiary truncate max-w-sm">{act.subtitle}</p>
+            </div>
+          </div>
+          <p className="text-[10px] font-black uppercase text-text-tertiary tracking-widest">{new Date(act.date).toLocaleDateString()}</p>
+        </div>
+      ))}
+    </div>
+  );
+}

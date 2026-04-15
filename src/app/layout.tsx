@@ -5,9 +5,11 @@ import Providers from '@/components/providers';
 import ClientAIAssistant from '@/components/ClientAIAssistant';
 import { Suspense } from 'react';
 import DailyStreakTracker from '@/components/auth/DailyStreakTracker';
+import { Toaster } from 'sonner';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
+// ... existing metadata ...
   title: 'SkillBridge — Learn. Earn. Grow.',
   description:
     'SkillBridge is a college-focused platform for resolving doubts, connecting with mentors, and growing through community learning.',
@@ -33,6 +35,7 @@ export default function RootLayout({
           <main className="app-main">{children}</main>
           <ConditionalFooter />
           <ClientAIAssistant />
+          <Toaster richColors position="top-right" theme="dark" />
         </Providers>
       </body>
     </html>

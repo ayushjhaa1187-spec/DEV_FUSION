@@ -78,7 +78,8 @@ export default function AIFloatingAssistant() {
             initial={{ scale: 0, rotate: -45 }}
             animate={{ scale: 1, rotate: 0 }}
             exit={{ scale: 0, rotate: 45 }}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
             className="group relative" 
             onClick={() => setIsOpen(true)}
             style={{
@@ -89,7 +90,6 @@ export default function AIFloatingAssistant() {
               boxShadow: '0 12px 32px rgba(124, 58, 237, 0.4)',
             }}
           >
-            {/* Pulsing Ring (Phase 2.4) */}
             <div className="absolute inset-0 rounded-[inherit] border-2 border-emerald-400 opacity-0 group-hover:animate-ping pointer-events-none" />
             <Sparkles size={28} />
           </motion.button>
@@ -99,148 +99,124 @@ export default function AIFloatingAssistant() {
       <AnimatePresence mode="wait">
         {isOpen && (
           <motion.div 
-            initial={{ opacity: 0, y: 100, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
-            className="ai-panel glass"
+            initial={{ opacity: 0, y: 100, scale: 0.95, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: 100, scale: 0.95, filter: 'blur(10px)' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="sb-glass"
             style={{
               width: '440px', height: '680px', maxHeight: '85vh',
-              background: 'var(--glass-bg)', backdropFilter: 'var(--glass-blur)',
-              border: '1px solid var(--border)', borderRadius: '32px',
               display: 'flex', flexDirection: 'column', overflow: 'hidden',
               boxShadow: 'var(--shadow-premium)',
               position: 'absolute', bottom: '0', right: '0'
             }}
           >
             {/* Header */}
-            <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '12px', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Sparkles size={20} color="white" />
+            <div className="flex justify-between items-center p-6 border-b border-white/5 bg-white/5">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-600/20">
+                  <Sparkles size={22} className="text-white" />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 900, fontFamily: 'var(--font-heading)' }}>SkillBridge <span>AI</span></h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <h3 className="m-0 text-sm font-black tracking-tight font-heading">SkillBridge <span className="text-emerald-400">AI</span></h3>
+                  <div className="flex items-center gap-1.5 mt-0.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Thinking Realtime</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Reasoning Engine v4</span>
                   </div>
                 </div>
               </div>
-              <button onClick={() => setIsOpen(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#94a3b8', cursor: 'pointer', width: '32px', height: '32px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={18} />
+              <button 
+                onClick={() => setIsOpen(false)} 
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+              >
+                <X size={18} className="opacity-40" />
               </button>
             </div>
 
             {/* Chat Area */}
-            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 custom-scrollbar">
               {messages.map((m, i) => (
-                <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%' }}>
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    style={{ 
-                      padding: '16px 20px',
-                      borderRadius: '24px',
-                      fontSize: '0.95rem',
-                      lineHeight: 1.6,
-                      background: m.role === 'user' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
-                      color: 'white',
-                      borderBottomRightRadius: m.role === 'user' ? '4px' : '24px',
-                      borderBottomLeftRadius: m.role === 'ai' ? '4px' : '24px',
-                      border: '1px solid rgba(255,255,255,0.05)',
-                      position: 'relative'
+                <motion.div 
+                  key={i} 
+                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  className={`${m.role === 'user' ? 'self-end bg-violet-600' : 'self-start bg-white/5 border border-white/10'} max-w-[90%] p-4 px-5 rounded-[24px] text-[0.95rem] leading-relaxed shadow-sm`}
+                  style={{
+                    borderBottomRightRadius: m.role === 'user' ? '4px' : '24px',
+                    borderBottomLeftRadius: m.role === 'ai' ? '4px' : '24px',
+                  }}
+                >
+                  <ReactMarkdown
+                    components={{
+                      p: ({children}) => <p className="m-0">{children}</p>,
+                      code({ className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || '');
+                        return match ? (
+                          <div className="rounded-xl overflow-hidden my-4 border border-white/10">
+                            <SyntaxHighlighter
+                              PreTag="div"
+                              language={match[1]}
+                              style={atomDark}
+                              customStyle={{ margin: 0, background: '#09090b', padding: '1.25rem', fontSize: '0.8rem' }}
+                              {...props}
+                            >
+                              {String(children).replace(/\n$/, '')}
+                            </SyntaxHighlighter>
+                          </div>
+                        ) : (
+                          <code className="bg-white/10 px-1.5 py-0.5 rounded text-emerald-400 font-mono text-[0.8rem]" {...props}>
+                            {children}
+                          </code>
+                        );
+                      }
                     }}
                   >
-                    <ReactMarkdown
-                      components={{
-                        code({ className, children, ...props }: any) {
-                          const match = /language-(\w+)/.exec(className || '');
-                          return match ? (
-                            <div className="rounded-xl overflow-hidden my-4">
-                              <SyntaxHighlighter
-                                PreTag="div"
-                                language={match[1]}
-                                style={atomDark}
-                                customStyle={{ margin: 0, background: '#000' }}
-                                {...props}
-                              >
-                                {String(children).replace(/\n$/, '')}
-                              </SyntaxHighlighter>
-                            </div>
-                          ) : (
-                            <code className="bg-white/10 px-1.5 py-0.5 rounded text-indigo-300" {...props}>
-                              {children}
-                            </code>
-                          );
-                        }
-                      }}
-                    >
-                      {m.content}
-                    </ReactMarkdown>
-
-                    {m.role === 'ai' && i === messages.length - 1 && !loading && i > 0 && (
-                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end' }}>
-                        <button 
-                          onClick={() => {
-                            const lastUserMsg = messages[i-1]?.content || "";
-                            const content = `AI Response was: \n\n${m.content}\n\nMy Question was: ${lastUserMsg}`;
-                            const title = lastUserMsg.slice(0, 50) + "...";
-                            router.push(`/doubts/new?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&source=ai_escalation`);
-                          }}
-                          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
-                        >
-                          <History size={12} /> Escalate to Community
-                        </button>
-                      </div>
-                    )}
-                  </motion.div>
-                </div>
+                    {m.content}
+                  </ReactMarkdown>
+                </motion.div>
               ))}
               {loading && (
-                <div style={{ alignSelf: 'flex-start', background: 'rgba(255,255,255,0.05)', padding: '16px 24px', borderRadius: '24px', display: 'flex', gap: '6px' }}>
-                  <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: 6, height: 6, borderRadius: '50%', background: '#7c3aed' }} />
-                  <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} style={{ width: 6, height: 6, borderRadius: '50%', background: '#7c3aed' }} />
-                  <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} style={{ width: 6, height: 6, borderRadius: '50%', background: '#7c3aed' }} />
+                <div className="self-start bg-white/5 p-4 px-6 rounded-[24px] border border-white/10 flex gap-2">
+                  {[0, 1, 2].map(dot => (
+                    <motion.div 
+                      key={dot}
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1, delay: dot * 0.2 }}
+                      className="w-1.5 h-1.5 rounded-full bg-violet-500"
+                    />
+                  ))}
                 </div>
               )}
             </div>
 
             {/* Input Area */}
-            <div style={{ padding: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+            <div className="p-6 border-t border-white/5 bg-white/5">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {quickPrompts.map(p => (
                   <button 
                     key={p} 
                     onClick={() => sendMessage(p)}
-                    style={{ padding: '8px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}
+                    className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-wider opacity-60 hover:opacity-100 hover:bg-white/10 transition-all"
                   >
                     {p}
                   </button>
                 ))}
               </div>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <div className="relative">
                 <input 
                   type="text" 
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && sendMessage()}
                   placeholder="Inquire with SkillBridge AI..."
-                  style={{ width: '100%', padding: '18px 52px 18px 24px', background: '#000', border: '1px solid var(--border)', borderRadius: '20px', color: 'white', outline: 'none', fontFamily: 'var(--font-body)', fontSize: '0.9rem' }}
+                  className="sb-input !bg-black pr-14"
                 />
                 <button 
                   onClick={() => sendMessage()}
                   disabled={!input.trim() || loading}
-                  style={{
-                    position: 'absolute', right: '10px',
-                    background: 'var(--color-primary)', border: 'none', color: 'white',
-                    width: '42px', height: '42px', borderRadius: '14px', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                    opacity: !input.trim() || loading ? 0.5 : 1,
-                    boxShadow: '0 4px 12px var(--primary-glow)'
-                  }}
+                  className="absolute right-1.5 top-1.5 w-11 h-11 bg-violet-600 rounded-xl flex items-center justify-center text-white disabled:opacity-40 shadow-lg shadow-violet-600/20 active:scale-95 transition-all"
                 >
-                  <Send size={20} />
+                  <Send size={18} />
                 </button>
               </div>
             </div>

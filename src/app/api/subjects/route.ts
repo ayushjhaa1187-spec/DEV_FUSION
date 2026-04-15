@@ -3,6 +3,11 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
   
   const { data, error } = await supabase
     .from('subjects')
