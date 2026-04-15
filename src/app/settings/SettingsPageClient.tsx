@@ -17,6 +17,7 @@ import ReputationBadge from '@/components/user/ReputationBadge';
 import AvailabilityGrid from '@/components/settings/AvailabilityGrid';
 import CouponWidget from '@/components/billing/CouponWidget';
 import { toast } from 'sonner';
+import { useDebounce } from '@/hooks/useDebounce';
 
 type ProfileFormData = {
   full_name: string;
@@ -51,6 +52,37 @@ export default function SettingsPageClient() {
 
   const subjects = watch('subjects') || [];
   const watchedFields = watch();
+  const debouncedFormData = useDebounce(watchedFields, 2000);
+
+  // Auto-save logic (Priority 3 & 9)
+  useEffect(() => {
+    if (loading || authLoading || !profileData || activeTab !== 'profile') return;
+
+    const currentData = {
+      full_name: profileData.full_name || '',
+      college: profileData.college || '',
+      branch: profileData.branch || '',
+      semester: Number(profileData.semester) || 1,
+      bio: profileData.bio || '',
+      github_url: profileData.github_url || '',
+      linkedin_url: profileData.linkedin_url || '',
+      twitter_url: profileData.twitter_url || '',
+      website_url: profileData.website_url || '',
+      subjects: profileData.subjects || []
+    };
+
+    // Minor normalization for comparison
+    const normalizedDebounced = {
+      ...debouncedFormData,
+      semester: Number(debouncedFormData.semester)
+    };
+
+    if (JSON.stringify(normalizedDebounced) !== JSON.stringify(currentData)) {
+      onSubmit(debouncedFormData);
+      // Update local profileData to prevent loop
+      setProfileData({ ...profileData, ...debouncedFormData });
+    }
+  }, [debouncedFormData, loading, authLoading, profileData, activeTab]);
 
   useEffect(() => {
     if (authLoading) return;
