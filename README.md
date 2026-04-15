@@ -1178,43 +1178,6 @@ DEV_FUSION/
 └── README.md
 ```
 
----
-
-## 🗺️ Roadmap
-
-### ✅ Phase 1 — Foundation (Complete)
-- [x] Auth (Google OAuth + Email/OTP)
-- [x] Doubt Feed with real-time upvotes
-- [x] AI Doubt Solver (Gemini streaming)
-- [x] Basic reputation system + badges
-
-### ✅ Phase 2 — Mentor Economy (Complete)
-- [x] Mentor application + admin approval
-- [x] Session booking with Razorpay sandbox
-- [x] Jitsi video integration
-- [x] Post-session ratings
-
-### ✅ Phase 3 — Tests & Leaderboard (Complete)
-- [x] AI MCQ test generation
-- [x] Timed test UI with auto-submit
-- [x] Score history + analytics
-- [x] Public leaderboard
-
-### 🔄 Phase 4 — Revenue Infrastructure (In Progress)
-- [ ] Subscription plans (Free / Pro / Elite) with Razorpay recurring billing
-- [ ] AI Credit wallet system
-- [ ] Verified Certificate issuance (PDF + QR)
-- [ ] Billing history page + invoice emails
-- [ ] Commission ledger for mentor payouts
-
-### 📋 Phase 5 — B2B & Scale (Planned)
-- [ ] College Campus Plan portal
-- [ ] Admin revenue dashboard
-- [ ] Company recruitment board
-- [ ] White-label API documentation
-- [ ] SSO for institutional accounts
-
----
 
 ## 🌍 Deployment
 
