@@ -8,10 +8,14 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { GamificationListener } from '@/components/GamificationListener';
 import { NotificationToastProvider } from '@/components/providers/NotificationToastProvider';
 
+import { useAuthGuard } from '@/hooks/useAuthGuard';
+
 const ClientAIAssistant = dynamic(() => import('@/components/ClientAIAssistant'), { ssr: false });
 const DailyStreakTracker = dynamic(() => import('@/components/auth/DailyStreakTracker'), { ssr: false });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  useAuthGuard();
+
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
