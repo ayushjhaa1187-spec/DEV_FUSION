@@ -179,3 +179,21 @@ JSON Array: ["Q1", "Q2", "Q3"]`;
   const result = await executeWithRetry(prompt, z.array(z.string()));
   return result.success ? (result.data || []) : [];
 }
+
+/**
+ * Streams an academic doubt response.
+ */
+export async function streamAIDoubt(question: string, context?: string) {
+  if (!API_KEY) throw new Error('AI_KEY_MISSING');
+
+  const model = genAI.getGenerativeModel({ model: PRIMARY_MODEL });
+  const prompt = `You are SkillBridge AI, an elite academic expert. 
+Answer the following concisely and pedagogically. 
+Format your response using Markdown. 
+
+User Question: "${question}"
+${context ? `Subject Context: ${context}` : ''}`;
+
+  const result = await model.generateContentStream(prompt);
+  return result.stream;
+}
