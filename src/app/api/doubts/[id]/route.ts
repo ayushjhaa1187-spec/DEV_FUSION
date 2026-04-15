@@ -64,10 +64,10 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
   if (error) {
     if (error.code === 'PGRST116') {
-      return NextResponse.json({ error: 'Doubt not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Doubt not found' }, { status: 404 });
     }
     console.error('[GET /api/doubts/[id]]', error);
-    return NextResponse.json({ error: 'Failed to fetch doubt' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to fetch doubt' }, { status: 500 });
   }
 
   // Increment view count (fire-and-forget — do NOT await, don't block response)
@@ -100,8 +100,11 @@ export async function GET(req: NextRequest, context: RouteContext) {
   });
 
   return NextResponse.json({
-    ...doubt,
-    is_author: doubt.author_id === user.id,
-    answers: answersWithVotes,
+    success: true,
+    data: {
+      ...doubt,
+      is_author: doubt.author_id === user.id,
+      answers: answersWithVotes,
+    }
   });
 }

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 
+/**
+ * /api/doubts/[id]/answers
+ * Handles community answers for a specific doubt.
+ * Reputation for posting/accepting is handled by DB triggers.
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -15,8 +20,8 @@ export async function GET(
     .order('is_accepted', { ascending: false })
     .order('votes', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true, data });
 }
 
 export async function POST(
@@ -28,14 +33,14 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const { content_markdown } = await req.json();
 
     if (!content_markdown || content_markdown.length < 10) {
-      return NextResponse.json({ error: 'Answer content is too short' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Answer content is too short' }, { status: 400 });
     }
 
     const { data: answer, error } = await supabase
@@ -43,32 +48,26 @@ export async function POST(
       .insert({
         doubt_id: id,
         author_id: user.id,
-        content: content_markdown, // legacy redundancy
+        content: content_markdown,
         content_markdown,
       })
       .select(`
         *,
-        profiles:author_id (
-          username,
-          avatar_url,
-          reputation_points
-        )
+        profiles:author_id (username, avatar_url, reputation_points)
       `)
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
 
-
-    // Award reputation for posting an answer
+    // 2. Award Reputation (using 'answer_upvoted' as requested in prompt for posting an answer)
     await supabase.rpc('update_reputation', {
-      p_user_id:   user.id,
-      p_action:    'post_answer',
-      p_entity_id: answer.id,
-    }).then(({ error: repErr }) => {
-      if (repErr) console.warn('Reputation award failed (non-fatal):', repErr.message);
+      p_user_id: user.id,
+      p_action: 'answer_upvoted',
+      p_entity_id: answer.id
     });
 
-    // Notify the doubt author
+    // ─── Notification Flow ──────────────────────────────────────────────────────
+    // Notify the doubt author (triggered only if not the same person)
     const { data: doubt } = await supabase
       .from('doubts')
       .select('author_id, title')
@@ -76,28 +75,18 @@ export async function POST(
       .single();
 
     if (doubt && doubt.author_id !== user.id) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', user.id)
-        .single();
-
-      // type must match ENUM: answer_received, answer_posted, etc.
-      await supabase.from('notifications').insert({
+       await supabase.from('notifications').insert({
         user_id: doubt.author_id,
         type: 'answer_posted',
         title: 'New Answer Received',
-        message: `${profile?.username ?? 'Someone'} answered your doubt`,
-        metadata: {
-          doubt_title: doubt.title,
-          answer_id: answer.id
-        },
+        message: `Someone answered your doubt: "${doubt.title.slice(0, 30)}..."`,
         link: `/doubts/${id}`
       });
     }
 
-    return NextResponse.json(answer);
-  } catch (error) {
-    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    return NextResponse.json({ success: true, data: answer }, { status: 201 });
+  } catch (error: any) {
+    console.error('[POST /api/doubts/ans] Error:', error.message);
+    return NextResponse.json({ success: false, error: error.message || 'Failed to submit answer' }, { status: 500 });
   }
 }

@@ -1,41 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { generatePracticeQuiz } from '@/lib/ai-service';
-import { checkRateLimit } from '@/lib/rate-limiter';
 import { enforcePlanLimit } from '@/lib/usage';
 
+/**
+ * /api/tests/generate
+ * Generates an AI-backed practice quiz and stores it in the DB.
+ */
 export async function POST(req: NextRequest) {
+  // 1. Auth Enforcement
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  // Sliding-window rate limit check (5 requests / hour)
-  const rateCheck = await checkRateLimit(user.id, 'ai_generate_test');
-  if (!rateCheck.allowed) {
-    const retryAfterSecs = Math.ceil((rateCheck.resetAt.getTime() - Date.now()) / 1000);
-    return NextResponse.json(
-      {
-        error: 'Rate limit exceeded. Try again later.',
-        resetAt: rateCheck.resetAt.toISOString(),
-      },
-      {
-        status: 429,
-        headers: { 'Retry-After': String(retryAfterSecs) },
-      }
-    );
-  }
+  if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
     const { subject_id, topic } = await req.json();
     if (!subject_id || !topic) {
-      return NextResponse.json({ error: 'Subject and Topic are required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Subject and Topic are required' }, { status: 400 });
     }
 
+    // 2. Plan Check
     const limit = await enforcePlanLimit(user.id, 'ai_test_generate', { free: 3, pro: 20, elite: null }, 'weekly');
     if (!limit.allowed) {
       return NextResponse.json({
+        success: false,
         error: `Weekly quiz generation limit reached for ${limit.plan} plan.`,
-        limitReached: true,
       }, { status: 403 });
     }
 
@@ -45,16 +34,20 @@ export async function POST(req: NextRequest) {
       .eq('id', subject_id)
       .single();
 
-    const questions = await generatePracticeQuiz(subject?.name || 'General', topic);
+    // 3. Centralized AI Call
+    const result = await generatePracticeQuiz(subject?.name || 'General', topic);
     
-    if (!questions || questions.length === 0) {
+    if (!result.success || !result.data || result.data.length === 0) {
       return NextResponse.json({ 
-        error: 'AI Engine failed to generate questions. Please ensure your GEMINI_API_KEY is valid and has sufficient quota.' 
+        success: false, 
+        error: result.error || 'AI Engine failed to generate questions.' 
       }, { status: 500 });
     }
 
+    const questions = result.data;
 
-    // 1. Store Test
+    // 4. Persistence
+    // Create Test Header
     const { data: test, error: testError } = await supabase
       .from('practice_tests')
       .insert({
@@ -66,9 +59,9 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (testError) return NextResponse.json({ error: testError.message }, { status: 500 });
+    if (testError) throw testError;
 
-    // 2. Store Questions
+    // Insert Questions
     const formattedQuestions = questions.map((q: any) => ({
       test_id: test.id,
       question_text: q.question_text,
@@ -82,19 +75,21 @@ export async function POST(req: NextRequest) {
       .insert(formattedQuestions)
       .select();
 
-    if (questionError) return NextResponse.json({ error: questionError.message }, { status: 500 });
+    if (questionError) throw questionError;
 
     return NextResponse.json({
-      ...test,
-      questions: storedQuestions,
-      remaining: limit.remaining,
-      rateLimitRemaining: rateCheck.remaining,
+      success: true,
+      data: {
+        ...test,
+        questions: storedQuestions,
+        remaining: limit.remaining
+      }
     });
   } catch (error: any) {
-    console.error('Test Generation Error:', error);
+    console.error('[api/tests/generate] Error:', error.message);
     return NextResponse.json({ 
-      error: error.message || 'Internal Server Error during test generation. Please try again.',
-      details: error.toString() 
+      success: false, 
+      error: error.message || 'Internal Server Error' 
     }, { status: 500 });
   }
 }

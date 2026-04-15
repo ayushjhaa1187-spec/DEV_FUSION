@@ -36,50 +36,28 @@ export default function AIFloatingAssistant() {
         body: JSON.stringify({ question: textToSend })
       });
       
+      const resData = await res.json().catch(() => ({ success: false, error: 'Network parsing error' }));
+
       if (res.status === 401) {
         setMessages(prev => [...prev, { role: 'ai', content: '🔒 **Sign in required.** Please [sign in](/auth) to use the AI tutor.' }]);
-        setLoading(false);
         return;
       }
       
       if (res.status === 402) {
-        setMessages(prev => [...prev, { role: 'ai', content: '🚀 **Free tier limit reached.** [Upgrade to Pro](/billing/plans) for unlimited AI assistance!' }]);
-        setLoading(false);
+        setMessages(prev => [...prev, { role: 'ai', content: '🚀 **Free tier limit reached.** [Upgrade to Pro](/settings) for unlimited AI assistance!' }]);
         return;
       }
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        setMessages(prev => [...prev, { role: 'ai', content: errorData.message || 'The neural network encountered an error. Please retry.' }]);
-        setLoading(false);
+      if (!res.ok || !resData.success) {
+        setMessages(prev => [...prev, { role: 'ai', content: resData.error || resData.message || 'The neural network encountered an error. Please retry.' }]);
         return;
       }
 
-      if (!res.body) throw new Error('No readable stream');
-
-      // Add a placeholder AI message
-      setMessages(prev => [...prev, { role: 'ai', content: '' }]);
-      
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let accumulated = '';
-
-      while (!done) {
-        const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunk = decoder.decode(value);
-        accumulated += chunk;
-        
-        // Update the last message (the placeholder we just added)
-        setMessages(prev => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1].content = accumulated;
-          return newMessages;
-        });
-      }
+      // Add the AI message from response
+      const aiContent = resData.data.answer || resData.data.response || 'No response generated.';
+      setMessages(prev => [...prev, { role: 'ai', content: aiContent }]);
     } catch (err) {
-      console.error('AI Stream Error:', err);
+      console.error('AI Fetch Error:', err);
       setMessages(prev => [...prev, { role: 'ai', content: '📡 Connection issue. Please check your internet and retry.' }]);
     } finally {
       setLoading(false);
@@ -170,7 +148,8 @@ export default function AIFloatingAssistant() {
                       color: 'white',
                       borderBottomRightRadius: m.role === 'user' ? '4px' : '24px',
                       borderBottomLeftRadius: m.role === 'ai' ? '4px' : '24px',
-                      border: '1px solid rgba(255,255,255,0.05)'
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      position: 'relative'
                     }}
                   >
                     <ReactMarkdown
@@ -199,6 +178,22 @@ export default function AIFloatingAssistant() {
                     >
                       {m.content}
                     </ReactMarkdown>
+
+                    {m.role === 'ai' && i === messages.length - 1 && !loading && i > 0 && (
+                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button 
+                          onClick={() => {
+                            const lastUserMsg = messages[i-1]?.content || "";
+                            const content = `AI Response was: \n\n${m.content}\n\nMy Question was: ${lastUserMsg}`;
+                            const title = lastUserMsg.slice(0, 50) + "...";
+                            router.push(`/doubts/new?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&source=ai_escalation`);
+                          }}
+                          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
+                        >
+                          <History size={12} /> Escalate to Community
+                        </button>
+                      </div>
+                    )}
                   </motion.div>
                 </div>
               ))}

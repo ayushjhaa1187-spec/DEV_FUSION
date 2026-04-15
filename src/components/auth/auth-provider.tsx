@@ -11,6 +11,7 @@ type Profile = {
   username?: string | null;
   avatar_url?: string | null;
   role?: string | null;
+  plan?: string | 'free';
 };
 
 interface AuthContextType {
@@ -66,7 +67,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    setProfile(data as Profile);
+    // Fetch plan separately for reliability
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('plan')
+      .eq('user_id', authUser.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    setProfile({ ...(data as Profile), plan: sub?.plan ?? 'free' });
   };
 
   useEffect(() => {

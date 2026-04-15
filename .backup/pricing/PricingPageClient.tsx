@@ -113,7 +113,7 @@ export default function PricingPageClient() {
     }
     setLoading(planId);
     try {
-      const res = await fetch('/api/subscriptions', {
+      const res = await fetch('/api/billing/plans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan_id: planId })

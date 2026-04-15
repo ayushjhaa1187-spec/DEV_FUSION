@@ -35,23 +35,26 @@ export async function GET(req: NextRequest) {
     if (profileError) throw profileError;
 
     return NextResponse.json({
-      profile,
-      stats: {
-        answers: answers || 0,
-        accepted: accepted || 0,
-        doubts: doubts || 0
-      },
-      history: (history || []).map((h: any) => ({
-        event_type: h.action, // mapping action to event_type for frontend compatibility
-        points: h.points,
-        entity_id: h.entity_id,
-        created_at: h.created_at
-      })),
-      badges: (badges || []).map((ub: any) => ({ ...ub.badges, earned_at: ub.unlocked_at }))
+      success: true,
+      data: {
+        profile,
+        stats: {
+          answers: answers || 0,
+          accepted: accepted || 0,
+          doubts: doubts || 0
+        },
+        history: (history || []).map((h: any) => ({
+          event_type: h.action,
+          points: h.points,
+          entity_id: h.entity_id,
+          created_at: h.created_at
+        })),
+        badges: (badges || []).map((ub: any) => ({ ...ub.badges, earned_at: ub.unlocked_at }))
+      }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Profile GET error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -68,7 +71,7 @@ export async function PATCH(req: NextRequest) {
     const updatableFields = [
       'full_name', 'bio', 'college', 'branch', 'semester',
       'github_url', 'linkedin_url', 'website_url', 'avatar_url',
-      'twitter_url', 'recruitment_opt_in' // Added for Talent Discovery
+      'twitter_url', 'recruitment_opt_in', 'subjects'
     ];
     for (const field of updatableFields) {
       if (field in body) allowed[field] = body[field];
@@ -91,9 +94,9 @@ export async function PATCH(req: NextRequest) {
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
-  } catch (err) {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, data });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 });
   }
 }

@@ -62,7 +62,16 @@ export default function AskDoubtPageClient() {
   const handlePostToCommunity = async () => {
     setIsLoading(true);
     try {
-      await doubtApi.createDoubt(formData);
+      // Find subject name for the requirement if subject_id is internal
+      const selectedSubject = subjects.find(s => s.id === formData.subject_id);
+      
+      const payload = {
+        title: formData.title,
+        body: typeof formData.content === 'string' ? formData.content : JSON.stringify(formData.content),
+        subject: selectedSubject?.name || formData.subject_id || 'General'
+      };
+
+      await doubtApi.createDoubt(payload);
       setStep(3);
       setTimeout(() => router.push('/doubts'), 2000);
     } catch (err: any) {

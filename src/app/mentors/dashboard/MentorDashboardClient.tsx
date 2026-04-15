@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import { 
-  DollarSign, 
-  Calendar, 
-  Star, 
-  Clock, 
-  ChevronRight, 
+import {
+  DollarSign,
+  Calendar,
+  Star,
+  Clock,
+  ChevronRight,
   ExternalLink,
   Settings,
   Bell,
@@ -38,7 +38,7 @@ export default function MentorDashboardClient() {
 
       if (profileData) {
         setProfile(profileData);
-        
+
         // 2. Fetch ledger
         const { data: ledgerData } = await supabase
           .from('commission_ledger')
@@ -80,7 +80,7 @@ export default function MentorDashboardClient() {
       <p className="text-gray-500 text-sm max-w-sm mb-10 leading-relaxed font-bold">
         Your application is either pending or you haven't applied yet. Join the elite network of developers and educators.
       </p>
-      <button 
+      <button
         onClick={() => window.location.href = '/mentors/apply'}
         className="px-12 py-5 bg-indigo-600 text-white rounded-[24px] font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-indigo-600/30 hover:scale-105 transition-all"
       >
@@ -140,7 +140,7 @@ export default function MentorDashboardClient() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {stats.map((stat, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -165,7 +165,7 @@ export default function MentorDashboardClient() {
                 <h3 className="text-2xl font-black uppercase italic tracking-tight">Financial Ledger</h3>
                 <button className="text-[10px] font-black uppercase tracking-widest text-indigo-400 border-b border-indigo-400/30">Detailed View</button>
               </div>
-              
+
               <div className="space-y-4">
                 {ledger.length === 0 ? (
                   <div className="py-20 text-center border border-dashed border-white/10 rounded-3xl text-gray-600 font-bold uppercase tracking-widest text-xs">
@@ -230,7 +230,7 @@ export default function MentorDashboardClient() {
               </div>
               <div className="relative">
                 <h3 className="text-2xl font-black mb-10 leading-none">Upcoming<br />Sessions</h3>
-                
+
                 <div className="space-y-6">
                   {bookings.length === 0 ? (
                     <div className="text-indigo-100/50 text-xs font-bold uppercase tracking-widest py-10">

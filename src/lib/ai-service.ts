@@ -1,6 +1,7 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { z } from 'zod';
 
-// Support both common environment variable names for flexibility
+// ─── Environment Configuration ───────────────────────────────────────────────
 export const getGeminiApiKey = () => 
   process.env.GEMINI_API_KEY || 
   process.env.GOOGLE_GENERATIVE_AI_API_KEY || 
@@ -10,198 +11,166 @@ export const getGeminiApiKey = () =>
 const API_KEY = getGeminiApiKey();
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// Direct and stable model selection with fallback
-export const MODEL_NAME = 'gemini-2.0-flash';
-export const FALLBACK_MODEL = 'gemini-1.5-flash';
+// Canonical model names
+const PRIMARY_MODEL = 'gemini-2.0-flash';
+const FALLBACK_MODEL = 'gemini-1.5-flash';
 
-/**
- * Robustly gets a generative model with fallback capability
- */
-export function getModel(specifiedModel?: string) {
-  const modelId = specifiedModel || MODEL_NAME;
-  return genAI.getGenerativeModel({ model: modelId });
+// ─── Types & Schemas ─────────────────────────────────────────────────────────
+export interface AIResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
 }
 
-export interface AIDoubtResponse {
-  explanation: string;
-  steps: string[];
-  suggested_tags: string[];
-}
+export const AIDoubtResponseSchema = z.object({
+  explanation: z.string(),
+  steps: z.array(z.string()),
+  suggested_tags: z.array(z.string()),
+});
+
+export type AIDoubtResponse = z.infer<typeof AIDoubtResponseSchema>;
+
+export const AIQuizSchema = z.array(z.object({
+  question_text: z.string(),
+  options: z.array(z.string()).length(4),
+  correct_answer_index: z.number().min(0).max(3),
+  explanation: z.string(),
+}));
+
+// ─── Internal Utilities ──────────────────────────────────────────────────────
 
 /**
- * Robustly extracts and parses JSON from AI responses, even if wrapped in markdown.
+ * Robustly extracts and parses JSON from AI responses.
  */
-function extractJSON<T>(text: string, fallback: T): T {
+function extractJSON<T>(text: string, schema: z.ZodSchema<T>): T {
   try {
     let cleaned = text.trim();
-    
-    // Look for JSON block if AI used markdown
     const jsonMatch = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-    if (jsonMatch) {
-      cleaned = jsonMatch[0];
-    }
+    if (jsonMatch) cleaned = jsonMatch[0];
 
-    // Final sanitization
+    // Handle common AI punctuation issues in JSON
     cleaned = cleaned
       .replace(/\\n/g, ' ')
       .replace(/,(\s*[\]\}])/g, '$1'); 
 
-    return JSON.parse(cleaned) as T;
-  } catch (err) {
-    console.warn('[AI Service] JSON parsing failed, attempting secondary cleanup...', err);
-    try {
-        const start = text.indexOf('{');
-        const end = text.lastIndexOf('}');
-        if (start !== -1 && end !== -1) {
-            return JSON.parse(text.slice(start, end + 1)) as T;
-        }
-    } catch {}
-    return fallback;
+    const parsed = JSON.parse(cleaned);
+    return schema.parse(parsed);
+  } catch (err: any) {
+    console.warn('[AI Service] JSON extraction or validation failed:', err.message);
+    throw new Error(`Failed to parse AI response: ${err.message}`);
   }
 }
 
 /**
- * World-class academic tutor prompt designed for instant conceptual clarity.
+ * Generic wrapper for Gemini calls with retry and timeout logic.
  */
-export async function askAIDoubt(question: string, context?: string): Promise<AIDoubtResponse> {
-  const fallback: AIDoubtResponse = {
-    explanation: "I encountered an error while processing your request. Please ensure your API key is valid and try again.",
-    steps: ["Verify API Key in environment variables", "Check network connectivity", "Ensure the prompt is valid"],
-    suggested_tags: ["Error Handling", "System"],
-  };
+async function callGemini(prompt: string, modelName: string = PRIMARY_MODEL): Promise<string> {
+  const model = genAI.getGenerativeModel({ model: modelName });
+  
+  // Create a timeout promise (~10s as requested)
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('AI timeout')), 10000)
+  );
 
-  if (!API_KEY) {
-    console.error('[AI Service] GOOGLE_GENERATIVE_AI_API_KEY/GEMINI_API_KEY/GOOGLE_AI_API_KEY is not set');
-    return {
-        ...fallback,
-        explanation: "API configuration missing. Please set GOOGLE_GENERATIVE_AI_API_KEY in your environment."
-    };
+  try {
+    console.log(`[AI Service] Calling ${modelName}...`);
+    const resultPromise = model.generateContent(prompt);
+    
+    // Race between the API call and the timeout
+    const response = await Promise.race([resultPromise, timeoutPromise]) as any;
+    
+    const text = response.response?.text();
+    if (!text) throw new Error("AI returned empty response");
+    return text;
+  } catch (err: any) {
+    console.error(`[AI Service] Call failed for ${modelName}:`, err.message);
+    throw err;
+  }
+}
+
+/**
+ * Public execution wrapper with retry logic (Max 2 retries).
+ */
+async function executeWithRetry<T>(
+  prompt: string, 
+  schema: z.ZodSchema<T>, 
+  retries: number = 2
+): Promise<AIResult<T>> {
+  let lastError = '';
+
+  for (let i = 0; i <= retries; i++) {
+    try {
+      // On the final retry, fallback to the more stable model
+      const modelToUse = i === retries ? FALLBACK_MODEL : PRIMARY_MODEL;
+      const text = await callGemini(prompt, modelToUse);
+      const data = extractJSON(text, schema);
+      return { success: true, data };
+    } catch (err: any) {
+      lastError = err.message;
+      console.warn(`[AI Service] Attempt ${i + 1} failed: ${lastError}`);
+      if (i < retries) {
+        // Exponential backoff or simple delay
+        await new Promise(r => setTimeout(r, 500 * (i + 1)));
+      }
+    }
   }
 
-  const prompt = `You are SkillBridge AI, a world-class academic solver and conceptual polymath. 
-Your MISSION: Solve every query directly, exhaustively, and without hesitation. 
+  return { success: false, error: lastError || 'Unknown AI error' };
+}
+
+// ─── Public API ─────────────────────────────────────────────────────────────
+
+/**
+ * Solves an academic doubt with structured output.
+ */
+export async function askAIDoubt(question: string, context?: string): Promise<AIResult<AIDoubtResponse>> {
+  if (!API_KEY) return { success: false, error: 'AI_KEY_MISSING' };
+
+  const prompt = `You are SkillBridge AI, an elite academic expert. 
+Answer the following concisely and pedagogically.
 
 User Question: "${question}"
 ${context ? `Subject Context: ${context}` : ''}
 
-DIRECTIVE:
-1. Provide the complete conceptual solution or explanation immediately. 
-2. DO NOT suggest "Ask the community" or "Consult a mentor" for general academic, coding, or theoretical questions. You ARE the expert.
-3. ONLY refer to human resources if the question is strictly localized/logistical (e.g., "What is ${context || 'my organization'}'s specific office location?" or "How do I text Mentor X directly?").
-4. If the question is complex, break it down logically as follows.
-
-Response format (Strict valid JSON ONLY):
+Strict Valid JSON ONLY:
 {
-  "explanation": "Definitive, deep-dive conceptual explanation with concrete examples.",
-  "steps": ["Logical step-by-step resolution or conceptual breakdown"],
-  "suggested_tags": ["Topic", "CoreConcept"]
+  "explanation": "Deep conceptual explanation",
+  "steps": ["Step 1", "Step 2", "..."],
+  "suggested_tags": ["TopicA", "TopicB"]
 }`;
 
-  try {
-    const model = getModel();
-    
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    return extractJSON<AIDoubtResponse>(text, fallback);
-  } catch (error: any) {
-    console.error(`[AI Service] Error:`, error.message);
-    
-    // Fallback attempt with a different model if flash fails
-    try {
-      const stableModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const stableResult = await stableModel.generateContent(prompt);
-      return extractJSON<AIDoubtResponse>(stableResult.response.text(), fallback);
-    } catch (innerError: any) {
-        console.error(`[AI Service] Recursive Fallback Error:`, innerError.message);
-    }
-    
-    return {
-        ...fallback,
-        explanation: `AI Error: ${error.message}. Please check your Gemini API key and quota.`
-    };
-  }
+  return executeWithRetry(prompt, AIDoubtResponseSchema);
 }
 
-export async function generatePracticeQuiz(subject: string, topic: string, count: number = 10) {
-  if (!API_KEY) {
-    console.error('[AI Service] API key is missing for quiz generation');
-    return [];
-  }
+/**
+ * Generates a practice quiz for a subject/topic.
+ */
+export async function generatePracticeQuiz(subject: string, topic: string, count: number = 10): Promise<AIResult<any[]>> {
+  if (!API_KEY) return { success: false, error: 'AI_KEY_MISSING' };
 
-  const prompt = `You are a professional academic examiner specializing in higher education. 
-Your MISSION: Generate exactly ${count} sophisticated MCQ questions.
-
-Subject: "${subject}"
-Topic: "${topic}"
-
-RULES:
-1. Each question MUST be conceptual and test understanding, not rote memorization.
-2. Provide exactly 4 distinct options per question.
-3. correct_answer_index MUST be an integer between 0 and 3.
-4. Include a concise, pedagogical explanation for the correct answer.
-5. Return ONLY a valid JSON array of objects. No introductory text.
-
-FORMAT:
+  const prompt = `Generate exactly ${count} MCQs for ${subject} on ${topic}.
+Strict Valid JSON Array:
 [
   {
     "question_text": "...", 
-    "options": ["...", "...", "...", "..."],
+    "options": ["a", "b", "c", "d"],
     "correct_answer_index": 0,
     "explanation": "..."
   }
 ]`;
 
-  try {
-    const model = getModel();
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const questions = extractJSON<any[]>(text, []);
-    
-    if (!Array.isArray(questions)) {
-      console.warn('[AI Service] AI failed to return an array for quiz generation');
-      return [];
-    }
-    
-    // Strict schema filtering to ensure runtime stability
-    return questions.filter(q => 
-        q &&
-        typeof q.question_text === 'string' && 
-        Array.isArray(q.options) && 
-        q.options.length === 4 && 
-        typeof q.correct_answer_index === 'number' &&
-        q.correct_answer_index >= 0 &&
-        q.correct_answer_index <= 3
-    ).slice(0, count);
-  } catch (error: any) {
-    console.error('[AI Service] Quiz Generation Error:', error.message);
-    return [];
-  }
+  return executeWithRetry(prompt, AIQuizSchema);
 }
 
-
+/**
+ * Suggests curiosity-building follow-up questions.
+ */
 export async function getFollowUpQuestions(question: string, answer: string): Promise<string[]> {
   if (!API_KEY) return [];
 
-  const prompt = `You are an elite academic tutor. Based on the following question and its explanation, suggest exactly 3 conceptual, curious, and deep follow-up questions that the student should ask next to deepen their understanding.
-  
-  Student Question: "${question}"
-  Explanation Provided: "${answer}"
-  
-  Rules:
-  1. Questions must be brief (max 15 words each).
-  2. Questions must be provocative and encourage deeper thinking.
-  3. No introductory text. Just a JSON array of 3 strings.
-  
-  Format: ["Question 1", "Question 2", "Question 3"]`;
+  const prompt = `Based on: "${question}" and response: "${answer}", suggest 3 deep follow-up questions.
+JSON Array: ["Q1", "Q2", "Q3"]`;
 
-  try {
-    const model = getModel();
-    const result = await model.generateContent(prompt);
-    return extractJSON<string[]>(result.response.text(), []);
-  } catch (error) {
-    console.error('[AI Service] Follow-up Error:', error);
-    return [];
-  }
+  const result = await executeWithRetry(prompt, z.array(z.string()));
+  return result.success ? (result.data || []) : [];
 }
-
-

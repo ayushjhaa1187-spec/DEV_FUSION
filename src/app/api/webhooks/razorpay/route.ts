@@ -36,10 +36,10 @@ export async function POST(req: NextRequest) {
     const event = JSON.parse(rawBody);
     const supabase = await createSupabaseServer();
 
-    // ─── 1. Subscription Success ──────────────────────────────────────────────
-    if (event.event === "subscription.charged") {
+    // ─── 1. Subscription Success / Activation ──────────────────────────────
+    if (event.event === "subscription.charged" || event.event === "subscription.activated") {
       const subEntity = event.payload.subscription.entity;
-      const payEntity = event.payload.payment.entity;
+      const payEntity = event.payload.payment?.entity;
       
       const subId = subEntity.id;
       const userId = subEntity.notes?.user_id;
@@ -72,53 +72,61 @@ export async function POST(req: NextRequest) {
         })
         .eq("razorpay_subscription_id", subId);
 
-      // Add Credits Atomically (via RPC)
-      await supabase.rpc("add_credits", {
-          p_user_id: userId,
-          p_credits: creditsToAdd
-      });
-
-      // Save Invoice
-      const { data: invoice } = await supabase
-        .from("invoices")
-        .insert({
-            user_id: userId,
-            razorpay_payment_id: payEntity.id,
-            amount: payEntity.amount / 100,
-            currency: payEntity.currency,
-            plan: planName,
-            description: `SkillBridge ${planName.toUpperCase()} Subscription Renewal`,
-            status: "paid",
-            paid_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      // Send Email
-      const { data: userProfile } = await supabase
-        .from("users")
-        .select("email, full_name")
-        .eq("id", userId)
-        .single();
-
-      if (userProfile && invoice) {
-        await sendSubscriptionConfirmationEmail({
-          email: userProfile.email,
-          name: userProfile.full_name || "Student",
-          plan: planName.toUpperCase(),
-          amount: payEntity.amount / 100,
-          nextBillingDate: new Date(subEntity.current_end * 1000).toISOString(),
-          invoiceId: invoice.id
+      // Only add credits and send email if it's a CHARGE event (not just activation)
+      if (event.event === "subscription.charged" && payEntity) {
+        // Add Credits Atomically (via RPC)
+        await supabase.rpc("add_credits", {
+            p_user_id: userId,
+            p_credits: creditsToAdd
         });
+
+        // Save Invoice
+        const { data: invoice } = await supabase
+          .from("invoices")
+          .insert({
+              user_id: userId,
+              razorpay_payment_id: payEntity.id,
+              amount: payEntity.amount / 100,
+              currency: payEntity.currency,
+              plan: planName,
+              description: `SkillBridge ${planName.toUpperCase()} Subscription Renewal`,
+              status: "paid",
+              paid_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        // Send Email
+        const { data: userProfile } = await supabase
+          .from("users")
+          .select("email, full_name")
+          .eq("id", userId)
+          .single();
+
+        if (userProfile && invoice) {
+          await sendSubscriptionConfirmationEmail({
+            email: userProfile.email,
+            name: userProfile.full_name || "Student",
+            plan: planName.toUpperCase(),
+            amount: payEntity.amount / 100,
+            nextBillingDate: new Date(subEntity.current_end * 1000).toISOString(),
+            invoiceId: invoice.id
+          });
+        }
       }
     } 
     
-    // ─── 2. Subscription Cancelled/Halted ─────────────────────────────────────
-    else if (event.event === "subscription.halted" || event.event === "subscription.cancelled") {
+    // ─── 2. Subscription Halt/Cancel/Expire ───────────────────────────────────
+    else if (
+        event.event === "subscription.halted" || 
+        event.event === "subscription.cancelled" ||
+        event.event === "subscription.expired"
+    ) {
       const subId = event.payload.subscription.entity.id;
+      const status = event.event === "subscription.expired" ? "expired" : "cancelled";
       await supabase
         .from("subscriptions")
-        .update({ status: "cancelled" })
+        .update({ status })
         .eq("razorpay_subscription_id", subId);
     }
 

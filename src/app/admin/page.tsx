@@ -40,9 +40,9 @@ export default function AdminDashboardPage() {
 
   const adminActions = [
     { name: 'Revenue & Subscriptions', icon: CreditCard, href: '/admin/revenue', color: 'text-emerald-400', desc: 'Manage billing and plans' },
+    { name: 'Institutional Hub', icon: Building2, href: '/admin/institutions', color: 'text-indigo-400', desc: 'B2B Partners & Campus Plans' },
     { name: 'Mentor Applications', icon: ShieldAlert, href: '/admin/applications', color: 'text-amber-400', desc: 'Review pending expert requests' },
     { name: 'Expert Management', icon: Users, href: '/admin/mentors', color: 'text-blue-400', desc: 'Manage roster and payouts' },
-    { name: 'System Analytics', icon: BarChart3, href: '/admin/analytics', color: 'text-purple-400', desc: 'Platform growth metrics' },
   ];
 
   return (

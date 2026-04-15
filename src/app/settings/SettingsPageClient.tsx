@@ -15,6 +15,7 @@ import { useAuth } from '@/components/auth/auth-provider';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReputationBadge from '@/components/user/ReputationBadge';
 import AvailabilityGrid from '@/components/settings/AvailabilityGrid';
+import CouponWidget from '@/components/billing/CouponWidget';
 import { toast } from 'sonner';
 
 type ProfileFormData = {
@@ -60,20 +61,13 @@ export default function SettingsPageClient() {
 
     let isMounted = true;
     async function loadProfile() {
-      if (profileData?.id === user?.id) {
-        setLoading(false);
-        return;
-      }
-      
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user?.id)
-          .single();
+        const res = await fetch('/api/profile');
+        const resData = await res.json();
         
-        if (data && isMounted) {
+        if (resData.success && isMounted) {
+          const { profile: data } = resData.data;
           setProfileData(data);
           setAvatarUrl(data.avatar_url);
           reset({
@@ -414,6 +408,15 @@ export default function SettingsPageClient() {
       {/* Live Preview Sidebar */}
       <div className="lg:col-span-1">
         <div className="sticky top-8 space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              Upgrade Access
+            </h3>
+          </div>
+
+          <CouponWidget />
+
           <div className="flex items-center justify-between px-2">
             <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400" />
