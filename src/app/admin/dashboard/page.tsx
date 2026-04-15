@@ -1,13 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServer } from '@/lib/supabase/server';
-import MentorDashboardClient from './MentorDashboardClient';
 
-export const metadata: Metadata = {
-  title: 'Mentor Dashboard | SkillBridge',
-  description: 'Manage your sessions, track earnings, and grow your mentoring legacy.',
-};
-
-export default async function MentorDashboardPage() {
+export default async function AdminDashboardRedirect() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -21,9 +15,10 @@ export default async function MentorDashboardPage() {
 
   const role = profile?.role || user.user_metadata?.role;
   
-  if (role !== 'mentor' && role !== 'admin') {
+  if (role !== 'admin') {
     redirect('/dashboard');
   }
 
-  return <MentorDashboardClient />;
+  // If already authorized, go to the main admin control center
+  redirect('/admin');
 }
