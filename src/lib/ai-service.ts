@@ -99,7 +99,7 @@ async function callGemini(prompt: string, modelName: string = PRIMARY_MODEL): Pr
 async function executeWithRetry<T>(
   prompt: string, 
   schema: z.ZodSchema<T>, 
-  retries: number = 2
+  retries: number = 3
 ): Promise<AIResult<T>> {
   let lastError = '';
 
@@ -153,16 +153,17 @@ Strict Valid JSON ONLY:
 export async function generatePracticeQuiz(subject: string, topic: string, count: number = 10): Promise<AIResult<any[]>> {
   if (!API_KEY) return { success: false, error: 'AI_KEY_MISSING' };
 
-  const prompt = `Generate exactly ${count} MCQs for ${subject} on ${topic}.
+  const prompt = `Generate exactly ${count} Multiple Choice Questions (MCQs) for ${subject} on ${topic}.
 Strict Valid JSON Array:
 [
   {
-    "question_text": "...", 
-    "options": ["a", "b", "c", "d"],
+    "question_text": "Clear conceptual question", 
+    "options": ["A", "B", "C", "D"],
     "correct_answer_index": 0,
-    "explanation": "..."
+    "explanation": "Brief pedagogical explanation"
   }
-]`;
+]
+Ensure exactly ${count} items are returned. No preamble. No markdown code blocks.`;
 
   return executeWithRetry(prompt, AIQuizSchema);
 }
