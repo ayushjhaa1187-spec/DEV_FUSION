@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
         .eq('author_id', user.id).eq('is_accepted', true),
       supabase.from('doubts').select('*', { count: 'exact', head: true })
         .eq('author_id', user.id),
-      supabase.from('reputation_events').select('event_type, points, entity_id, created_at')
+      // Use the canonical reputation_history table
+      supabase.from('reputation_history').select('action, points, entity_id, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20),
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
         doubts: doubts || 0
       },
       history: (history || []).map((h: any) => ({
-        event_type: h.event_type,
+        event_type: h.action, // mapping action to event_type for frontend compatibility
         points: h.points,
         entity_id: h.entity_id,
         created_at: h.created_at
@@ -62,12 +63,12 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Whitelist updatable fields (never allow id, reputation_points, etc.)
+    // Whitelist updatable fields
     const allowed: Record<string, unknown> = {};
     const updatableFields = [
       'full_name', 'bio', 'college', 'branch', 'semester',
       'github_url', 'linkedin_url', 'website_url', 'avatar_url',
-      'twitter_url', 'subjects'
+      'twitter_url', 'recruitment_opt_in' // Added for Talent Discovery
     ];
     for (const field of updatableFields) {
       if (field in body) allowed[field] = body[field];

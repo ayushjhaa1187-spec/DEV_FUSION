@@ -5,7 +5,7 @@ import Link from 'next/link';
 export default async function BillingPlansPage() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/auth/login');
+  if (!user) redirect('/auth');
 
   const plans = [
     { 

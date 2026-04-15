@@ -5,7 +5,7 @@ import { CREDIT_PACKS } from '@/lib/plans';
 export default async function BillingCreditsPage() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/auth/login');
+  if (!user) redirect('/auth');
 
   const { data: wallet } = await supabase
     .from('credit_wallets')

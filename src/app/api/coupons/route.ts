@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 
 const COUPONS: Record<string, 'pro' | 'elite'> = {
-  'JAHNAVI_LABS': 'elite',
+  'JAHNVI_FIND': 'elite',
   'AYUSH_DEAL26': 'pro',
 };
 

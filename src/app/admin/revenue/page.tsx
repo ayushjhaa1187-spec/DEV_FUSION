@@ -14,7 +14,7 @@ export default async function AdminRevenuePage() {
 
   // 1. Admin Role Guard
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/auth");
 
   const { data: profile } = await supabase
     .from("users")

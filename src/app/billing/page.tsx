@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 async function BillingContent() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/auth/login');
+  if (!user) redirect('/auth');
 
   const [{ data: subscription }, { data: wallet }] = await Promise.all([
     supabase
@@ -52,7 +52,7 @@ async function BillingContent() {
 export default async function BillingPage() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/auth/login');
+  if (!user) redirect('/auth');
 
   return (
     <main className="min-h-screen bg-[#0a0612] p-8">

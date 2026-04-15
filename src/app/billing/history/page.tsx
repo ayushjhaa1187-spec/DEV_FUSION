@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 export default async function BillingHistoryPage() {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/auth/login');
+  if (!user) redirect('/auth');
 
   const { data: txns } = await supabase
     .from('transactions')

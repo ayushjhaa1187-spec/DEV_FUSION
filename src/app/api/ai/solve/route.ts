@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  let model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  let model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = `${buildSystemPrompt(subject, difficulty)}\n\n---\nStudent Query: ${queryText}`;
 
@@ -118,8 +118,8 @@ export async function POST(req: NextRequest) {
     try {
       streamResult = await model.generateContentStream(prompt);
     } catch (modelErr: any) {
-      console.warn("[ai/solve] Gemini 2.5 Flash failed, falling back to flash-latest:", modelErr.message);
-      model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+      console.warn("[ai/solve] Gemini 2.0 Flash failed, falling back to 1.5-flash:", modelErr.message);
+      model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       streamResult = await model.generateContentStream(prompt);
     }
 

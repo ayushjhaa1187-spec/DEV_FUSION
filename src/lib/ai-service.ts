@@ -11,8 +11,8 @@ const API_KEY = getGeminiApiKey();
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Direct and stable model selection with fallback
-export const MODEL_NAME = 'gemini-2.5-flash';
-export const FALLBACK_MODEL = 'gemini-flash-latest';
+export const MODEL_NAME = 'gemini-2.0-flash';
+export const FALLBACK_MODEL = 'gemini-1.5-flash';
 
 /**
  * Robustly gets a generative model with fallback capability
@@ -128,24 +128,26 @@ export async function generatePracticeQuiz(subject: string, topic: string, count
     return [];
   }
 
-  const prompt = `You are a professional academic examiner. Generate exactly ${count} high-quality, conceptual multiple-choice questions for college students.
+  const prompt = `You are a professional academic examiner specializing in higher education. 
+Your MISSION: Generate exactly ${count} sophisticated MCQ questions.
+
 Subject: "${subject}"
 Topic: "${topic}"
 
-Rules:
-1. Every question must have exactly 4 options.
-2. Each option must be distinct.
-3. Only ONE correct_answer_index (0-3).
-4. provide a clear 'explanation' for the correct answer.
-5. Questions must be conceptual and challenging, not just trivia.
+RULES:
+1. Each question MUST be conceptual and test understanding, not rote memorization.
+2. Provide exactly 4 distinct options per question.
+3. correct_answer_index MUST be an integer between 0 and 3.
+4. Include a concise, pedagogical explanation for the correct answer.
+5. Return ONLY a valid JSON array of objects. No introductory text.
 
-Respond ONLY with a valid JSON array of objects:
+FORMAT:
 [
   {
-    "question_text": "Question content...",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "question_text": "...", 
+    "options": ["...", "...", "...", "..."],
     "correct_answer_index": 0,
-    "explanation": "Why this is correct..."
+    "explanation": "..."
   }
 ]`;
 
@@ -155,20 +157,27 @@ Respond ONLY with a valid JSON array of objects:
     const text = result.response.text();
     const questions = extractJSON<any[]>(text, []);
     
-    // Validation
-    if (!Array.isArray(questions)) return [];
+    if (!Array.isArray(questions)) {
+      console.warn('[AI Service] AI failed to return an array for quiz generation');
+      return [];
+    }
     
+    // Strict schema filtering to ensure runtime stability
     return questions.filter(q => 
-        q.question_text && 
+        q &&
+        typeof q.question_text === 'string' && 
         Array.isArray(q.options) && 
         q.options.length === 4 && 
-        typeof q.correct_answer_index === 'number'
+        typeof q.correct_answer_index === 'number' &&
+        q.correct_answer_index >= 0 &&
+        q.correct_answer_index <= 3
     ).slice(0, count);
   } catch (error: any) {
     console.error('[AI Service] Quiz Generation Error:', error.message);
     return [];
   }
 }
+
 
 export async function getFollowUpQuestions(question: string, answer: string): Promise<string[]> {
   if (!API_KEY) return [];

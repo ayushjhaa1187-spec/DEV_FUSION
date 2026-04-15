@@ -48,30 +48,33 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  let session = null;
+  // getUser() is more secure as it revalidates with Supabase Auth
+  let user = null;
   try {
-    const { data } = await supabase.auth.getSession();
-    session = data.session;
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
   } catch (e) {
-    console.error('Middleware session fetch failed:', e);
-    session = null;
+    console.error('Middleware auth check failed:', e);
   }
 
   const path = request.nextUrl.pathname;
+
   const isProtected = PROTECTED_ROUTES.some((route) => path.startsWith(route));
   const isAuthRoute = AUTH_ROUTES.some((route) => path === route || path.startsWith(`${route}/`));
 
   if (isProtected) {
-    if (!session) {
-      const redirectUrl = new URL('/auth/login', request.url);
+    if (!user) {
+      const redirectUrl = new URL('/auth', request.url);
       redirectUrl.searchParams.set('redirectTo', path);
       return NextResponse.redirect(redirectUrl);
     }
   }
 
-  if (isAuthRoute && session && !path.startsWith('/auth/callback')) {
+  // Redirect authenticated users away from auth pages, EXCEPT for the callback route
+  if (isAuthRoute && user && !path.includes('/auth/callback')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
+
 
   return response;
 }

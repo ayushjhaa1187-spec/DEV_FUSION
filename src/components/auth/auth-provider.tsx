@@ -143,13 +143,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setProfile(null);
       
       // Force immediate navigation and refresh
-      router.replace('/');
+      router.replace('/auth');
       router.refresh();
     } catch (err) {
       console.error('Error signing out:', err);
       setUser(null);
       setProfile(null);
-      router.replace('/');
+      router.replace('/auth');
       router.refresh();
     } finally {
       setLoading(false);

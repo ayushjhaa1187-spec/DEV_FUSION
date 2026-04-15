@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { extractConceptScores, updateReviewQueue } from '@/lib/review-queue';
 
 export async function POST(
   req: NextRequest,
@@ -92,7 +93,39 @@ export async function POST(
       console.error('Reputation award error:', repError);
     }
 
-    // 5. Award 'Test Ace' badge for a perfect score
+    // 4b. Update review queue with weak concepts (score < 60%)
+    try {
+      const conceptScores = await extractConceptScores(final_attempt_id, attempt.test_id);
+      await updateReviewQueue(user.id, conceptScores);
+    } catch (queueError) {
+      // Non-fatal — user can still see their score
+      console.error('Review queue update error:', queueError);
+    }
+
+    // 5. AI Pattern Detection (Phase 6 Polish)
+    let aiInsight = null;
+    try {
+      if (score < 100) {
+        // Fetch question details to see what exactly was missed
+        const { data: missedQuestions } = await supabase
+          .from('practice_answers')
+          .select('practice_questions(content, concept_id)')
+          .eq('attempt_id', final_attempt_id)
+          .eq('is_correct', false);
+
+        if (missedQuestions && missedQuestions.length > 0) {
+          const missedConcepts = Array.from(new Set(missedQuestions.map((q: any) => q.practice_questions?.concept_id)));
+          aiInsight = {
+            detectedWeaknesses: missedConcepts,
+            advice: `Patterns suggest a cognitive gap in: ${missedConcepts.join(', ')}. Reviewing these in your new 'Review Queue' is recommended.`
+          };
+        }
+      }
+    } catch (e) {
+      console.error('AI Insight Error:', e);
+    }
+
+    // 6. Award 'Test Ace' badge for a perfect score
     if (score === 100) {
       const { data: badge } = await supabase
         .from('badges')
@@ -116,6 +149,7 @@ export async function POST(
       wrong,
       total,
       pointsEarned,
+      aiInsight,
       ...(score === 100 ? { badge: 'Test Ace' } : {}),
     });
   } catch (error: any) {

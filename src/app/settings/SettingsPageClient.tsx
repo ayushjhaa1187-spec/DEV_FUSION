@@ -31,7 +31,7 @@ type ProfileFormData = {
 };
 
 export default function SettingsPageClient() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const supabase = createSupabaseBrowser();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -52,14 +52,25 @@ export default function SettingsPageClient() {
   const watchedFields = watch();
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      router.replace('/auth');
+      return;
+    }
+
     let isMounted = true;
     async function loadProfile() {
-      if (!user || profileData?.id === user.id) return;
+      if (profileData?.id === user?.id) {
+        setLoading(false);
+        return;
+      }
+      
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', user?.id)
           .single();
         
         if (data && isMounted) {
@@ -86,7 +97,7 @@ export default function SettingsPageClient() {
     }
     loadProfile();
     return () => { isMounted = false; };
-  }, [user, reset, supabase, profileData?.id]);
+  }, [user, authLoading, reset, supabase, profileData?.id, router]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -170,10 +181,19 @@ export default function SettingsPageClient() {
     }
   };
 
-  if (loading) return (
+  if (authLoading) return (
     <div className="flex flex-col items-center justify-center p-20 gap-4">
        <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent" />
        <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Syncing Neural Profiles...</p>
+    </div>
+  );
+
+  if (!user) return null;
+
+  if (loading && !profileData) return (
+    <div className="flex flex-col items-center justify-center p-20 gap-4">
+       <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent" />
+       <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Accessing Profile Data...</p>
     </div>
   );
 

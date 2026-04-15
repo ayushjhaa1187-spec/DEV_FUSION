@@ -22,7 +22,7 @@ export default async function SessionsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/auth/login');
+    redirect('/auth');
   }
 
   return <SessionsClient userId={user.id} />;

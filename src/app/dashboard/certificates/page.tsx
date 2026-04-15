@@ -15,7 +15,7 @@ export default async function CertificatesDashboardPage() {
 
   // 1. Auth & Profile
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  if (!user) redirect("/auth");
 
   const { data: profile } = await supabase
     .from("users")

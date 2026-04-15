@@ -58,6 +58,7 @@
 - [Deployment](#-deployment)
 - [Contributing](#-contributing)
 - [Team](#-team)
+- [Integrated Ecosystem](#-integrated-ecosystem--student-success)
 
 ---
 
@@ -1279,7 +1280,111 @@ git push origin feature/your-feature-name
 | **Jahnvi Chauhan** | Frontend UI/UX, Framer Motion Animations |
 | **Ayush Kumar Jha** | Full-Stack Lead, AI Integration, Revenue Architecture |
 
-Built with ❤️ for the **DEV_FUSION Hackathon** — Problem Statement 2.
+## 🌐 Integrated Ecosystem & Student Success
+
+### The SkillBridge Flywheel
+The platform operates as a self-sustaining talent economy where every interaction feeds into a larger cycle of learning, mentorship, and recruitment.
+
+```mermaid
+graph TD
+    %% foundation
+    subgraph Engine [The Engine: AI & Economic Layer]
+        AI[Gemini 1.5 Pro]
+        Wallet[AI Credit Wallet]
+        Pay[Razorpay & Ledgers]
+    end
+
+    %% Entry
+    Start((User Entry)) --> Login[Supabase & OTP]
+    Login --> Economy{Unlock Platform}
+    
+    %% Coupons
+    Economy -->|Elite Code: JAHNVI_FIND| SubElite[Elite / Campus Pro]
+    Economy -->|Pro Code: AYUSH_DEAL26| SubPro[Pro / Scholar Access]
+    Economy -->|Direct Pay| Credits[Buy Credits: 2-15 per action]
+
+    %% Paths
+    Economy --> S_Hub[Student Hub]
+    Economy --> M_Hub[Mentor Hub]
+    Economy --> O_Hub[Organization Hub]
+
+    %% Student Hub
+    subgraph StudentLife [Student Journey]
+        S_Hub --> Doubts[AI Doubt Solver]
+        S_Hub --> Tests[Adaptive Practice & Certs]
+        S_Hub --> Booking[Book Global Mentors]
+    end
+
+    %% Mentor Hub
+    subgraph MentorLife [Mentor Lifecycle]
+        M_Hub --> Independent[Independent Listing]
+        M_Hub --> Apply[Apply to Organizations]
+    end
+
+    %% Organization Hub
+    subgraph OrgLife [Institutional Hub]
+        O_Hub --> OrgAdmin[Org Dashboard]
+        OrgAdmin -->|Invite| S_Hub
+        OrgAdmin -->|Recruit| Interview[Jitsi Interview Loop]
+    end
+
+    %% Integration Bridge
+    Apply --> Interview
+    Interview -->|Approved| Affiliated[Affiliated Mentor Status]
+    Affiliated -->|Direct Mentor| S_Hub
+    S_Hub -->|Feedback| Reputation[Gamified Points & Badges]
+    Reputation -->|Talent Spotlight| OrgAdmin
+
+    %% Aesthetic Styles
+    style Engine fill:#1e1b4b,stroke:#6366f1,color:#e0e7ff
+    style OrgLife fill:#052e16,stroke:#22c55e,color:#dcfce7
+    style StudentLife fill:#1e3a5f,stroke:#3b82f6,color:#e0f2fe
+    style MentorLife fill:#2d1b69,stroke:#7c3aed,color:#ede9fe
+```
+
+### 🎓 Student Mastery Lifecycle
+SkillBridge ensures students don't just consume content, but master it through a triple-loop of engagement.
+
+```mermaid
+graph TD
+    %% Pillars
+    subgraph Onboarding [1. The Launchpad]
+        S_Dash[Dynamic Dashboard]
+        Daily[Daily Streak & Momentum Pulse]
+    end
+
+    subgraph Learning [2. AI Pillars]
+        Doubts[Gemini Doubt Solver]
+        Practise[AI Practice Hub]
+    end
+
+    subgraph Mastery [3. Mastery & Feedback]
+        Analytics[Real-time Weak Area Detection]
+        Review[Concept Review Queue: Spaced Repetition]
+        Cert[QR-Backed Subject Certificates]
+    end
+
+    subgraph Ambition [4. Global Economy]
+        Points[Reputation Economy: Answer & Earn]
+        Leaderboard[Global & Weekly Leaderboards]
+        Hire[Industry Talent Spotlight]
+    end
+
+    %% Flow
+    S_Dash --> Daily
+    S_Dash --> Doubts
+    S_Dash --> Practise
+    
+    Practise --> Analytics --> Review --> Practise
+    Practise -->|Score 80%+| Cert
+    Doubts -->|Unresolved| Community[Community Feed]
+    Community -->|Expert Answer| Points --> Leaderboard --> Hire
+```
+
+---
+
+*Built with ❤️ for DevFusion 2026*
+*DEV_FUSION Hackathon** — Problem Statement 2.
 
 </div>
 
