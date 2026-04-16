@@ -29,31 +29,41 @@ export default function DashboardPageClient() {
 
   const fetchDashboardStats = useCallback(async () => {
     if (!user) return;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
     try {
       setLoading(true);
       setError(null);
       
-      const [statsRes, usageRes] = await Promise.all([
-        fetch('/api/dashboard/stats'),
-        fetch('/api/usage/status')
+      const [statsRes, usageRes] = await Promise.allSettled([
+        fetch('/api/dashboard/stats', { signal: controller.signal }),
+        fetch('/api/usage/status', { signal: controller.signal })
       ]);
 
-      const [statsJson, usageJson] = await Promise.all([
-        statsRes.json(),
-        usageRes.json()
-      ]);
+      clearTimeout(timeoutId);
 
-      if (statsJson.success) {
-        setData(statsJson.data);
+      // Handle Stats (Fatal if fails)
+      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+        const statsJson = await statsRes.value.json();
+        if (statsJson.success) setData(statsJson.data);
+        else throw new Error(statsJson.error || 'Identity uplink failure');
       } else {
-        throw new Error(statsJson.error || 'Identity uplink failure.');
+        throw new Error('Neural network timeout. Please verify your connection.');
       }
 
-      if (usageJson.success) {
-        setUsage(usageJson);
+      // Handle Usage (Non-fatal, fall back to null)
+      if (usageRes.status === 'fulfilled' && usageRes.value.ok) {
+        const usageJson = await usageRes.value.json();
+        if (usageJson.success) setUsage(usageJson);
       }
+      
     } catch (err: any) {
-      setError(err.message || 'The dashboard failed to synchronize with the neural network.');
+      if (err.name === 'AbortError') {
+        setError('Connection timed out. The neural bridge is experiencing high latency.');
+      } else {
+        setError(err.message || 'The dashboard failed to synchronize with the neural network.');
+      }
     } finally {
       setLoading(false);
     }

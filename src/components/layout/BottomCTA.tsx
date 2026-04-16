@@ -24,11 +24,11 @@ export default function BottomCTA() {
           </p>
 
           <div className="sb-cta-actions">
-            <Link href="/courses" className="sb-cta-btn primary">
-              Explore Courses <ArrowRight size={18} />
+            <Link href="/pricing" className="sb-cta-btn primary">
+              Elevate Potential <ArrowRight size={18} />
             </Link>
-            <Link href="/contact" className="sb-cta-btn secondary">
-              Contact Us
+            <Link href="/mentors" className="sb-cta-btn secondary">
+              Find a Mentor
             </Link>
           </div>
         </div>

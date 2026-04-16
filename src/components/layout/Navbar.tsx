@@ -33,6 +33,7 @@ export default function Navbar() {
     { name: 'Mentors', href: '/mentors' },
     { name: 'Community', href: '/community' },
     { name: 'Practice', href: '/tests' },
+    { name: 'Pricing', href: '/pricing' },
     { name: 'Leaderboard', href: '/leaderboard' },
   ];
 
