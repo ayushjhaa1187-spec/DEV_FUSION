@@ -42,7 +42,7 @@ export default function SettingsPageClient() {
   const [uploading, setUploading] = useState(false);
   const [subjectInput, setSubjectInput] = useState('');
   const [profileData, setProfileData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'profile' | 'mentorship'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'mentorship' | 'subscription'>('profile');
 
   const { register, handleSubmit, setValue, watch, control, reset } = useForm<ProfileFormData>({
     defaultValues: {
@@ -277,7 +277,7 @@ export default function SettingsPageClient() {
         </header>
 
         <AnimatePresence mode="wait">
-          {activeTab === 'profile' ? (
+          {activeTab === 'profile' && (
             <motion.div
               key="profile"
               initial={{ opacity: 0, x: -20 }}
@@ -285,135 +285,125 @@ export default function SettingsPageClient() {
               exit={{ opacity: 0, x: 20 }}
             >
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* Avatar Section */}
-                <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
-                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <User className="w-5 h-5 text-indigo-400" />
-                    Public Identity
-                  </h2>
-                  <div className="flex flex-col md:flex-row gap-8 items-start">
-                    <div className="relative group">
-                      <div className="w-32 h-32 rounded-3xl bg-white/10 overflow-hidden ring-4 ring-white/5 group-hover:ring-indigo-500/30 transition-all">
-                        {avatarUrl ? (
-                          <Image src={avatarUrl} alt="Avatar" width={128} height={128} loading="lazy" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-indigo-500/20 flex items-center justify-center text-3xl font-black">{watchedFields.full_name?.[0] || 'U'}</div>
-                        )}
-                      </div>
-                      <label className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 rounded-xl cursor-pointer hover:bg-indigo-500 transition-all shadow-xl">
-                        <Upload className="w-4 h-4 text-white" />
-                        <input type="file" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
-                      </label>
-                    </div>
-                    
-                    <div className="flex-1 w-full space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Full Display Name</label>
-                        <input {...register('full_name')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="e.g. Ayush Jha" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Bio / Mission Statement</label>
-                        <textarea {...register('bio')} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="Tell the community about your expertise..." />
-                      </div>
-                    </div>
-                  </div>
-                </section>
+                 {/* Identity Content */}
+                 <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
+                   <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                     <User className="w-5 h-5 text-indigo-400" />
+                     Public Identity
+                   </h2>
+                   <div className="flex flex-col md:flex-row gap-8 items-start">
+                     <div className="relative group">
+                       <div className="w-32 h-32 rounded-3xl bg-white/10 overflow-hidden ring-4 ring-white/5 group-hover:ring-indigo-500/30 transition-all">
+                         {avatarUrl ? (
+                           <Image src={avatarUrl} alt="Avatar" width={128} height={128} loading="lazy" className="w-full h-full object-cover" />
+                         ) : (
+                           <div className="w-full h-full bg-indigo-500/20 flex items-center justify-center text-3xl font-black">{watchedFields.full_name?.[0] || 'U'}</div>
+                         )}
+                       </div>
+                       <label className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 rounded-xl cursor-pointer hover:bg-indigo-500 transition-all shadow-xl">
+                         <Upload className="w-4 h-4 text-white" />
+                         <input type="file" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                       </label>
+                     </div>
+                     
+                     <div className="flex-1 w-full space-y-4">
+                       <div>
+                         <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Full Display Name</label>
+                         <input {...register('full_name')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="e.g. Ayush Jha" />
+                       </div>
+                       <div>
+                         <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Bio / Mission Statement</label>
+                         <textarea {...register('bio')} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="Tell the community about your expertise..." />
+                       </div>
+                     </div>
+                   </div>
+                 </section>
 
-                {/* Academic Info */}
-                <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
-                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <GraduationCap className="w-5 h-5 text-emerald-400" />
-                    Academic Credentials
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">College / University</label>
-                      <input {...register('college')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Department / Branch</label>
-                      <input {...register('branch')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Current Semester</label>
-                      <select {...register('semester', { valueAsNumber: true })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50">
-                        {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s} className="bg-slate-900 font-bold">Semester {s}</option>)}
-                      </select>
-                    </div>
-                  </div>
+                 <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
+                   <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                     <GraduationCap className="w-5 h-5 text-emerald-400" />
+                     Academic Credentials
+                   </h2>
+                   {/* Academic Fields */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="md:col-span-2">
+                       <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">College / University</label>
+                       <input {...register('college')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" />
+                     </div>
+                     <div>
+                       <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Department / Branch</label>
+                       <input {...register('branch')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" />
+                     </div>
+                     <div>
+                       <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Current Semester</label>
+                       <select {...register('semester', { valueAsNumber: true })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50">
+                         {[1,2,3,4,5,6,7,8].map(s => <option key={s} value={s} className="bg-slate-900 font-bold">Semester {s}</option>)}
+                       </select>
+                     </div>
+                   </div>
+                 </section>
 
-                  <div className="mt-6">
-                    <label className="block text-sm font-medium text-gray-400 mb-2 font-bold uppercase text-[10px] tracking-widest">Subject Expertise Tags</label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <AnimatePresence>
-                        {subjects.map((s, i) => (
-                          <motion.span 
-                            key={s} 
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.8, opacity: 0 }}
-                            className="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-xs font-bold flex items-center gap-2"
-                          >
-                            {s}
-                            <button type="button" onClick={() => removeSubject(i)} className="hover:text-white transition-colors"><X className="w-3 h-3" /></button>
-                          </motion.span>
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                    <div className="flex gap-2">
-                      <input 
-                        value={subjectInput}
-                        onChange={(e) => setSubjectInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSubject())}
-                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" 
-                        placeholder="Add expertise (e.g. Quantum Physics)..." 
-                      />
-                      <button type="button" onClick={addSubject} className="bg-indigo-600 aspect-square p-3 rounded-xl hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-600/20">
-                        <Plus className="w-6 h-6 text-white" />
-                      </button>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Social Presence */}
-                <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
-                  <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-sky-400" />
-                    Neural Network Links
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="relative">
-                      <Github className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                      <input {...register('github_url')} placeholder="GitHub URL" className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:border-indigo-500/50" />
-                    </div>
-                    <div className="relative">
-                      <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input {...register('linkedin_url')} placeholder="LinkedIn URL" className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:border-indigo-500/50" />
-                    </div>
-                    <div className="relative">
-                      <Twitter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input {...register('twitter_url')} placeholder="Twitter / X URL" className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:border-indigo-500/50" />
-                    </div>
-                    <div className="relative">
-                      <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input {...register('website_url')} placeholder="Personal Portfolio" className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white outline-none focus:border-indigo-500/50" />
-                    </div>
-                  </div>
-                </section>
-
-                <div className="flex justify-end pt-4">
-                  <button 
-                    type="submit" 
-                    disabled={saving}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-8 py-4 rounded-2xl font-black font-heading shadow-2xl shadow-indigo-600/30 transition-all transform hover:-translate-y-1 active:translate-y-0 uppercase tracking-widest text-sm"
-                  >
-                    {saving ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> : <Save className="w-5 h-5" />}
-                    {saving ? 'Syncing...' : 'Commit Profile Changes'}
-                  </button>
-                </div>
+                 <div className="flex justify-end pt-4">
+                   <button type="submit" disabled={saving} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-8 py-4 rounded-2xl font-black shadow-2xl transition-all uppercase tracking-widest text-sm">
+                     {saving ? <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : <Save className="w-5 h-5" />}
+                     Commit Changes
+                   </button>
+                 </div>
               </form>
             </motion.div>
-          ) : (
+          )}
+
+          {activeTab === 'subscription' && (
+            <motion.div
+              key="subscription"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-10"
+            >
+               <div className="bg-white/5 p-10 rounded-[40px] border border-white/5 backdrop-blur-3xl relative overflow-hidden group">
+                  <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/5 rounded-full blur-[100px]" />
+                  <div className="relative z-10">
+                     <div className="flex items-center justify-between mb-10">
+                        <div>
+                           <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full inline-flex items-center gap-2 mb-4">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Neural Tier Beta</span>
+                           </div>
+                           <h3 className="text-3xl font-black tracking-tight text-white">Platform Subscription</h3>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1">Status</p>
+                           <p className="text-sm font-bold text-emerald-400">Synchronized</p>
+                        </div>
+                     </div>
+
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                        <div className="p-6 bg-white/5 rounded-3xl border border-transparent hover:border-indigo-500/20 transition-all">
+                           <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-2">My Active Plan</p>
+                           <p className="text-lg font-black text-white">{profileData?.subscription_plan || 'Standard Scholar'}</p>
+                        </div>
+                        <div className="p-6 bg-white/5 rounded-3xl border border-transparent hover:border-indigo-500/20 transition-all text-right">
+                           <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest mb-2">Billing Cycle</p>
+                           <p className="text-sm font-bold text-gray-300">Continuous Academic Link</p>
+                        </div>
+                     </div>
+
+                     <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-6 bg-indigo-600 rounded-[2rem] shadow-xl shadow-indigo-600/20">
+                        <div className="text-white text-center md:text-left">
+                           <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Boost your potential</p>
+                           <p className="text-lg font-black tracking-tight">Expand Neural Solves</p>
+                        </div>
+                        <button onClick={() => router.push('/pricing')} className="px-8 py-3 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all">
+                           Explore Tiers
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'mentorship' && (
             <motion.div
               key="mentorship"
               initial={{ opacity: 0, x: 20 }}
@@ -421,38 +411,28 @@ export default function SettingsPageClient() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
+              {/* Mentorship Content (Existing) */}
               <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
                  <div className="flex items-center justify-between mb-8">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                        <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                       Mentor Status
+                       Expert Status
                     </h2>
                     <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                        profileData?.role === 'mentor' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-gray-500/10 text-gray-500 border-white/5'
                     }`}>
-                       {profileData?.role === 'mentor' ? 'Active Expert' : 'Student Access'}
+                       {profileData?.role === 'mentor' ? 'Active Expert' : 'Regular Access'}
                     </div>
                  </div>
-
                  {profileData?.role !== 'mentor' ? (
                     <div className="py-12 text-center space-y-4">
                        <UserCheck className="w-16 h-16 text-gray-700 mx-auto opacity-20" />
-                       <h3 className="text-xl font-bold text-gray-300">Become an Expert Mentor</h3>
-                       <p className="text-gray-500 max-w-md mx-auto text-sm">
-                          Help others, build your reputation, and earn high-tier badges. You need at least 500 reputation points to apply.
-                       </p>
-                       <div className="pt-4">
-                          <button className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 font-bold text-sm hover:bg-indigo-500 hover:text-white hover:border-indigo-500 transition-all">
-                             Coming Soon
-                          </button>
-                       </div>
+                       <h3 className="text-xl font-bold text-gray-300">Apply for Expert Role</h3>
+                       <p className="text-gray-500 max-w-md mx-auto text-sm">Requires 500+ Reputation points and Academic Verification.</p>
+                       <button className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 font-bold text-sm">COMING SOON</button>
                     </div>
                  ) : (
-                    <AvailabilityGrid 
-                      initialData={profileData?.availability} 
-                      onSave={saveAvailability} 
-                      saving={saving} 
-                    />
+                    <AvailabilityGrid initialData={profileData?.availability} onSave={saveAvailability} saving={saving} />
                  )}
               </section>
             </motion.div>

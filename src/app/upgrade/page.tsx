@@ -9,7 +9,6 @@ import { createSupabaseBrowser } from '@/lib/supabase/client';
 import CouponWidget from '@/components/billing/CouponWidget';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import Script from 'next/script';
 
 function UpgradeContent() {
   const searchParams = useSearchParams();
