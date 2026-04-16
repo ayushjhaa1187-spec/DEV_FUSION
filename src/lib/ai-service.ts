@@ -67,14 +67,6 @@ function extractJSON<T>(text: string, schema: z.ZodSchema<T>): T {
     const data = JSON.parse(cleaned);
     return schema.parse(data);
   } catch (err: any) {
-    console.warn('[AI Service] JSON extraction failed:', err.message);
-    throw new Error(`Failed to parse AI response: ${err.message}`);
-  }
-}
-
-    const data = JSON.parse(cleaned);
-    return schema.parse(data);
-  } catch (err: any) {
     console.warn('[AI Service] JSON extraction or validation failed:', err.message);
     throw new Error(`Failed to parse AI response: ${err.message}`);
   }

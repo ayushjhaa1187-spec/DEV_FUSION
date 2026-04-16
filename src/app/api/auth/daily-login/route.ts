@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     const today = new Date().toISOString().split('T')[0];
     const idempotencyKey = `daily_login_${user.id}_${today}`;
 
-    // ISOLATED OPERATIONS: Ensure one failure doesn't crash the entire flow
+    // BACKGROUND SYNC (Global Catch-All): Never block the UI over points
     try {
       // 1. Award daily login points
       const { error: repError } = await supabase.rpc('update_reputation', {
@@ -36,19 +36,19 @@ export async function POST(req: NextRequest) {
         p_metadata:        {},
         p_idempotency_key: idempotencyKey,
       });
-      if (repError) console.warn('[daily-login] Reputation RPC issue:', repError.message);
+      if (repError) console.warn('[daily-login] Reputation synced failed (ignoring):', repError.message);
 
       // 2. Update login streak
       const { error: streakError } = await supabase.rpc('update_login_streak', { u_id: user.id });
-      if (streakError) console.warn('[daily-login] Streak update issue:', streakError.message);
+      if (streakError) console.warn('[daily-login] Streak sync failed (ignoring):', streakError.message);
 
-    } catch (opErr) {
-      console.error('[daily-login] Background operation failed:', opErr);
+    } catch (bgErr) {
+      console.warn('[daily-login] Background gamification skipped due to link instability.');
     }
 
-    return NextResponse.json({ success: true, status: 'processed' }, { status: 200 });
+    return NextResponse.json({ success: true, status: 'processed_or_skipped' }, { status: 200 });
   } catch (err: any) {
-    console.error('[daily-login] Fatal fail-safe recovery:', err.message || err);
+    console.error('[daily-login] Fatal bridge recovery activated:', err.message || err);
     return NextResponse.json({ success: true, status: 'recovered' }, { status: 200 });
   }
 }

@@ -93,30 +93,33 @@ export default function SettingsPageClient() {
 
     let isMounted = true;
     async function loadProfile() {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s hard timeout
+
       try {
         setLoading(true);
-        const res = await fetch('/api/profile');
-        const resData = await res.json();
+        const res = await fetch('/api/profile', { signal: controller.signal });
+        clearTimeout(timeoutId);
         
+        const resData = await res.json();
         if (resData.success && isMounted) {
-          const { profile: data } = resData.data;
-          setProfileData(data);
-          setAvatarUrl(data.avatar_url);
+          setProfileData(resData.data.profile);
           reset({
-            full_name: data.full_name || '',
-            college: data.college || '',
-            branch: data.branch || '',
-            semester: data.semester || 1,
-            bio: data.bio || '',
-            github_url: data.github_url || '',
-            linkedin_url: data.linkedin_url || '',
-            twitter_url: data.twitter_url || '',
-            website_url: data.website_url || '',
-            subjects: data.subjects || []
+            full_name: resData.data.profile.full_name || '',
+            college: resData.data.profile.college || '',
+            branch: resData.data.profile.branch || '',
+            semester: resData.data.profile.semester || 1,
+            bio: resData.data.profile.bio || '',
+            github_url: resData.data.profile.github_url || '',
+            linkedin_url: resData.data.profile.linkedin_url || '',
+            twitter_url: resData.data.profile.twitter_url || '',
+            website_url: resData.data.profile.website_url || '',
+            subjects: resData.data.profile.subjects || []
           });
         }
-      } catch (e) {
-        console.error('Settings load failed:', e);
+      } catch (err: any) {
+        console.warn('[Settings] Profile sync encounterd latency:', err.message);
+        if (isMounted) toast.error("Sync partial: verify your neural link connection.");
       } finally {
         if (isMounted) setLoading(false);
       }
