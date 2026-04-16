@@ -11,7 +11,10 @@ export function useSafeRealtime(
   const supabase = createSupabaseBrowser();
 
   useEffect(() => {
-    const channelName = `realtime:${table}:${filter}`;
+    if (!table || !filter) return;
+
+    console.log(`[Realtime] Subscribing to ${table} with filter: ${filter}`);
+    const channelName = `realtime:${table}:${filter.replace(/[^a-zA-Z0-9]/g, '_')}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -26,9 +29,14 @@ export function useSafeRealtime(
           onInsert(payload.new);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`[Realtime] Successfully subscribed to ${channelName}`);
+        }
+      });
 
     return () => {
+      console.log(`[Realtime] Cleaning up subscription for ${channelName}`);
       supabase.removeChannel(channel);
     };
   }, [table, filter, onInsert, supabase]);

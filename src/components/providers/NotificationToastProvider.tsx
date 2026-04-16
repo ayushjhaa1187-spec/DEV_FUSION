@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 import { useToast } from '@/components/ui/Toast';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
@@ -17,41 +17,40 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
     });
   }, [supabase]);
 
+  const handleNotification = useCallback((notification: any) => {
+    // Get appropriate icon based on type
+    let Icon = Bell;
+    let colorClass = 'text-primary';
+
+    if (notification.type === 'badge_unlock') {
+      Icon = Award;
+      colorClass = 'text-yellow-500';
+    } else if (notification.type.includes('answer')) {
+      Icon = MessageSquare;
+      colorClass = 'text-blue-500';
+    } else if (notification.type.includes('rep')) {
+      Icon = Zap;
+      colorClass = 'text-orange-500';
+    }
+
+    showToast(
+      <div className="flex items-start gap-3 py-1">
+        <div className={`p-2.5 bg-white/5 rounded-xl ${colorClass}`}>
+          <Icon size={20} />
+        </div>
+        <div className="flex-1">
+          <p className="font-bold text-sm text-white">{notification.title || 'Notification'}</p>
+          <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{notification.body || notification.message}</p>
+        </div>
+      </div>,
+      'info'
+    );
+  }, [showToast]);
+
   useSafeRealtime(
     'notifications',
     userId ? `user_id=eq.${userId}` : '',
-    (notification) => {
-      // Get appropriate icon based on type
-      let Icon = Bell;
-      let colorClass = 'text-primary';
-
-      if (notification.type === 'badge_unlock') {
-        Icon = Award;
-        colorClass = 'text-yellow-500';
-      } else if (notification.type.includes('answer')) {
-        Icon = MessageSquare;
-        colorClass = 'text-blue-500';
-      } else if (notification.type.includes('rep')) {
-        Icon = Zap;
-        colorClass = 'text-orange-500';
-      }
-
-      showToast(
-        <div className="flex items-start gap-3 py-1">
-          <div className={`p-2.5 bg-white/5 rounded-xl ${colorClass}`}>
-            <Icon size={20} />
-          </div>
-          <div className="flex-1">
-            <p className="font-bold text-sm text-white">{notification.title || 'Notification'}</p>
-            <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{notification.body || notification.message}</p>
-          </div>
-        </div>,
-        'info'
-      );
-
-      // Play subtle notification sound if needed (optional)
-      // new Audio('/sounds/notification.mp3').play().catch(() => {});
-    }
+    handleNotification
   );
 
   return <>{children}</>;
