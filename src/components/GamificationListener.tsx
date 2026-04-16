@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { useToast } from '@/components/ui/Toast';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
+import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 
 export function GamificationListener() {
   const { user } = useAuth();

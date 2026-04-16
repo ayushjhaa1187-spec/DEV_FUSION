@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
+import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 import { Bell, Hash, MessageSquare, Flame, CheckCircle, Info, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';

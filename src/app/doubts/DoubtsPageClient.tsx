@@ -9,6 +9,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { Search, X, Sparkles, Send, Filter, Clock, TrendingUp, CheckCircle2, ChevronRight, MessageSquare as MsgIcon } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 import { toast } from 'sonner';
 
 export default function DoubtsPageClient() {
@@ -110,7 +111,7 @@ export default function DoubtsPageClient() {
     }
   }, [activeSubject, filterType, userProfile, userSubjects, searchQuery]);
 
-  useSafeRealtime('doubts-hub', [
+  const { supabase } = useSafeRealtime('doubts-hub', [
     {
       event: 'INSERT',
       table: 'doubts',
