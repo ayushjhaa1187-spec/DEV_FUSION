@@ -44,7 +44,17 @@ export function NotificationBell({ userId }: { userId: string }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const supabase = createSupabaseBrowser();
+  
+  const { supabase } = useSafeRealtime(`bell-${userId}`, [
+    {
+      event: 'INSERT',
+      table: 'notifications',
+      filter: `user_id=eq.${userId}`,
+      handler: (payload) => {
+        setNotifications((prev) => [payload.new as Notification, ...prev.slice(0, 9)]);
+      }
+    }
+  ]);
 
   useEffect(() => {
     // Initial fetch
@@ -55,23 +65,6 @@ export function NotificationBell({ userId }: { userId: string }) {
       .order('created_at', { ascending: false })
       .limit(10)
       .then(({ data }) => data && setNotifications(data));
-
-    // Realtime subscription
-    const channel = supabase
-      .channel(`notifications:user_id=eq.${userId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${userId}`,
-      }, (payload) => {
-        setNotifications((prev) => [payload.new as Notification, ...prev.slice(0, 9)]);
-      })
-      .subscribe();
-
-    return () => { 
-      supabase.removeChannel(channel); 
-    };
   }, [userId, supabase]);
 
   useEffect(() => {

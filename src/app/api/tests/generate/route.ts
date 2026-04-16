@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Subject and Topic are required' }, { status: 400 });
     }
 
-    // 2. Plan Check
-    const limit = await enforcePlanLimit(user.id, 'ai_test_generate', { free: 3, pro: 20, elite: null }, 'weekly');
+    // 2. Plan Check (Relaxed to 10/week for verification)
+    const limit = await enforcePlanLimit(user.id, 'ai_test_generate', { free: 10, pro: 50, elite: null }, 'weekly');
     if (!limit.allowed) {
       return NextResponse.json({
         success: false,

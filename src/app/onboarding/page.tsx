@@ -32,5 +32,5 @@ export default async function OnboardingPage() {
 
   const { data: subjects } = await supabase.from('subjects').select('id, name');
 
-  return <OnboardingClient user={user} subjects={subjects || []} />;
+  return <OnboardingClient user={user} profile={profile} subjects={subjects || []} />;
 }

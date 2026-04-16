@@ -50,16 +50,30 @@ export const AIQuizSchema = z.array(z.object({
 function extractJSON<T>(text: string, schema: z.ZodSchema<T>): T {
   try {
     let cleaned = text.trim();
+    
+    // 1. Remove markdown code blocks (```json ... ```)
+    cleaned = cleaned.replace(/```(?:json)?\s*([\s\S]*?)\s*```/g, '$1');
+    
+    // 2. Extract valid JSON structure
     const jsonMatch = cleaned.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-    if (jsonMatch) cleaned = jsonMatch[0];
+    if (!jsonMatch) throw new Error('No JSON found in response');
+    cleaned = jsonMatch[0];
 
-    // Handle common AI punctuation issues in JSON
+    // 3. Fix minor LLM-generated syntax errors (trailing commas, newlines)
     cleaned = cleaned
       .replace(/\\n/g, ' ')
       .replace(/,(\s*[\]\}])/g, '$1'); 
 
-    const parsed = JSON.parse(cleaned);
-    return schema.parse(parsed);
+    const data = JSON.parse(cleaned);
+    return schema.parse(data);
+  } catch (err: any) {
+    console.warn('[AI Service] JSON extraction failed:', err.message);
+    throw new Error(`Failed to parse AI response: ${err.message}`);
+  }
+}
+
+    const data = JSON.parse(cleaned);
+    return schema.parse(data);
   } catch (err: any) {
     console.warn('[AI Service] JSON extraction or validation failed:', err.message);
     throw new Error(`Failed to parse AI response: ${err.message}`);
@@ -72,9 +86,9 @@ function extractJSON<T>(text: string, schema: z.ZodSchema<T>): T {
 async function callGemini(prompt: string, modelName: string = PRIMARY_MODEL): Promise<string> {
   const model = genAI.getGenerativeModel({ model: modelName });
   
-  // Create a timeout promise (~10s as requested)
+  // Create a timeout promise (~30s as requested)
   const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('AI timeout')), 10000)
+    setTimeout(() => reject(new Error('AI timeout')), 30000)
   );
 
   try {

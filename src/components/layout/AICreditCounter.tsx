@@ -4,17 +4,19 @@ import React, { useEffect, useState } from 'react';
 import { Zap } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/components/auth/auth-provider';
+import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 
 export default function AICreditCounter() {
   const [credits, setCredits] = useState<number | null>(null);
   const [tier, setTier] = useState<string>('free');
 
+  const { user } = useAuth();
+
   useEffect(() => {
     const fetchCredits = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
+      const supabase = createClient();
       const { data } = await supabase
         .from('profiles')
         .select('current_ai_credits, current_tier')
@@ -25,32 +27,25 @@ export default function AICreditCounter() {
         setCredits(data.current_ai_credits || 0);
         setTier(data.current_tier || 'free');
       }
-
-      // Subscribe to profile changes for live update
-      const channel = supabase
-        .channel('credit-updates')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles',
-            filter: `id=eq.${user.id}`,
-          },
-          (payload) => {
-            setCredits(payload.new.current_ai_credits);
-            setTier(payload.new.current_tier);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     };
-    
     fetchCredits();
-  }, []);
+  }, [user]);
+
+  // Use Centralized Safe Realtime
+  useSafeRealtime(
+    `ai_credits_${user?.id}`,
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'profiles',
+      filter: `id=eq.${user?.id}`,
+    },
+    (payload) => {
+      setCredits(payload.new.current_ai_credits);
+      setTier(payload.new.current_tier);
+    },
+    [user?.id]
+  );
 
   if (credits === null) return null;
 

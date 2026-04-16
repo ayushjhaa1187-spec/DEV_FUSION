@@ -26,19 +26,51 @@ export async function GET(request: Request) {
     }
 
     if (session) {
-      const { data: profile } = await supabase
+      const { user } = session;
+      
+      // 1. Immediate Profile Sync (Ensures profile exists BEFORE redirect)
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role, college, branch')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .maybeSingle();
 
-      const role = profile?.role || session.user.user_metadata?.role || 'student';
+      if (profileError) {
+        console.error('[Callback] Profile fetch error:', profileError);
+      }
 
+      // 2. If profile is missing or fundamentally empty, redirect to onboarding explicitly
+      // Note: We use maybeSingle() so data being null is expected for new users.
+      if (!profile) {
+        // Upsert a default profile from metadata
+        const defaultRole = user.user_metadata?.role || 'student';
+        await supabase.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || '',
+          role: defaultRole,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' }).catch(e => console.error('[Callback] Upsert failed:', e));
+        
+        // Always send new users to onboarding to "Choose Their Path" 
+        return NextResponse.redirect(`${origin}/onboarding`);
+      }
+
+      // 3. Role-Aware Redirection
+      const role = profile.role || user.user_metadata?.role || 'student';
+
+      // Organizations bypass student onboarding
       if (role === 'organization' || role === 'campus_admin') {
         return NextResponse.redirect(`${origin}/organization/dashboard`);
       }
 
-      if (!profile?.college || !profile?.branch) {
+      // Mentors bypass student academic onboarding if they have institution set
+      if (role === 'mentor' && profile.college) {
+        return NextResponse.redirect(`${origin}/mentors/dashboard`);
+      }
+
+      // Students/Mentors without basic info go to onboarding
+      if (!profile.college || !profile.branch) {
         return NextResponse.redirect(`${origin}/onboarding`);
       }
 

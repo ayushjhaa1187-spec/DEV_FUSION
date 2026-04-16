@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { FileText, Download, Play, Search, BookOpen, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 
 export default function ResourcesPageClient() {
   const [resources, setResources] = useState<any[]>([]);
@@ -12,29 +13,37 @@ export default function ResourcesPageClient() {
   const [activeTab, setActiveTab] = useState<'notes' | 'videos'>('notes');
   const supabase = createSupabaseBrowser();
 
-  const curatedPlaylists = [
-    { title: 'Data Structures & Algorithms', channel: 'Abdul Bari', id: 'PL2_aWCzGMAwI3W_JlcBbtYTQAn7-tc6Yx', color: '#ef4444' },
-    { title: 'Operating Systems Full Course', channel: 'Gate Smashers', id: 'PLmXKhU9FNesSFvj6gASuWmQd23Ul5omtD', color: '#3b82f6' },
-    { title: 'Database Management Systems', channel: 'Knowledge Gate', id: 'PLmXKhU9FNesR1rLmcTu7LDv33W8938qec', color: '#10b981' },
-    { title: 'System Design Interview', channel: 'Gaurav Sen', id: 'PLMCXHnjXnTnvo6alSjVkgxV-VH6EPyvoX', color: '#f59e0b' }
-  ];
+  const loadResources = async () => {
+    try {
+      const { data } = await supabase
+        .from('resources')
+        .select('*, profiles(username), subjects(name)')
+        .order('created_at', { ascending: false });
+      setResources(data || []);
+    } catch (err) {
+      console.error('Failed to load resources');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadResources() {
-      try {
-        const { data } = await supabase
-          .from('resources')
-          .select('*, profiles(username), subjects(name)')
-          .order('created_at', { ascending: false });
-        setResources(data || []);
-      } catch (err) {
-        console.error('Failed to load resources');
-      } finally {
-        setLoading(false);
-      }
-    }
     loadResources();
   }, [supabase]);
+
+  // Use Centralized Safe Realtime
+  useSafeRealtime(
+    'knowledge_hub_updates',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'resources',
+    },
+    () => {
+      loadResources();
+    },
+    []
+  );
 
   const filteredResources = resources.filter(r => 
     r.title.toLowerCase().includes(searchTerm.toLowerCase()) || 

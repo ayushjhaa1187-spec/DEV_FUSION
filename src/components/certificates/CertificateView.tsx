@@ -90,63 +90,69 @@ export default function CertificateView({ data }: CertificateProps) {
           ref={certRef}
           className="relative aspect-[1.414/1] w-full bg-[#0a0612] p-12 md:p-20 flex flex-col items-center justify-between border-8 border-double border-indigo-500/20"
         >
-          {/* Decorative Ornaments */}
-          <div className="absolute top-0 left-0 w-32 h-32 border-l-4 border-t-4 border-indigo-500/30 rounded-tl-3xl m-8" />
-          <div className="absolute top-0 right-0 w-32 h-32 border-r-4 border-t-4 border-indigo-500/30 rounded-tr-3xl m-8" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 border-l-4 border-b-4 border-indigo-500/30 rounded-bl-3xl m-8" />
-          <div className="absolute bottom-0 right-0 w-32 h-32 border-r-4 border-b-4 border-indigo-500/30 rounded-br-3xl m-8" />
+          {/* Decorative Corner Ornaments - Minimalist */}
+          <div className="absolute top-0 left-0 w-2 h-24 bg-indigo-600 m-8" />
+          <div className="absolute top-0 left-0 w-24 h-2 bg-indigo-600 m-8" />
+          <div className="absolute top-0 right-0 w-2 h-24 bg-indigo-600 m-8" />
+          <div className="absolute top-0 right-0 w-24 h-2 bg-indigo-600 m-8" />
 
           {/* Header */}
-          <div className="text-center z-10">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                 <Globe className="text-white w-6 h-6" />
+          <div className="text-center z-10 pt-4">
+            <div className="flex flex-col items-center gap-2 mb-8">
+              <div className="w-16 h-16 bg-indigo-600/10 rounded-full flex items-center justify-center mb-2">
+                 <Globe className="text-indigo-600 w-8 h-8" />
               </div>
-              <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-                SkillBridge
+              <span className="text-xl font-bold text-gray-800 tracking-tight">
+                TechSkills Academy
               </span>
             </div>
-            <h2 className="text-indigo-400 font-bold uppercase tracking-[0.2em] text-sm mb-2">
-              Certificate of Achievement
+            <h2 className="text-gray-900 font-black uppercase tracking-[0.3em] text-3xl mb-4">
+              Certificate of Completion
             </h2>
           </div>
 
           {/* Recipient */}
-          <div className="text-center z-10">
-            <p className="text-gray-400 italic mb-6">This is to certify that</p>
-            <h1 className="text-4xl md:text-6xl font-serif text-white mb-6">
+          <div className="text-center z-10 -mt-8">
+            <p className="text-gray-600 italic mb-8 text-xl">This certifies that</p>
+            <h1 className="text-5xl md:text-7xl font-serif text-gray-900 mb-10 border-b-2 border-gray-100 pb-4 px-20">
               {data.full_name}
             </h1>
-            <p className="max-w-xl mx-auto text-gray-400 leading-relaxed text-lg">
-              has successfully completed the assessment in{" "}
-              <span className="text-indigo-300 font-semibold">{data.subject}</span>{" "}
-              with a standout performance score of{" "}
-              <span className="text-emerald-400 font-bold">{data.score}%</span>.
+            <p className="max-w-2xl mx-auto text-gray-600 leading-relaxed text-lg italic">
+              has demonstrated proficiency in <span className="text-indigo-600 font-bold uppercase tracking-wider">{data.subject}</span>, fulfilling all course requirements with distinction.
             </p>
           </div>
 
-          {/* Footer / QR */}
-          <div className="w-full flex justify-between items-end z-10 px-10">
-            <div className="text-left space-y-1">
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest">Date Issued</p>
-              <p className="text-white font-medium">{format(new Date(data.issued_at), "MMMM dd, yyyy")}</p>
-              <div className="h-px w-32 bg-indigo-500/30 my-4" />
-              <p className="text-xs text-indigo-400 font-semibold">Verification Official</p>
+          {/* Verification Center */}
+          <div className="flex items-center justify-center gap-8 z-10 mb-12">
+            <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-100">
+              <QRCodeSVG value={verificationUrl} size={70} level="M" />
             </div>
-
-            <div className="flex flex-col items-center gap-2">
-              <div className="bg-white p-2 rounded-lg shadow-xl">
-                <QRCodeSVG value={verificationUrl} size={80} level="H" />
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center border-2 border-emerald-500/20">
+                 <ShieldCheck className="text-emerald-600 w-8 h-8" />
               </div>
-              <p className="text-[10px] text-gray-500 font-mono">
-                ID: {data.id.split("-")[0]}...
-              </p>
+              <span className="text-[10px] font-black text-emerald-600 uppercase mt-1">Certified</span>
             </div>
           </div>
 
-          {/* Background Branding */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03]">
-            <h1 className="text-[15rem] font-bold rotate-[-12deg]">SKILLBRIDGE</h1>
+          {/* Footer / Signatures */}
+          <div className="w-full flex justify-between items-end z-10 px-20 pb-4">
+             {/* Left - Director */}
+            <div className="text-center space-y-2">
+              <p className="text-lg font-serif italic text-gray-900 border-b border-gray-300 px-4 min-w-[180px]">Jahnvi Chauhan</p>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Director of Program</p>
+            </div>
+
+            {/* Right - Course Provider */}
+            <div className="text-center space-y-2">
+              <p className="text-lg font-serif italic text-gray-900 border-b border-gray-300 px-4 min-w-[180px]">Expert Mentors</p>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Course Provider</p>
+            </div>
+          </div>
+
+          {/* Background Branding Watermark */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.02]">
+            <h1 className="text-[12rem] font-bold">VERIFIED</h1>
           </div>
         </div>
       </div>

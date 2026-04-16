@@ -36,16 +36,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const supabase = useMemo(() => createSupabaseBrowser(), []);
 
   const fetchProfile = async (authUser: User) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authUser.id)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
 
-    if (error) throw error;
+      if (error) {
+        console.warn('[Auth] Profile fetch error:', error);
+      }
 
-    if (!data) {
-      const { error: upsertError } = await supabase.from('profiles').upsert(
+      if (data) {
+        // Fetch plan separately for reliability
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('plan')
+          .eq('user_id', authUser.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        setProfile({ ...(data as Profile), plan: sub?.plan ?? 'free' });
+        return;
+      }
+
+      // Upsert only if profile missing
+      await supabase.from('profiles').upsert(
         {
           id: authUser.id,
           email: authUser.email,
@@ -53,35 +69,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'id' }
-      );
+      ).catch(e => console.warn('[Auth] Upsert failed:', e));
 
-      if (upsertError) throw upsertError;
-
-      const { data: createdProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .maybeSingle();
-
-      setProfile((createdProfile as Profile) ?? null);
-      return;
+      setProfile({ id: authUser.id, plan: 'free' } as Profile);
+    } catch (err) {
+      console.error('[Auth] Critical sync error:', err);
+      // Fallback to minimal profile but DON'T block loading complete
+      setProfile({ id: authUser.id, plan: 'free' } as Profile);
     }
-
-    // Fetch plan separately for reliability
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('plan')
-      .eq('user_id', authUser.id)
-      .eq('status', 'active')
-      .maybeSingle();
-
-    setProfile({ ...(data as Profile), plan: sub?.plan ?? 'free' });
   };
 
+  // ABSOLUTE UNBLOCKER: Guarantee the UI is interactive within 2s of mount.
   useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.warn('[AuthProvider] Emergency unblock triggered.');
+        setLoading(false);
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  useEffect(() => {
+    let mounted = true;
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      console.log(`[Auth] Event Detected: ${event}`);
+
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
@@ -93,41 +110,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      if (currentUser) {
+      if (currentUser && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED')) {
         try {
-          setLoading(true);
           await fetchProfile(currentUser);
-
-          if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-            await fetch('/api/auth/daily-login', { method: 'POST' });
+          if (event === 'SIGNED_IN') {
+             fetch('/api/auth/daily-login', { method: 'POST' }).catch(() => {});
           }
         } catch (e) {
-          console.error('Profile fetch failed:', e);
+          console.error('[Auth] Data sync failure:', e);
         } finally {
-          setLoading(false);
+          if (mounted) setLoading(false);
         }
-      } else {
+      } else if (!currentUser) {
         setProfile(null);
         setLoading(false);
       }
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
-      if (currentUser) {
-        try {
-          await fetchProfile(currentUser);
-        } catch (e) {
-          console.error('Initial profile fetch failed:', e);
-        }
-      }
-
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [router, supabase]);
 
   const signOut = async () => {

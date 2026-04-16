@@ -13,6 +13,7 @@ import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichTextRenderer from '@/components/ui/RichTextRenderer';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 
 export default function DoubtDetailPageClient({ id }: { id: string }) {
   const { user } = useAuth();
@@ -48,26 +49,26 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
     fetchData();
   }, [fetchData]);
 
-  useEffect(() => {
-    const supabase = createSupabaseBrowser();
-    const channel = supabase
-      .channel(`answers-${id}`)
-      .on('postgres_changes', {
+  // Use Centralized Safe Realtime
+  useSafeRealtime(
+    `doubt_answers_${id}`,
+    [
+      {
         event: 'INSERT',
         schema: 'public',
         table: 'answers',
         filter: `doubt_id=eq.${id}`
-      }, () => fetchData())
-      .on('postgres_changes', {
+      },
+      {
         event: 'UPDATE',
         schema: 'public',
         table: 'answers',
         filter: `doubt_id=eq.${id}`
-      }, () => fetchData())
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [id, fetchData]);
+      }
+    ],
+    () => fetchData(),
+    [id, fetchData]
+  );
 
   const handlePostAnswer = async () => {
     if (!newAnswerText.trim()) return;

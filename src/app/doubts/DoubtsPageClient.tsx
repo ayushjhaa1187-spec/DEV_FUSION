@@ -110,29 +110,35 @@ export default function DoubtsPageClient() {
     }
   }, [activeSubject, filterType, userProfile, userSubjects, searchQuery]);
 
-  useEffect(() => { loadDoubts(true); }, [loadDoubts]);
-
-  useEffect(() => {
-    const supabase = createSupabaseBrowser();
-    const channel = supabase.channel('doubts-feed')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'doubts' }, async (payload) => {
+  useSafeRealtime('doubts-hub', [
+    {
+      event: 'INSERT',
+      table: 'doubts',
+      handler: async (payload) => {
         const { data: newDoubt } = await supabase.from('doubts')
           .select('*, subjects(name), profiles(username, avatar_url, reputation_points)')
           .eq('id', payload.new.id).single();
         if (!newDoubt) return;
         setDoubts(prev => {
           if (prev.find(d => d.id === newDoubt.id)) return prev;
-          if (window.scrollY < 100) return [newDoubt, ...prev];
+          if (typeof window !== 'undefined' && window.scrollY < 100) return [newDoubt, ...prev];
           toast.info('New doubt posted!', {
             action: { label: 'View', onClick: () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setDoubts(current => [newDoubt, ...current.filter(d => d.id !== newDoubt.id)]); } }
           });
           return prev;
         });
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'doubts' }, () => loadDoubts(false))
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [loadDoubts]);
+      }
+    },
+    {
+      event: 'UPDATE',
+      table: 'doubts',
+      handler: () => {
+        loadDoubts(false);
+      }
+    }
+  ]);
+
+  useEffect(() => { loadDoubts(true); }, [loadDoubts]);
 
   const handleSearchChange = (val: string) => {
     setSearchInput(val);

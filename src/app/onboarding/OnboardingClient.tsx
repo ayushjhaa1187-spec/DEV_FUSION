@@ -10,13 +10,19 @@ import { useToast } from '@/components/ui/Toast';
 
 import Gateway from '@/components/auth/Gateway';
 
-export default function OnboardingClient({ user, subjects }: { user: any, subjects: any[] }) {
+export default function OnboardingClient({ user, profile, subjects }: { user: any, profile: any, subjects: any[] }) {
   const router = useRouter();
   const supabase = createSupabaseBrowser();
   const { showToast } = useToast();
   
-  const initialRole = (user?.user_metadata?.role || (user as any).role) as 'student' | 'mentor' | 'organization' | undefined;
-  const [selectedRole, setSelectedRole] = useState<'student' | 'mentor' | 'organization' | undefined>(initialRole);
+  const initialRole = (profile?.role || user?.user_metadata?.role) as 'student' | 'mentor' | 'organization' | undefined;
+  
+  // FORCE ROLE SELECTION for new users:
+  // Show selection screen if the user hasn't filled out their college/institution/slug yet.
+  const [selectedRole, setSelectedRole] = useState<'student' | 'mentor' | 'organization' | undefined>(() => {
+    const hasData = profile?.college || profile?.branch || profile?.slug;
+    return hasData ? initialRole : undefined;
+  });
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,7 +32,11 @@ export default function OnboardingClient({ user, subjects }: { user: any, subjec
     bio: '',
     github: '',
     linkedin: '',
-    // Org specific
+    // Mentor/Org specific
+    job_title: '',
+    company: '',
+    years_experience: '',
+    expertise: '',
     website: '',
     slug: ''
   });
@@ -37,10 +47,12 @@ export default function OnboardingClient({ user, subjects }: { user: any, subjec
     await supabase.from('profiles').update({ role }).eq('id', user.id);
   };
 
+  const isMentor = selectedRole === 'mentor';
   const isOrg = selectedRole === 'organization';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.id]: e.target.value }));
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,17 +88,12 @@ export default function OnboardingClient({ user, subjects }: { user: any, subjec
         if (orgError) throw orgError;
 
       } else {
-        const social_links = {
-          github: formData.github,
-          linkedin: formData.linkedin,
-        };
-
         const { error } = await supabase
           .from('profiles')
           .update({
-            college: formData.college,
-            branch: formData.branch,
-            semester: parseInt(formData.semester) || 1,
+            college: formData.college || formData.company, // Use company as affiliation for mentors
+            branch: formData.branch || formData.expertise, // Use expertise as branch for mentors
+            semester: parseInt(formData.semester || formData.years_experience) || 1, 
             bio: formData.bio,
             github_url: formData.github,
             linkedin_url: formData.linkedin,
@@ -94,6 +101,28 @@ export default function OnboardingClient({ user, subjects }: { user: any, subjec
           .eq('id', user.id);
 
         if (error) throw error;
+
+        // 3. Create Mentor Profile if role is mentor
+        if (isMentor) {
+          const { error: mentorError } = await supabase
+            .from('mentor_profiles')
+            .upsert({
+              id: user.id,
+              job_title: formData.job_title,
+              company: formData.company,
+              years_experience: parseInt(formData.years_experience) || 0,
+              expertise: formData.expertise,
+              specialty: formData.expertise, // Map expertise to specialty
+              bio: formData.bio,
+              hourly_rate: 500, // Default rate
+              rating: 5.0
+            });
+          
+          if (mentorError) {
+             console.error('Mentor profile sync error:', mentorError);
+             // Don't throw here to avoid blocking onboarding if the table is locked
+          }
+        }
       }
       
       showToast('Account setup complete! Welcome aboard.', 'success');
@@ -118,11 +147,15 @@ export default function OnboardingClient({ user, subjects }: { user: any, subjec
     <div className="min-h-screen app-main flex items-center justify-center p-4">
        <Card variant="elevated" className="w-full max-w-2xl bg-[#0d091a] border-white/5">
           <CardHeader>
-            <CardTitle className="text-white">{isOrg ? 'Organization Setup' : 'Complete Your Profile'}</CardTitle>
+            <CardTitle className="text-white">
+              {isOrg ? 'Organization Command Center' : isMentor ? 'Elite Mentor Profile' : 'Student Success Path'}
+            </CardTitle>
             <CardDescription className="text-gray-400">
               {isOrg 
-                ? 'Tell us about your organization to help mentors find and join you.' 
-                : 'Tell us a bit about your academic journey to personalize your SkillBridge experience.'}
+                ? 'Configure your organization identity to start hosting and scaling.' 
+                : isMentor
+                  ? 'Showcase your expertise to the next generation of engineers.'
+                  : 'Tell us a bit about your academic journey to personalize your dashboard.'}
             </CardDescription>
           </CardHeader>
          <CardContent>
@@ -157,46 +190,84 @@ export default function OnboardingClient({ user, subjects }: { user: any, subjec
                       onChange={handleChange}
                     />
                   </>
+                ) : isMentor ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormInput
+                        id="job_title"
+                        label="Current Profession"
+                        className="bg-white/5 border-white/10 text-white"
+                        placeholder="e.g. Senior Software Engineer"
+                        value={formData.job_title}
+                        onChange={handleChange}
+                        required
+                      />
+                      <FormInput
+                        id="company"
+                        label="Organization / Company"
+                        className="bg-white/5 border-white/10 text-white"
+                        placeholder="e.g. Google / Freelance"
+                        value={formData.company}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormInput
+                        id="years_experience"
+                        label="Years of Experience"
+                        className="bg-white/5 border-white/10 text-white"
+                        type="number"
+                        placeholder="e.g. 5"
+                        value={formData.years_experience}
+                        onChange={handleChange}
+                        required
+                      />
+                      <FormInput
+                        id="expertise"
+                        label="Primary Expertise"
+                        className="bg-white/5 border-white/10 text-white"
+                        placeholder="e.g. React, Python, ML"
+                        value={formData.expertise}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
+                  </>
                 ) : (
                   <>
                     <FormInput
                       id="college"
-                      label={selectedRole === 'mentor' ? 'Affiliated Institution' : 'College / University'}
+                      label="College / University"
                       className="bg-white/5 border-white/10 text-white"
                       placeholder="e.g. Stanford University"
                       value={formData.college}
                       onChange={handleChange}
-                      required={!isOrg}
+                      required
                     />
-                    <FormInput
-                      id="branch"
-                      label="Branch / Major"
-                      className="bg-white/5 border-white/10 text-white"
-                      placeholder="e.g. Computer Science"
-                      value={formData.branch}
-                      onChange={handleChange}
-                      required={!isOrg}
-                    />
-                    <FormInput
-                      id="semester"
-                      label="Current Semester"
-                      className="bg-white/5 border-white/10 text-white"
-                      type="number"
-                      min="1"
-                      max="10"
-                      placeholder="e.g. 5"
-                      value={formData.semester}
-                      onChange={handleChange}
-                      required={!isOrg}
-                    />
-                    <FormInput
-                      id="linkedin"
-                      label="LinkedIn Profile"
-                      className="bg-white/5 border-white/10 text-white"
-                      placeholder="https://linkedin.com/in/..."
-                      value={formData.linkedin}
-                      onChange={handleChange}
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormInput
+                        id="branch"
+                        label="Branch / Major"
+                        className="bg-white/5 border-white/10 text-white"
+                        placeholder="e.g. Computer Science"
+                        value={formData.branch}
+                        onChange={handleChange}
+                        required
+                      />
+                      <FormInput
+                        id="semester"
+                        label="Current Semester"
+                        className="bg-white/5 border-white/10 text-white"
+                        type="number"
+                        min="1"
+                        max="10"
+                        placeholder="e.g. 5"
+                        value={formData.semester}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
                   </>
                 )}
               </div>

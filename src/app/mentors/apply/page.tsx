@@ -40,14 +40,22 @@ export default function MentorApplyPage() {
   });
 
   useEffect(() => {
+    // Safety timeout to prevent infinite loader in case of auth race conditions
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
     if (!authLoading && !user) {
+      clearTimeout(safetyTimeout);
       router.push('/auth');
       return;
     }
 
     if (user) {
-      checkApplicationStatus();
+      checkApplicationStatus().then(() => clearTimeout(safetyTimeout));
     }
+
+    return () => clearTimeout(safetyTimeout);
   }, [user, authLoading, router]);
 
   async function checkApplicationStatus() {

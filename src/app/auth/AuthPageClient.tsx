@@ -66,10 +66,15 @@ export default function AuthPageClient() {
 
         if (userId) {
           await supabase.rpc('process_login_streak', { p_user_id: userId });
-          const { data: profile } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle();
-          router.push(getRoleRedirect(profile?.role));
+          const { data: profile } = await supabase.from('profiles').select('role, college, branch').eq('id', userId).maybeSingle();
+          
+          if (!profile || (!profile.college && profile.role !== 'organization')) {
+             router.push('/onboarding');
+          } else {
+             router.push(getRoleRedirect(profile?.role));
+          }
         } else {
-          router.push('/dashboard');
+          router.push('/onboarding');
         }
       } else {
         const { error } = await supabase.auth.signUp({

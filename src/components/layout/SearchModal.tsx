@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search as SearchIcon, X, MessageSquare, User, Book, Command, ArrowRight, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 export default function SearchModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
@@ -11,9 +11,11 @@ export default function SearchModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Handle body scroll locking
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
       document.body.style.overflow = 'hidden';
@@ -21,6 +23,11 @@ export default function SearchModal({ isOpen, onClose }: { isOpen: boolean; onCl
       document.body.style.overflow = 'unset';
     }
   }, [isOpen]);
+
+  // Handle navigation (close modal when route changes)
+  useEffect(() => {
+    onClose();
+  }, [pathname, onClose]);
 
   useEffect(() => {
     const handler = setTimeout(async () => {
@@ -56,19 +63,24 @@ export default function SearchModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   return (
     <div className="fixed inset-0 z-[10000] flex items-start justify-center pt-[15vh] px-4">
+      {/* Backdrop */}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-[#06060f]/80 backdrop-blur-md"
+        className="fixed inset-0 bg-[#06060f]/90 backdrop-blur-xl cursor-pointer"
+        style={{ zIndex: -1 }}
       />
       
+      {/* Modal Container */}
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: -20 }}
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: -20 }}
-        className="relative w-full max-w-2xl bg-[#0c0c16] border border-white/10 rounded-[2.5rem] shadow-3xl overflow-hidden shadow-indigo-500/10"
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl bg-[#0c0c16] rounded-[32px] border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[80vh]"
+        style={{ zIndex: 1 }}
       >
         <div className="flex items-center p-6 border-b border-white/5">
           <SearchIcon className="w-6 h-6 text-indigo-400 mr-4" />
