@@ -5,7 +5,11 @@ import { Ticket, Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-r
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
-export default function CouponWidget() {
+interface CouponWidgetProps {
+  onSuccess?: (plan: string, message: string) => void;
+}
+
+export default function CouponWidget({ onSuccess }: CouponWidgetProps) {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [applied, setApplied] = useState<{ plan: string, message: string } | null>(null);
@@ -28,6 +32,10 @@ export default function CouponWidget() {
 
       setApplied({ plan: data.plan, message: data.message });
       toast.success(data.message);
+      
+      if (onSuccess) {
+        onSuccess(data.plan, data.message);
+      }
     } catch (err: any) {
       toast.error(err.message);
     } finally {

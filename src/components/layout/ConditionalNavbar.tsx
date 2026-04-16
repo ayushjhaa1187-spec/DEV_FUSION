@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import BottomCTA from '@/components/layout/BottomCTA';
 
 export default function ConditionalNavbar() {
   const pathname = usePathname();
@@ -25,5 +26,10 @@ export function ConditionalFooter() {
     return null;
   }
 
-  return <Footer />;
+  return (
+    <>
+      <BottomCTA />
+      <Footer />
+    </>
+  );
 }

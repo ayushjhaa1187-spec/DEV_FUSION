@@ -6,7 +6,7 @@ import Loading from './loading';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'My Profile | DEV_FUSION',
+  title: 'My Profile | SkillBridge',
   description: 'Manage your SkillBridge profile, track achievements, and view your academic activity.',
 };
 

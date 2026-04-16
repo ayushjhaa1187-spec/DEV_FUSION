@@ -322,7 +322,15 @@ export default function HomePageClient() {
         </Link>
       </section>
 
-
+      {/* ── FOOTER ── */}
+      <footer className="landing-footer">
+        <div className="footer-copy">© 2026 SkillBridge · Built at SkillBridge Hackathon 🚀</div>
+        <div className="footer-links">
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <a href="https://github.com/ayushjhaa1187-spec/SkillBridge" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </footer>
     </div>
   );
 }

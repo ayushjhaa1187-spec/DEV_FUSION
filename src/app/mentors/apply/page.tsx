@@ -164,7 +164,7 @@ export default function MentorApplyPage() {
             Join the <span className="text-indigo-500 text-gradient bg-gradient-to-r from-indigo-500 to-emerald-500 bg-clip-text text-transparent">Mentor Elite</span>
           </h1>
           <p className="text-gray-400 text-lg mb-12 leading-relaxed">
-            The DEV_FUSION Mentor Program connects top-performing students with peers who need guidance. Help others, build your portfolio, and earn exclusive badges.
+            The SkillBridge Mentor Program connects top-performing students with peers who need guidance. Help others, build your portfolio, and earn exclusive badges.
           </p>
 
           <div className="space-y-8">

@@ -2,10 +2,10 @@ import LiveSessionsPageClient from './LiveSessionsPageClient';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Live Sessions | DEV_FUSION',
+  title: 'Live Sessions | SkillBridge',
   description: 'Join live interactive sessions from the mentors you follow and get instant clarification.',
   openGraph: {
-    title: 'Live Sessions | DEV_FUSION',
+    title: 'Live Sessions | SkillBridge',
     description: 'Join live interactive sessions from the mentors you follow and get instant clarification.',
     type: 'website'
   }

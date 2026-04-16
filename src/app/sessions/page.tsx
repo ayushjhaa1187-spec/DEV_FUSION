@@ -4,10 +4,10 @@ import SessionsClient from './SessionsClient';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'My Sessions | DEV_FUSION',
+  title: 'My Sessions | SkillBridge',
   description: 'Manage your upcoming and past mentorship sessions.',
   openGraph: {
-    title: 'My Sessions | DEV_FUSION',
+    title: 'My Sessions | SkillBridge',
     description: 'Manage your upcoming and past mentorship sessions.',
     type: 'website'
   }

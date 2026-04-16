@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
+import CreditPulse from '@/components/dashboard/CreditPulse';
 
 /**
  * DashboardPageClient
@@ -22,6 +23,7 @@ export default function DashboardPageClient() {
   const router = useRouter();
   
   const [data, setData] = useState<any>(null);
+  const [usage, setUsage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,12 +32,25 @@ export default function DashboardPageClient() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/dashboard/stats');
-      const json = await res.json();
-      if (json.success) {
-        setData(json.data);
+      
+      const [statsRes, usageRes] = await Promise.all([
+        fetch('/api/dashboard/stats'),
+        fetch('/api/usage/status')
+      ]);
+
+      const [statsJson, usageJson] = await Promise.all([
+        statsRes.json(),
+        usageRes.json()
+      ]);
+
+      if (statsJson.success) {
+        setData(statsJson.data);
       } else {
-        throw new Error(json.error || 'Identity uplink failure.');
+        throw new Error(statsJson.error || 'Identity uplink failure.');
+      }
+
+      if (usageJson.success) {
+        setUsage(usageJson);
       }
     } catch (err: any) {
       setError(err.message || 'The dashboard failed to synchronize with the neural network.');
@@ -85,18 +100,33 @@ export default function DashboardPageClient() {
   if (error) {
     return (
       <div className="py-20 max-w-7xl mx-auto px-6">
-        <ErrorState message={error} onRetry={fetchDashboardStats} />
+        <ErrorState 
+          message={error} 
+          onRetry={fetchDashboardStats} 
+          title="Neural Uplink Severed"
+        />
       </div>
     );
   }
 
   if (authLoading || loading) {
     return (
-      <div className="sb-skeleton-container space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="h-44 bg-gray-100 dark:bg-white/5 rounded-[40px] animate-pulse" />
-          <div className="h-44 bg-gray-100 dark:bg-white/5 rounded-[40px] animate-pulse" />
-          <div className="h-44 bg-gray-100 dark:bg-white/5 rounded-[40px] animate-pulse" />
+      <div className="sb-skeleton-container space-y-12 py-8">
+        <div className="flex flex-col gap-2 mb-12">
+          <div className="h-10 w-64 bg-gray-100 dark:bg-white/5 animate-pulse rounded-2xl" />
+          <div className="h-4 w-48 bg-gray-100 dark:bg-white/5 animate-pulse rounded-lg" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-48 bg-gray-100 dark:bg-white/5 rounded-[40px] animate-pulse border border-gray-100 dark:border-white/5" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2 h-[500px] bg-gray-100 dark:bg-white/5 rounded-[40px] animate-pulse" />
+          <div className="space-y-10">
+            <div className="h-64 bg-gray-100 dark:bg-white/5 rounded-[40px] animate-pulse" />
+            <div className="h-64 bg-gray-100 dark:bg-white/5 rounded-[40px] animate-pulse" />
+          </div>
         </div>
       </div>
     );
@@ -179,8 +209,17 @@ export default function DashboardPageClient() {
            </div>
         </motion.div>
 
-        {/* Right: Direct Navigation */}
+         {/* Right: Direct Navigation */}
         <motion.div variants={itemVars} className="lg:col-span-1 flex flex-col gap-10">
+           {/* Neural Capacity Tracker */}
+           {usage && (
+             <CreditPulse 
+               used={usage.usage.used} 
+               total={usage.usage.total} 
+               plan={usage.plan} 
+             />
+           )}
+
            <div className="bg-white dark:bg-[#0a0a1a] p-8 rounded-[40px] border border-gray-100 dark:border-white/5 shadow-sm">
               <h3 className="text-lg font-black tracking-tight mb-8 m-0 flex items-center gap-3 text-gray-900 dark:text-white">
                  <LayoutDashboard size={20} className="text-emerald-400" /> Quick Access
@@ -200,18 +239,17 @@ export default function DashboardPageClient() {
               </div>
            </div>
 
-           {/* Achievements Lite */}
+           {/* Achievements Lite (Moved or minimized) */}
            <motion.div variants={itemVars} className="bg-white dark:bg-[#0a0a1a] p-8 rounded-[40px] border border-gray-100 dark:border-white/5 relative group overflow-hidden shadow-sm">
               <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-[24px] bg-violet-600/10 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-6 shadow-sm border border-violet-500/10">
-                  <Brain size={32} />
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-violet-600/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shadow-sm border border-violet-500/10 shrink-0">
+                  <Brain size={24} />
                 </div>
-                <h4 className="text-xl font-black mb-2 tracking-tight text-gray-900 dark:text-white">Milestone Sync</h4>
-                <p className="text-[10px] text-gray-400 font-bold max-w-[200px] mb-8 uppercase tracking-widest">Complete more modules to unlock elite status</p>
-                <Link href="/tests" className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-black rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-[1.02] transition-transform text-center">
-                   Analyze Progress
-                </Link>
+                <div>
+                   <h4 className="text-sm font-black tracking-tight text-gray-900 dark:text-white">Milestone Sync</h4>
+                   <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Complete more modules to unlock elite status</p>
+                </div>
               </div>
            </motion.div>
         </motion.div>

@@ -2,10 +2,10 @@ import '../landing.css';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Blog | DEV_FUSION',
+  title: 'Blog | SkillBridge',
   description: 'Insights, student success stories, and platform updates from the SkillBridge community.',
   openGraph: {
-    title: 'Blog | DEV_FUSION',
+    title: 'Blog | SkillBridge',
     description: 'Insights, student success stories, and platform updates from the SkillBridge community.',
     type: 'website'
   }

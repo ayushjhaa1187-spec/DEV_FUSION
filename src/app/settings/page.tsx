@@ -6,10 +6,10 @@ import { redirect } from 'next/navigation';
 import { createSupabaseServer } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
-  title: 'Settings | DEV_FUSION',
+  title: 'Settings | SkillBridge',
   description: 'Manage your account settings and preferences.',
   openGraph: {
-    title: 'Settings | DEV_FUSION',
+    title: 'Settings | SkillBridge',
     description: 'Manage your account settings and preferences.',
     type: 'website',
   },

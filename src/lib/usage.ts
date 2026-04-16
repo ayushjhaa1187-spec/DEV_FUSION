@@ -89,33 +89,53 @@ export async function checkDailyFreeLimit(
   action: AiAction,
   dailyMax: number
 ): Promise<{ withinLimit: boolean; usedToday: number }> {
-  return { withinLimit: true, usedToday: 0 };
+  const supabase = await createSupabaseServer();
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('usage_daily_log')
+    .select('count')
+    .eq('user_id', userId)
+    .eq('action', action)
+    .eq('date', today)
+    .maybeSingle();
+
+  const used = data?.count ?? 0;
+  return { withinLimit: used < dailyMax, usedToday: used };
 }
 
 export async function incrementDailyUsage(
   userId: string,
   action: AiAction
 ): Promise<void> {
-  // Silent success
+  const supabase = await createSupabaseServer();
+  const today = new Date().toISOString().split('T')[0];
+
+  await supabase.rpc('increment_daily_usage', {
+     p_user_id: userId,
+     p_action: action,
+     p_date: today
+  });
 }
 
 // Backward-compatible helper used by existing quiz routes
 export async function checkAndIncrementUsage(userId: string, _bucket: string): Promise<{ allowed: boolean; remaining: number }> {
-  return { allowed: true, remaining: 999 };
+  const current = await getCreditBalance(userId);
+  if (current < 1) return { allowed: false, remaining: current };
+  
+  await consumeCredit(userId, 'ai_test_generate');
+  return { allowed: true, remaining: current - 1 };
 }
 
 export async function getUserPlan(userId: string): Promise<string> {
   const supabase = await createSupabaseServer();
   const { data } = await supabase
-    .from('subscriptions')
-    .select('plan')
-    .eq('user_id', userId)
-    .in('status', ['active', 'authenticated'])
-    .order('created_at', { ascending: false })
-    .limit(1)
+    .from('profiles')
+    .select('subscription_plan')
+    .eq('id', userId)
     .maybeSingle();
 
-  return data?.plan ?? 'free';
+  return data?.subscription_plan ?? 'free';
 }
 
 export async function enforcePlanLimit(
@@ -123,9 +143,16 @@ export async function enforcePlanLimit(
   action: 'ai_doubt_solve' | 'ai_test_generate',
   limits: { free: number; pro: number; elite: number | null },
   period: 'daily' | 'weekly'
-): Promise<{ allowed: boolean; remaining: number | null; plan: string }> {
+): Promise<{ allowed: boolean; remaining: number | null; plan: string; usedToday: number }> {
   const plan = await getUserPlan(userId);
-  // STABILIZATION OVERRIDE
-  console.warn(`[Usage] Force allowing ${action} for stability testing.`);
-  return { allowed: true, remaining: 999, plan };
+  const max = plan === 'elite' ? limits.elite : (plan === 'pro' ? limits.pro : limits.free);
+  
+  const { withinLimit, usedToday } = await checkDailyFreeLimit(userId, action, max || 999999);
+  
+  return { 
+    allowed: max === null || withinLimit, 
+    remaining: max === null ? null : Math.max(0, max - usedToday), 
+    plan,
+    usedToday
+  };
 }

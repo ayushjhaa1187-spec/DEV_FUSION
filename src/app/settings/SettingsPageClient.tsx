@@ -208,18 +208,28 @@ export default function SettingsPageClient() {
   };
 
   if (authLoading) return (
-    <div className="flex flex-col items-center justify-center p-20 gap-4">
-       <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent" />
-       <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Syncing Neural Profiles...</p>
+    <div className="flex flex-col items-center justify-center p-20 gap-6 min-h-[60vh]">
+       <div className="relative">
+         <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-500/20 border-t-indigo-500" />
+         <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-indigo-400 animate-pulse" />
+       </div>
+       <div className="text-center">
+         <p className="text-white font-black uppercase tracking-[0.2em] text-sm mb-2">Syncing Neural Profile</p>
+         <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">Establishing secure link to SkillBridge Network...</p>
+       </div>
     </div>
   );
 
   if (!user) return null;
 
   if (loading && !profileData) return (
-    <div className="flex flex-col items-center justify-center p-20 gap-4">
-       <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent" />
-       <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Accessing Profile Data...</p>
+    <div className="flex flex-col items-center justify-center p-20 gap-6 min-h-[60vh]">
+       <div className="animate-pulse flex flex-col items-center gap-4">
+         <div className="h-12 w-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center">
+            <ShieldCheck className="w-6 h-6 text-emerald-400" />
+         </div>
+         <p className="text-gray-400 font-black uppercase tracking-widest text-[10px]">Accessing Secure Data Bundles...</p>
+       </div>
     </div>
   );
 
@@ -227,25 +237,38 @@ export default function SettingsPageClient() {
     <div className="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Settings Form */}
       <div className="lg:col-span-2 space-y-8">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <h1 className="text-4xl font-black text-white font-heading tracking-tight">System Configuration</h1>
-            <p className="text-gray-400 mt-2">Personalize your academic interface and network parameters.</p>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded text-[9px] font-black text-indigo-400 uppercase tracking-widest">System v2.4</div>
+              <div className="w-1 h-1 rounded-full bg-indigo-500/40" />
+              <div className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Node: {profileData?.college || 'External'}</div>
+            </div>
+            <h1 className="text-5xl font-black text-white font-heading tracking-tight leading-none">Console</h1>
+            <p className="text-gray-500 mt-3 font-medium text-sm max-w-md italic">Fine-tune your cognitive presence and academic parameters within the SkillBridge ecosystem.</p>
           </div>
           
-          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 backdrop-blur-md">
+          <div className="flex bg-white/5 p-1.5 rounded-[20px] border border-white/5 backdrop-blur-xl shadow-2xl">
             <button 
               onClick={() => setActiveTab('profile')}
-              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                activeTab === 'profile' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300'
+              className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${
+                activeTab === 'profile' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
               }`}
             >
-              Neural Profile
+              Identity
+            </button>
+            <button 
+              onClick={() => setActiveTab('subscription')}
+              className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${
+                activeTab === 'subscription' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              Subscription
             </button>
             <button 
               onClick={() => setActiveTab('mentorship')}
-              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                activeTab === 'mentorship' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300'
+              className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${
+                activeTab === 'mentorship' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
               }`}
             >
               Mentorship
