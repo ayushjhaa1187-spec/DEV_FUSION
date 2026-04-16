@@ -110,7 +110,7 @@ export default function Navbar() {
  
             {user ? (
               <div className="flex items-center gap-5">
-                <NotificationBell userId={user.id} />
+                <NotificationBell userId={user?.id} />
  
                 <div className={styles.profileWrapper} ref={profileDropdownRef}>
                   <motion.button
@@ -138,7 +138,7 @@ export default function Navbar() {
                       >
                         <div className={styles.dropdownHeader}>
                           <p className={styles.dropdownName}>{profile?.full_name || 'Student'}</p>
-                          <p className={styles.dropdownEmail}>{user.email}</p>
+                          <p className={styles.dropdownEmail}>{user?.email}</p>
                         </div>
                         <div className={styles.divider} />
                         <Link href="/dashboard" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>

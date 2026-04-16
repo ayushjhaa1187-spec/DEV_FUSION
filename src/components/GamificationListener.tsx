@@ -9,7 +9,10 @@ import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 export function GamificationListener() {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const { supabase } = useSafeRealtime(`gamification-${user.id}`, [
+
+  if (!user) return null;
+
+  const { supabase } = useSafeRealtime(`gamification-${user?.id}`, [
     {
       event: 'INSERT',
       table: 'reputation_events',
