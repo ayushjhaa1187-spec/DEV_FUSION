@@ -133,7 +133,7 @@ function UpgradeContent() {
           </div>
         </div>
 
-        <CouponWidget onSuccess={() => setIsSuccess(true)} />
+        <CouponWidget onSuccess={(_plan, _msg) => setIsSuccess(true)} />
       </div>
 
       {/* Payment Simulation */}
