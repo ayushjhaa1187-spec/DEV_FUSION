@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'SkillBridge — Learn. Earn. Grow.',
     description: 'Resolve doubts, connect with mentors, and grow through community learning.',
-    url: 'https://dev-fusion.vercel.app',
+    url: 'https://dev-fusion-dun.vercel.app',
     siteName: 'SkillBridge',
     images: [
       {
-        url: 'https://dev-fusion.vercel.app/og-image.png',
+        url: 'https://dev-fusion-dun.vercel.app/og-image.png',
         width: 1200,
         height: 630,
         alt: 'SkillBridge Preview',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SkillBridge — Learn. Earn. Grow.',
     description: 'Resolve doubts, connect with mentors, and grow through community learning.',
-    images: ['https://dev-fusion.vercel.app/og-image.png'],
+    images: ['https://dev-fusion-dun.vercel.app/og-image.png'],
   },
 };
 

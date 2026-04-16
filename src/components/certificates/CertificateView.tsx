@@ -103,7 +103,7 @@ export default function CertificateView({ data }: CertificateProps) {
                  <Globe className="text-indigo-600 w-8 h-8" />
               </div>
               <span className="text-xl font-bold text-gray-800 tracking-tight">
-                TechSkills Academy
+                SkillBridge Academy
               </span>
             </div>
             <h2 className="text-gray-900 font-black uppercase tracking-[0.3em] text-3xl mb-4">

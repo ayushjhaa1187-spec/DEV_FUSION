@@ -8,7 +8,7 @@ import { createSupabaseBrowser } from '@/lib/supabase/client';
 export function GamificationListener() {
   const { user } = useAuth();
   const { showToast } = useToast();
-  useSafeRealtime(`gamification-${user.id}`, [
+  const { supabase } = useSafeRealtime(`gamification-${user.id}`, [
     {
       event: 'INSERT',
       table: 'reputation_events',
