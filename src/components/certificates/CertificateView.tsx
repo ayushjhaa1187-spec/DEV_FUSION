@@ -28,7 +28,15 @@ interface CertificateProps {
 
 export default function CertificateView({ data }: CertificateProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [verificationUrl, setVerificationUrl] = useState('');
   const certRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // SSR Safe: only runs on mount in the browser
+    if (typeof window !== 'undefined') {
+      setVerificationUrl(`${window.location.origin}/verify/${data.verification_hash}`);
+    }
+  }, [data.verification_hash]);
 
   const downloadPDF = async () => {
     if (!certRef.current) return;
@@ -54,8 +62,6 @@ export default function CertificateView({ data }: CertificateProps) {
       setIsGenerating(false);
     }
   };
-
-  const verificationUrl = `${window.location.origin}/verify/${data.verification_hash}`;
 
   return (
     <div className="space-y-6">

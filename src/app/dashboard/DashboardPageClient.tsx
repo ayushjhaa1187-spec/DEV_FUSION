@@ -44,8 +44,9 @@ export default function DashboardPageClient() {
       clearTimeout(timeoutId);
 
       // Handle Stats (Fatal if fails)
-      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
-        const statsJson = await statsRes.value.json();
+      const statsResult = statsRes as PromiseFulfilledResult<Response>;
+      if (statsResult.status === 'fulfilled' && statsResult.value.ok) {
+        const statsJson = await statsResult.value.json();
         if (statsJson.success) setData(statsJson.data);
         else throw new Error(statsJson.error || 'Identity uplink failure');
       } else {
@@ -53,8 +54,9 @@ export default function DashboardPageClient() {
       }
 
       // Handle Usage (Non-fatal, fall back to null)
-      if (usageRes.status === 'fulfilled' && usageRes.value.ok) {
-        const usageJson = await usageRes.value.json();
+      const usageResult = usageRes as PromiseFulfilledResult<Response>;
+      if (usageResult.status === 'fulfilled' && usageResult.value.ok) {
+        const usageJson = await usageResult.value.json();
         if (usageJson.success) setUsage(usageJson);
       }
       

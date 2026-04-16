@@ -20,8 +20,8 @@ import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/useDebounce';
 
 type ProfileFormData = {
-  full_name: string;
-  college: string;
+  full_name?: string;
+  college?: string;
   branch?: string;
   semester?: number;
   bio?: string;
@@ -29,7 +29,7 @@ type ProfileFormData = {
   linkedin_url?: string;
   twitter_url?: string;
   website_url?: string;
-  subjects: string[];
+  subjects?: string[];
 };
 
 export default function SettingsPageClient() {
