@@ -95,6 +95,7 @@ export const testApi = {
 };
 
 export const aiApi = {
+  getUsage: () => apiFetch('/api/usage/status'),
   solveDoubt: (data: unknown) => apiFetch('/api/ai/solve', { method: 'POST', body: JSON.stringify(data) }),
 };
 

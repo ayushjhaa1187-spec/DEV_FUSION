@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { doubtApi, aiApi, subjectApi } from '@/lib/api';
 import RichTextEditor from '@/components/ui/RichTextEditor';
+import LimitReachedModal from '@/components/modals/LimitReachedModal';
 import './doubts-ask.css';
 
 export default function AskDoubtPageClient() {
@@ -22,10 +23,22 @@ export default function AskDoubtPageClient() {
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<{ used: number; total: number } | null>(null);
+  const [isLimitModalOpen, setIsLimitModalOpen] = useState(false);
 
   useEffect(() => {
     subjectApi.getSubjects().then(setSubjects).catch(console.error);
+    fetchUsage();
   }, []);
+
+  const fetchUsage = async () => {
+    try {
+      const data = await aiApi.getUsage();
+      setUsage(data.usage);
+    } catch (err) {
+      console.error('Failed to fetch usage:', err);
+    }
+  };
 
   // Sync content if it comes as a string from searchParams
   useEffect(() => {
@@ -42,6 +55,12 @@ export default function AskDoubtPageClient() {
       setError('Please fill title, content and subject.');
       return;
     }
+
+    if (usage && usage.used >= usage.total) {
+      setIsLimitModalOpen(true);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -51,6 +70,7 @@ export default function AskDoubtPageClient() {
       });
       setAiAnalysis(analysis);
       setStep(2);
+      fetchUsage(); // Refresh usage after successful solve
     } catch (err: any) {
       setError('AI analysis failed. You can skip to community post.');
       setStep(2);
@@ -212,6 +232,13 @@ export default function AskDoubtPageClient() {
           )}
         </div>
       )}
+
+      <LimitReachedModal 
+        isOpen={isLimitModalOpen}
+        onClose={() => setIsLimitModalOpen(false)}
+        used={usage?.used}
+        total={usage?.total}
+      />
     </div>
   );
 }

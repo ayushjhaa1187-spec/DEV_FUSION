@@ -53,7 +53,8 @@ function isJoinable(startTime?: string, endTime?: string): boolean {
   if (!startTime) return false;
   const now = Date.now();
   const start = new Date(startTime).getTime();
-  const end = endTime ? new Date(endTime).getTime() : start + 60 * 60 * 1000;
+  // Final Stabilization: Enforce 30-minute duration instead of 60m
+  const end = endTime ? new Date(endTime).getTime() : start + 30 * 60 * 1000;
   // Active 10 minutes before start and during session
   return now >= start - 10 * 60 * 1000 && now <= end;
 }

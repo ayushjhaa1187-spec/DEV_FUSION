@@ -46,13 +46,23 @@ export async function POST(req: NextRequest) {
   if (!mentor) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   try {
-    const { start_time, end_time } = await req.json();
+    const { start_time, end_time: provided_end_time } = await req.json();
+    const start = new Date(start_time);
+    
+    // Prevent slots in the past
+    if (start < new Date()) {
+      return NextResponse.json({ error: 'Cannot create slots in the past' }, { status: 400 });
+    }
+
+    // Force strict 30-minute duration
+    const end = new Date(start.getTime() + 30 * 60 * 1000);
+    const end_time = end.toISOString();
 
     const { data, error } = await supabase
       .from('mentor_slots')
       .insert({
         mentor_id: mentor.id,
-        start_time,
+        start_time: start.toISOString(),
         end_time,
         status: 'available'
       })
