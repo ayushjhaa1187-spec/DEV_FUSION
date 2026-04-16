@@ -21,7 +21,7 @@ export function ConditionalFooter() {
   const isLandingPage = pathname === '/';
   const isAuthPage = pathname?.startsWith('/auth');
 
-  if (isLandingPage || isAuthPage) {
+  if (isAuthPage) {
     return null;
   }
 

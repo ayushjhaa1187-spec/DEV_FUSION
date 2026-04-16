@@ -8,6 +8,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const idempotencyKey = `daily_login_${user.id}_${today}`;
   console.log(`[daily-login] Processing for user ${user.id} with key ${idempotencyKey}`);
 
   try {
