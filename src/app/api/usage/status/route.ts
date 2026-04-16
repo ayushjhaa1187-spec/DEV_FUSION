@@ -16,14 +16,17 @@ export async function GET(req: NextRequest) {
     const plan = await getUserPlan(user.id) as any;
     const limits = PLAN_DETAILS[plan as 'free' | 'pro' | 'elite'] || PLAN_DETAILS.free;
 
-    // Fetch usage counts from log
-    const { data: usage } = await supabase
+    // Fetch all usage counts for today
+    const { data: usageLogs } = await supabase
       .from('usage_daily_log')
-      .select('count')
+      .select('action, count')
       .eq('user_id', user.id)
-      .eq('action', 'ai_doubt_solve')
-      .eq('date', today)
-      .maybeSingle();
+      .eq('date', today);
+
+    const counts: Record<string, number> = {};
+    usageLogs?.forEach(log => {
+      counts[log.action] = log.count;
+    });
 
     // Fetch wallet balance
     const { data: wallet } = await supabase
@@ -35,8 +38,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       plan: plan,
+      usages: {
+        doubt_solve: {
+          used: counts['ai_doubt_solve'] ?? 0,
+          total: limits.aiDaily
+        },
+        test_generate: {
+          used: counts['ai_test_generate'] ?? 0,
+          total: limits.testsWeekly // Note: Using testsWeekly limit here
+        }
+      },
+      // Backward compatibility
       usage: {
-        used: usage?.count ?? 0,
+        used: counts['ai_doubt_solve'] ?? 0,
         total: limits.aiDaily
       },
       wallet: {

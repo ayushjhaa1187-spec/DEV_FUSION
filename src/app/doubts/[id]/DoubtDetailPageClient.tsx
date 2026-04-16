@@ -7,10 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/components/auth/auth-provider';
 import { doubtApi, answerApi } from '@/lib/api';
 import ReputationBadge from '@/components/user/ReputationBadge';
-import { Sparkles, MessageSquare, ChevronRight, ThumbsUp, ThumbsDown, CheckCircle2, Share2, Flag, ArrowLeft, Clock, Send, X } from 'lucide-react';
+import { Sparkles, MessageSquare, ChevronRight, ThumbsUp, ThumbsDown, CheckCircle2, Share2, Flag, ArrowLeft, Clock, Send, X, Brain } from 'lucide-react';
 import { LoadingPage } from '@/components/ui/Loading';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import RichTextRenderer from '@/components/ui/RichTextRenderer';
+import { aiApi } from '@/lib/api';
+import LimitReachedModal from '@/components/modals/LimitReachedModal';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useSafeRealtime } from '@/hooks/useSafeRealtime';
@@ -27,6 +29,8 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
   const [posting, setPosting] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState<any>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [usage, setUsage] = useState({ used: 0, total: 5 });
 
   const fetchData = useCallback(async () => {
     try {
@@ -47,7 +51,15 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    // Fetch initial usage
+    if (user) {
+      aiApi.getUsage().then(data => {
+        if (data?.success && data.usages?.doubt_solve) {
+          setUsage(data.usages.doubt_solve);
+        }
+      });
+    }
+  }, [fetchData, user]);
 
   // Use Centralized Safe Realtime
   useSafeRealtime(
@@ -108,6 +120,51 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
       ));
     } catch (err) {
       console.error('Vote failed');
+    }
+  };
+  
+  const handleAiAnalyze = async () => {
+    if (!user || !doubt) return;
+    
+    // 1. Pre-flight usage check
+    try {
+      const usageData = await aiApi.getUsage();
+      if (usageData?.success && usageData.usages?.doubt_solve) {
+        setUsage(usageData.usages.doubt_solve);
+        if (usageData.usages.doubt_solve.used >= usageData.usages.doubt_solve.total) {
+          setShowLimitModal(true);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Usage check failure', e);
+    }
+
+    setAiLoading(true);
+    setAiResponse(null);
+    try {
+      const res = await aiApi.solveDoubt({
+        title: doubt.title,
+        content: doubt.content_markdown || doubt.content_text,
+        subject: doubt.subjects?.name || 'General'
+      });
+      
+      if (res.success) {
+        setAiResponse(res.analysis);
+        // Refresh usage after success
+        const fresh = await aiApi.getUsage();
+        if (fresh?.success && fresh.usages?.doubt_solve) {
+          setUsage(fresh.usages.doubt_solve);
+        }
+      } else if (res.error?.includes('limit')) {
+        setShowLimitModal(true);
+      } else {
+        throw new Error(res.error || 'AI Analysis failed');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Transmission failed. Ensure your neural link is stable.');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -209,8 +266,58 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
                   <ThumbsDown size={16} />
                 </button>
              </div>
+
+             <button 
+                onClick={handleAiAnalyze}
+                disabled={aiLoading}
+                className="flex items-center gap-3 px-8 py-3 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition group disabled:opacity-50"
+              >
+                {aiLoading ? (
+                  <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Sparkles size={16} className="group-hover:rotate-12 transition-transform" />
+                )}
+                <span className="text-[10px] font-black uppercase tracking-widest">Immediate AI Analysis</span>
+              </button>
           </div>
         </section>
+
+        {/* AI Response Display */}
+        <AnimatePresence>
+          {aiResponse && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="mt-8 mb-12 p-10 rounded-[40px] bg-indigo-500/5 border border-indigo-500/10 relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-8 opacity-5">
+                 <Brain size={120} />
+              </div>
+              <div className="flex items-center gap-3 mb-8">
+                 <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-lg">
+                   <Sparkles size={20} />
+                 </div>
+                 <div>
+                   <h4 className="text-sm font-black text-white uppercase tracking-widest leading-none">AI Conceptual Breakdown</h4>
+                   <p className="text-[9px] text-indigo-400 font-bold uppercase tracking-widest mt-1">Generated via Gemini 1.5 Flash</p>
+                 </div>
+                 <button 
+                   onClick={() => setAiResponse(null)}
+                   className="ml-auto text-gray-600 hover:text-white transition"
+                 >
+                   <X size={18} />
+                 </button>
+              </div>
+              <div className="prose prose-invert prose-indigo max-w-none">
+                 <RichTextRenderer content={aiResponse} />
+              </div>
+              <div className="mt-8 pt-8 border-t border-white/5 text-[9px] text-gray-600 font-bold uppercase tracking-[0.2em]">
+                 * Verified by SkillBridge AI Engine. Information should be cross-referenced with syllabus.
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Answers Section */}
         <div className="space-y-12">
@@ -342,6 +449,15 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
           </div>
         </section>
       </main>
+
+      <LimitReachedModal 
+        isOpen={showLimitModal} 
+        onClose={() => setShowLimitModal(false)}
+        used={usage.used}
+        total={usage.total}
+        title="Analysis Quota Reached"
+        description="Your daily allocation for high-bandwidth conceptual analysis has been synchronized. Upgrade to unlock unrestricted synaptic resolution."
+      />
     </div>
   );
 }

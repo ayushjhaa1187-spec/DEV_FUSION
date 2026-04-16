@@ -18,6 +18,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
+import { aiApi } from '@/lib/api';
+import LimitReachedModal from '@/components/modals/LimitReachedModal';
 
 type TestView = 'selection' | 'generating' | 'taking' | 'result';
 
@@ -46,6 +48,10 @@ export default function PracticeTestsPageClient() {
   const [lastResult, setLastResult] = useState<any>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Usage & Access Control
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [usage, setUsage] = useState({ used: 0, total: 3 }); // Default free limit
+
   // Initial Data
   useEffect(() => {
     if (user) {
@@ -53,6 +59,12 @@ export default function PracticeTestsPageClient() {
       testApi.getHistory().then(setHistory);
       leaderboardApi.getTop(10).then(data => {
         if (data?.entries) setGlobalLeaderboard(data.entries);
+      });
+      // Initial usage check
+      aiApi.getUsage().then(data => {
+        if (data?.success && data.usages?.test_generate) {
+          setUsage(data.usages.test_generate);
+        }
       });
     }
   }, [user]);
@@ -112,8 +124,23 @@ export default function PracticeTestsPageClient() {
       setAnswers({});
       setCurrentQuestionIdx(0);
       setView('taking');
+      
+      // Update usage after successful generation
+      const usageData = await aiApi.getUsage();
+      if (usageData?.success && usageData.usages?.test_generate) {
+        setUsage(usageData.usages.test_generate);
+      }
     } catch (err: any) {
-      alert(err.message || 'Generation failed');
+      if (err.status === 403) {
+        // Fetch fresh usage before showing modal
+        const usageData = await aiApi.getUsage();
+        if (usageData?.success && usageData.usages?.test_generate) {
+          setUsage(usageData.usages.test_generate);
+        }
+        setShowLimitModal(true);
+      } else {
+        alert(err.message || 'Generation failed');
+      }
       setView('selection');
     }
   };
@@ -523,6 +550,15 @@ export default function PracticeTestsPageClient() {
         )}
 
       </AnimatePresence>
+
+      <LimitReachedModal 
+        isOpen={showLimitModal} 
+        onClose={() => setShowLimitModal(false)}
+        used={usage.used}
+        total={usage.total}
+        title="Testing Capacity Reached"
+        description="Your weekly allocation for AI-generated practice assessments has been synchronized to its maximum capacity. Upgrade to Elite for unrestricted neural evaluations."
+      />
     </div>
   );
 }
