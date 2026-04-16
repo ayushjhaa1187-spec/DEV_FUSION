@@ -17,7 +17,8 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
     });
   }, [supabase]);
 
-  const handleNotification = useCallback((notification: any) => {
+  const handleNotification = useCallback((payload: any) => {
+    const notification = payload.new;
     // Get appropriate icon based on type
     let Icon = Bell;
     let colorClass = 'text-primary';
@@ -47,10 +48,17 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
     );
   }, [showToast]);
 
+  // Use the NEW safe signature
   useSafeRealtime(
-    'notifications',
-    userId ? `user_id=eq.${userId}` : '',
-    handleNotification
+    `toast-${userId || 'anon'}`,
+    userId ? [
+      {
+        event: 'INSERT',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+        handler: handleNotification
+      }
+    ] : []
   );
 
   return <>{children}</>;

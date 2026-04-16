@@ -53,16 +53,24 @@ export async function updateSession(request: NextRequest) {
 
   // Redirect to onboarding if authenticated but role is missing
   if (user && isProtectedRoute && !request.nextUrl.pathname.startsWith('/onboarding')) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle();
-      
-    if (!profile?.role && !user.user_metadata?.role) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/onboarding'
-      return NextResponse.redirect(url)
+    // 1. Check metadata first (Zero-cost)
+    const metadataRole = user.user_metadata?.role;
+    
+    if (!metadataRole) {
+      // 2. Only query DB if metadata is missing (minimizes 429 chance)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+        
+      if (!profile?.role) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/onboarding'
+        // Avoid infinite loop if we somehow got stuck
+        if (request.nextUrl.pathname === '/onboarding') return supabaseResponse;
+        return NextResponse.redirect(url)
+      }
     }
   }
 

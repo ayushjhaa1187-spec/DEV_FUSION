@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, use } from 'react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
+import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 import { Send, Hash, Users, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { LoadingPage } from '@/components/ui/Loading';
@@ -17,10 +18,10 @@ export default function GroupChatPage({ params }: { params: Promise<{ id: string
   const scrollRef = useRef<HTMLDivElement>(null);
   const supabase = createSupabaseBrowser();
 
+  // 1. Initial Load
   useEffect(() => {
     if (!user) return;
 
-    // 1. Initial Load
     const loadGroup = async () => {
       const { data: groupData } = await supabase.from('study_groups').select('*, profiles(username)').eq('id', id).single();
       const { data: msgData } = await supabase.from('study_group_messages').select('*, profiles:sender_id(username, avatar_url)').eq('group_id', id).order('created_at', { ascending: true });
@@ -31,27 +32,21 @@ export default function GroupChatPage({ params }: { params: Promise<{ id: string
       setMembers(memData || []);
     };
     loadGroup();
+  }, [id, user, supabase]);
 
-    // 2. Realtime Subscription
-    const channel = supabase
-      .channel(`group-chat:${id}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'study_group_messages',
-        filter: `group_id=eq.${id}`
-      }, async (payload) => {
-        // Fetch profile info for the new message
+  // 2. Safe Realtime Subscription
+  useSafeRealtime(`group-${id}`, [
+    {
+      event: 'INSERT',
+      table: 'study_group_messages',
+      filter: `group_id=eq.${id}`,
+      handler: async (payload) => {
         const { data: profile } = await supabase.from('profiles').select('username, avatar_url').eq('id', payload.new.sender_id).single();
         const fullMsg = { ...payload.new, profiles: profile };
         setMessages(prev => [...prev, fullMsg]);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [id, user, supabase]);
+      }
+    }
+  ]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -82,9 +77,7 @@ export default function GroupChatPage({ params }: { params: Promise<{ id: string
 
   return (
     <main className="h-screen bg-[#0f0f1a] flex flex-col pt-[72px]">
-      
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Sidebar */}
         <aside className={`fixed inset-0 z-50 md:relative md:flex w-64 bg-[#161623] border-r border-gray-800 flex-col transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
           <div className="p-6 border-b border-gray-800 flex justify-between items-center">
              <div className="flex flex-col">
@@ -114,9 +107,7 @@ export default function GroupChatPage({ params }: { params: Promise<{ id: string
 
         {isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
-        {/* Chat Area */}
         <div className="flex-1 flex flex-col bg-[#0f0f1a]">
-          {/* Mobile Chat Header */}
           <div className="p-4 border-b border-gray-800 flex items-center justify-between md:hidden bg-[#161623]/50 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <Link href="/community/groups" className="text-gray-500"><ArrowLeft className="w-5 h-5" /></Link>
@@ -127,7 +118,6 @@ export default function GroupChatPage({ params }: { params: Promise<{ id: string
             </button>
           </div>
 
-          {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 flex flex-col">
             {messages.map((msg, i) => (
               <div key={msg.id} className={`flex gap-3 md:gap-4 ${msg.sender_id === user?.id ? 'flex-row-reverse' : ''}`}>
@@ -146,7 +136,6 @@ export default function GroupChatPage({ params }: { params: Promise<{ id: string
             <div ref={scrollRef} />
           </div>
 
-          {/* Form */}
           <div className="p-6 bg-[#161623] border-t border-gray-800">
             <form onSubmit={handleSend} className="max-w-4xl mx-auto flex gap-4">
               <div className="flex-1 relative">

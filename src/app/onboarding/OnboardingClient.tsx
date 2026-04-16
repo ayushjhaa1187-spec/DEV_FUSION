@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -15,13 +15,17 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
   const supabase = createSupabaseBrowser();
   const { showToast } = useToast();
   
+  // 1. Permanent Initial Role
   const initialRole = (profile?.role || user?.user_metadata?.role) as 'student' | 'mentor' | 'organization' | undefined;
   
-  // FORCE ROLE SELECTION for new users:
-  // Show selection screen if the user hasn't filled out their college/institution/slug yet.
+  // 2. Stable State Initialization
   const [selectedRole, setSelectedRole] = useState<'student' | 'mentor' | 'organization' | undefined>(() => {
-    const hasData = profile?.college || profile?.branch || profile?.slug;
-    return hasData ? initialRole : undefined;
+    // Check localStorage first
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('skillbridge_setup_role');
+      if (saved) return saved as any;
+    }
+    return initialRole;
   });
 
   const [loading, setLoading] = useState(false);
@@ -32,7 +36,6 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
     bio: '',
     github: '',
     linkedin: '',
-    // Mentor/Org specific
     job_title: '',
     company: '',
     years_experience: '',
@@ -43,12 +46,14 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
 
   const handleRoleSelect = async (role: 'student' | 'mentor' | 'organization') => {
     setSelectedRole(role);
-    // Persist basic role choice immediately to avoid context loss on refresh
+    localStorage.setItem('skillbridge_setup_role', role);
+    // Persist to DB immediately
     await supabase.from('profiles').update({ role }).eq('id', user.id);
   };
 
   const isMentor = selectedRole === 'mentor';
   const isOrg = selectedRole === 'organization';
+  const isStudent = selectedRole === 'student';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -67,7 +72,7 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
           .update({
             bio: formData.bio,
             website_url: formData.website,
-            full_name: user?.user_metadata?.full_name || formData.college, // use college field as name if needed
+            full_name: user?.user_metadata?.full_name || formData.college,
           })
           .eq('id', user.id);
 
@@ -91,8 +96,8 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
         const { error } = await supabase
           .from('profiles')
           .update({
-            college: formData.college || formData.company, // Use company as affiliation for mentors
-            branch: formData.branch || formData.expertise, // Use expertise as branch for mentors
+            college: formData.college || formData.company,
+            branch: formData.branch || formData.expertise,
             semester: parseInt(formData.semester || formData.years_experience) || 1, 
             bio: formData.bio,
             github_url: formData.github,
@@ -102,32 +107,30 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
 
         if (error) throw error;
 
-        // 3. Create Mentor Profile if role is mentor
         if (isMentor) {
-          const { error: mentorError } = await supabase
-            .from('mentor_profiles')
-            .upsert({
-              id: user.id,
-              job_title: formData.job_title,
-              company: formData.company,
-              years_experience: parseInt(formData.years_experience) || 0,
-              expertise: formData.expertise,
-              specialty: formData.expertise, // Map expertise to specialty
-              bio: formData.bio,
-              hourly_rate: 500, // Default rate
-              rating: 5.0
-            });
-          
-          if (mentorError) {
-             console.error('Mentor profile sync error:', mentorError);
-             // Don't throw here to avoid blocking onboarding if the table is locked
+          try {
+            await supabase
+              .from('mentor_profiles')
+              .upsert({
+                id: user.id,
+                job_title: formData.job_title,
+                company: formData.company,
+                years_experience: parseInt(formData.years_experience) || 0,
+                expertise: formData.expertise,
+                specialty: formData.expertise,
+                bio: formData.bio,
+                hourly_rate: 500,
+                rating: 5.0
+              });
+          } catch (mentorErr) {
+            console.warn('[Onboarding] Mentor profile sync failed:', mentorErr);
           }
         }
       }
       
+      localStorage.removeItem('skillbridge_setup_role');
       showToast('Account setup complete! Welcome aboard.', 'success');
       router.push('/dashboard');
-      router.refresh();
     } catch (err: any) {
       showToast(err.message || 'Failed to save profile. Try again.', 'error');
     } finally {
@@ -160,7 +163,7 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
           </CardHeader>
          <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-white">
                 {isOrg ? (
                   <>
                     <FormInput
@@ -234,7 +237,7 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
                       />
                     </div>
                   </>
-                ) : (
+                ) : isStudent ? (
                   <>
                     <FormInput
                       id="college"
@@ -269,7 +272,7 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
                       />
                     </div>
                   </>
-                )}
+                ) : null}
               </div>
               
               {!isOrg && (
@@ -297,14 +300,17 @@ export default function OnboardingClient({ user, profile, subjects }: { user: an
                <Button 
                  type="button" 
                  variant="outline" 
-                 onClick={() => setSelectedRole(undefined)}
+                 onClick={() => {
+                   setSelectedRole(undefined);
+                   localStorage.removeItem('skillbridge_setup_role');
+                 }}
                  disabled={loading}
                  className="border-white/10 text-gray-400"
                >
                  Back
                </Button>
-               <Button type="submit" variant="primary" size="lg" loading={loading} className="bg-indigo-600 hover:bg-indigo-500 text-white">
-                 Save & Continue
+               <Button type="submit" variant="primary" size="lg" loading={loading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-black tracking-widest uppercase">
+                 Complete Setup
                </Button>
              </div>
             </form>

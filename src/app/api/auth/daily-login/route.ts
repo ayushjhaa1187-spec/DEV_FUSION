@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  const idempotencyKey = `daily_login:${user.id}:${today}`;
+  console.log(`[daily-login] Processing for user ${user.id} with key ${idempotencyKey}`);
 
   try {
     // 1. Award daily login points
@@ -21,22 +21,25 @@ export async function POST(req: NextRequest) {
     });
 
     if (repError) {
-      console.warn('[daily-login] Reputation RLS or RPC error (skipped):', repError.message);
+      console.warn('[daily-login] Reputation RPC error (non-fatal):', repError.message);
     }
 
     // 2. Update login streak
-    await supabase.rpc('update_login_streak', { u_id: user.id });
+    const { error: streakError } = await supabase.rpc('update_login_streak', { u_id: user.id });
+    if (streakError) {
+      console.warn('[daily-login] Streak update failed (non-fatal):', streakError.message);
+    }
 
     // 3. Automated Badge Check
     try {
       await checkAndAwardBadges(user.id);
     } catch (badgeErr) {
-       console.warn('[daily-login] Badge check failed (skipped):', badgeErr);
+       console.warn('[daily-login] Badge check failed (non-fatal):', badgeErr);
     }
-  } catch (err) {
-    // Non-fatal: log and recover
-    console.warn('[daily-login] Critical catch-all recovery:', err);
-  }
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, status: 'processed' }, { status: 200 });
+  } catch (err: any) {
+    console.error('[daily-login] Critical catch-all recovery:', err.message || err);
+    return NextResponse.json({ success: true, status: 'recovered', error: err.message }, { status: 200 });
+  }
 }
