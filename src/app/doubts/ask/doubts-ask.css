@@ -75,6 +75,18 @@
   transition: border-color 0.25s ease;
 }
 
+.form-group select option {
+  background-color: #13132b;
+  color: white;
+  padding: 12px;
+}
+
+.form-group input::selection,
+.form-group textarea::selection {
+  background: var(--color-primary);
+  color: white;
+}
+
 .form-group textarea {
   resize: vertical;
 }

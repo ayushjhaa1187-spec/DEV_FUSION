@@ -37,13 +37,13 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
       }
 
       showToast(
-        <div className="flex items-start gap-3">
-          <div className={`p-2 bg-bg-primary rounded-lg ${colorClass}`}>
-            <Icon size={18} />
+        <div className="flex items-start gap-3 py-1">
+          <div className={`p-2.5 bg-white/5 rounded-xl ${colorClass}`}>
+            <Icon size={20} />
           </div>
-          <div>
-            <p className="font-bold text-sm text-white">{notification.title || 'New Notification'}</p>
-            <p className="text-xs text-text-secondary">{notification.message}</p>
+          <div className="flex-1">
+            <p className="font-bold text-sm text-white">{notification.title || 'Notification'}</p>
+            <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{notification.body || notification.message}</p>
           </div>
         </div>,
         'info'

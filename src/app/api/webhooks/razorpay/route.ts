@@ -31,9 +31,24 @@ export async function POST(req: Request) {
     }
 
     const event = JSON.parse(body);
-    console.log(`[razorpay_webhook] Received event: ${event.event}`);
+    const eventId = event.id || event.payload.payment?.entity?.id || event.payload.order?.entity?.id;
+    console.log(`[razorpay_webhook] Received event: ${event.event} (ID: ${eventId})`);
 
-    // 2. Handle successful payment
+    // 2. Idempotency Check
+    if (eventId) {
+      const { data: alreadyProcessed } = await supabaseAdmin
+        .from('processed_webhooks')
+        .select('id')
+        .eq('id', eventId)
+        .maybeSingle();
+      
+      if (alreadyProcessed) {
+        console.log(`[razorpay_webhook] Event ${eventId} already processed. Skipping.`);
+        return NextResponse.json({ status: 'already_processed' });
+      }
+    }
+
+    // 3. Handle successful payment
     if (event.event === 'payment.captured' || event.event === 'order.paid') {
       const payment = event.payload.payment?.entity || event.payload.order?.entity;
       const notes = payment?.notes || {};
@@ -42,6 +57,16 @@ export async function POST(req: Request) {
       if (!userId || !planType) {
         console.warn('[razorpay_webhook] Missing metadata in payment notes', { userId, planType });
         return NextResponse.json({ status: 'ignored_missing_metadata' });
+      }
+
+      // Record this webhook as processed immediately (atomic-ish)
+      if (eventId) {
+        await supabaseAdmin.from('processed_webhooks').insert({
+          id: eventId,
+          provider: 'razorpay',
+          event_type: event.event,
+          payload: event
+        });
       }
 
       console.log(`[razorpay_webhook] Processing ${planType} for user ${userId}`);

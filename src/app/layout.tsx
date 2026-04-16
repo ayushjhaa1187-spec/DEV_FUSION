@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 // Components
 import ConditionalNavbar, { ConditionalFooter } from '@/components/layout/ConditionalNavbar';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import Providers from '@/components/providers';
+import { NotificationToastProvider } from '@/components/providers/NotificationToastProvider';
 import { Suspense } from 'react';
 import { Toaster } from 'sonner';
 import Script from 'next/script';
@@ -51,9 +53,14 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>
-          <ConditionalNavbar />
-          <main className="app-main">{children}</main>
-          <ConditionalFooter />
+          <NotificationToastProvider>
+            <div className="flex flex-col min-h-screen">
+              <ConditionalNavbar />
+              <main className="flex-grow pb-24 md:pb-0">{children}</main>
+              <ConditionalFooter />
+              <MobileBottomNav />
+            </div>
+          </NotificationToastProvider>
           <Toaster richColors position="top-right" theme="dark" />
           <Analytics />
           <SpeedInsights />

@@ -12,12 +12,21 @@ export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServer();
 
   try {
-    // 1. Search Doubts using FTS
-    const { data: doubts } = await supabase
+    // 1. Search Doubts using FTS with ilike fallback
+    let { data: doubts } = await supabase
       .from('doubts')
       .select('id, title, status, votes, created_at, profiles(full_name)')
       .textSearch('fts', query, { config: 'english', type: 'websearch' })
       .limit(5);
+
+    if (!doubts || doubts.length === 0) {
+      const { data: fallbackDoubts } = await supabase
+        .from('doubts')
+        .select('id, title, status, votes, created_at, profiles(full_name)')
+        .ilike('title', `%${query}%`)
+        .limit(5);
+      doubts = fallbackDoubts;
+    }
 
     // 2. Search Mentors
     const { data: mentors } = await supabase

@@ -51,17 +51,24 @@ export default function MentorApplyPage() {
   }, [user, authLoading, router]);
 
   async function checkApplicationStatus() {
-    const supabase = createSupabaseBrowser();
-    const { data } = await supabase
-      .from('mentor_applications')
-      .select('*')
-      .eq('user_id', user?.id)
-      .order('submitted_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    
-    setApplication(data);
-    setLoading(false);
+    try {
+      const supabase = createSupabaseBrowser();
+      const { data, error } = await supabase
+        .from('mentor_applications')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) throw error;
+      setApplication(data);
+    } catch (err: any) {
+      console.error('Error checking application status:', err);
+      // Don't set error state here to avoid preventing form from showing if it was just a transient DB error
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -63,10 +63,11 @@ export default function LeaderboardPageClient() {
       if (!res.ok) throw new Error('Update failed');
       return res.json();
     },
-    onSuccess: (data) => {
-      setIsOptInLocal(data.recruitment_opt_in);
+    onSuccess: (response) => {
+      const val = response?.data?.recruitment_opt_in;
+      setIsOptInLocal(val);
       queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
-      toast.success(data.recruitment_opt_in ? 'Talent discovery enabled! You are now visible to organizations.' : 'Talent discovery disabled.');
+      toast.success(val ? 'Talent discovery enabled! You are now visible to organizations.' : 'Talent discovery disabled.');
     }
   });
 

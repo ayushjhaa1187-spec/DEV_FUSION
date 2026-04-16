@@ -12,8 +12,8 @@ const API_KEY = getGeminiApiKey();
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // Canonical model names
-export const PRIMARY_MODEL = 'gemini-1.5-flash-latest'; 
-export const FALLBACK_MODEL = 'gemini-1.5-flash';
+export const PRIMARY_MODEL = 'gemini-1.5-flash'; 
+export const FALLBACK_MODEL = 'gemini-1.5-pro';
 
 /**
  * Returns a configured Gemini model instance.

@@ -47,9 +47,23 @@ export async function updateSession(request: NextRequest) {
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
-    // Add a search param for feedback (optional but good)
     url.searchParams.set('message', 'Please sign in to access this page')
     return NextResponse.redirect(url)
+  }
+
+  // Redirect to onboarding if authenticated but role is missing
+  if (user && isProtectedRoute && !request.nextUrl.pathname.startsWith('/onboarding')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+      
+    if (!profile?.role && !user.user_metadata?.role) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

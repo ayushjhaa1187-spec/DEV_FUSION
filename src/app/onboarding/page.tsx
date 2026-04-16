@@ -18,7 +18,7 @@ export default async function OnboardingPage() {
     .eq('id', user.id)
     .maybeSingle();
 
-  const role = profile?.role || user.user_metadata?.role || 'student';
+  const role = profile?.role || user.user_metadata?.role;
 
   // Organization users should not be blocked by student academic fields.
   if (role === 'organization' || role === 'campus_admin') {
