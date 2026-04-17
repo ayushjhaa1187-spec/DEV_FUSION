@@ -39,29 +39,29 @@ export default function BlogPage() {
   return (
     <main className="sb-page">
       
-      <section className="sb-hero" style={{ paddingTop: '160px' }}>
-        <div className="sb-heroBadge">
-          <span className="sb-badgeDot" />
+      <section className="hero" style={{ paddingTop: '160px' }}>
+        <div className="hero-badge">
+          <span className="dot" />
           SkillBridge Blog
         </div>
 
-        <h1 className="sb-title">
+        <h1 className="title">
           Stories of <span>Growth.</span>
         </h1>
 
-        <p className="sb-subtitle">
+        <p className="tagline">
           Insights, student success stories, and platform updates from the SkillBridge community.
         </p>
       </section>
 
-      <section className="sb-section">
-        <div className="sb-blogs" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
+      <section className="section">
+        <div className="blogs-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}>
           {stories.map((story, i) => (
-            <article key={i} className="sb-blog" style={{ opacity: 1, transform: 'none' }}>
-              <div className={`sb-blogThumb ${story.color}`}>{story.icon}</div>
-              <div className="sb-blogBody">
-                <span>{story.tag}</span>
-                <h3>{story.title}</h3>
+            <article key={i} className="blog-card" style={{ opacity: 1, transform: 'none' }}>
+              <div className={`blog-thumb ${story.color}`}>{story.icon}</div>
+              <div className="blog-body">
+                <span className="blog-tag">{story.tag}</span>
+                <h3 className="blog-title">{story.title}</h3>
                 <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginTop: '8px', lineHeight: '1.5' }}>
                   {story.desc}
                 </p>

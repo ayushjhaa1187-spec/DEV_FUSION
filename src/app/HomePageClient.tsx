@@ -3,98 +3,11 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import './landing.css';
+import SkillBridgeIcon from '@/components/ui/SkillBridgeIcon';
 
-// ── PARTICLE CANVAS LOGIC ──
-const ParticleBackground = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+// ── CONSTELLATION BACKGROUND IMPORTED GLOBALLY OR VIA COMPONENT ──
+import ConstellationBackground from '@/components/ui/ConstellationBackground';
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let W: number, H: number;
-    let particles: { x: number; y: number; vx: number; vy: number; r: number; color: string; alpha: number; reset: () => void; update: () => void; draw: () => void }[] = [];
-    let mouse = { x: -999, y: -999 };
-    let animId: number;
-
-    const resize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; };
-    resize();
-    window.addEventListener('resize', resize);
-    const onMouse = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; };
-    window.addEventListener('mousemove', onMouse);
-
-    const hues = ['124,58,237', '6,214,160', '245,158,11', '99,102,241'];
-
-    function createParticle() {
-      const p = {
-        x: 0, y: 0, vx: 0, vy: 0, r: 0, color: '', alpha: 0,
-        reset() {
-          this.x = Math.random() * W;
-          this.y = Math.random() * H;
-          this.vx = (Math.random() - 0.5) * 0.4;
-          this.vy = (Math.random() - 0.5) * 0.4;
-          this.r = Math.random() * 2 + 0.5;
-          this.color = hues[Math.floor(Math.random() * hues.length)];
-          this.alpha = Math.random() * 0.5 + 0.2;
-        },
-        update() {
-          this.x += this.vx;
-          this.y += this.vy;
-          const dx = this.x - mouse.x, dy = this.y - mouse.y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 100) { this.x += dx / d * 1.2; this.y += dy / d * 1.2; }
-          if (this.x < 0 || this.x > W || this.y < 0 || this.y > H) this.reset();
-        },
-        draw() {
-          ctx!.beginPath();
-          ctx!.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-          ctx!.fillStyle = `rgba(${this.color},${this.alpha})`;
-          ctx!.fill();
-        }
-      };
-      p.reset();
-      return p;
-    }
-
-    for (let i = 0; i < 120; i++) particles.push(createParticle());
-
-    function drawLines() {
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 120) {
-            ctx!.beginPath();
-            ctx!.moveTo(particles[i].x, particles[i].y);
-            ctx!.lineTo(particles[j].x, particles[j].y);
-            ctx!.strokeStyle = `rgba(124,58,237,${0.15 * (1 - d / 120)})`;
-            ctx!.lineWidth = 0.5;
-            ctx!.stroke();
-          }
-        }
-      }
-    }
-
-    function animate() {
-      ctx!.clearRect(0, 0, W, H);
-      particles.forEach(p => { p.update(); p.draw(); });
-      drawLines();
-      animId = requestAnimationFrame(animate);
-    }
-    animate();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', onMouse);
-    };
-  }, []);
-
-  return <canvas ref={canvasRef} id="bg-canvas" />;
-};
 
 // ── COUNTER ANIMATION ──
 function useCounterAnimation() {
@@ -148,25 +61,12 @@ export default function HomePageClient() {
 
   return (
     <div style={{ background: 'var(--bg)' }}>
-      <ParticleBackground />
+      <ConstellationBackground opacity={0.65} interactive={true} />
 
       {/* ── LANDING NAVBAR ── */}
       <nav className="landing-nav">
         <Link href="/" className="landing-nav-logo">
-          <svg className="landing-nav-logoIcon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="landingNavGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#7c3aed" />
-                <stop offset="100%" stopColor="#06d6a0" />
-              </linearGradient>
-            </defs>
-            <path d="M4 28 Q20 8 36 28" stroke="url(#landingNavGrad)" strokeWidth="3" fill="none" strokeLinecap="round" />
-            <line x1="4" y1="28" x2="36" y2="28" stroke="url(#landingNavGrad)" strokeWidth="2.5" strokeLinecap="round" />
-            <line x1="13" y1="20" x2="13" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
-            <line x1="27" y1="20" x2="27" y2="28" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
-            <circle cx="20" cy="10.5" r="3" fill="#06d6a0" opacity="0.9" />
-            <circle cx="20" cy="10.5" r="5.5" fill="#06d6a0" opacity="0.2" />
-          </svg>
+          <SkillBridgeIcon className="landing-nav-logoIcon" />
           <span className="landing-nav-logoText">Skill<span>Bridge</span></span>
         </Link>
         <div className="landing-nav-links">

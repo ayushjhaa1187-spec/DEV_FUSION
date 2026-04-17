@@ -45,9 +45,9 @@ export async function consumeCredit(
     .eq('user_id', userId)
     .maybeSingle();
 
-  // STABILIZATION: If no wallet exists for a new user, auto-provision 999 for testing
-  // in a real production env, this would be 0 or 10.
-  const currentBalance = wallet?.balance ?? 999;
+  // STABILIZATION: If no wallet exists for a new user, auto-provision 10 initial credits
+  // in a real production env, this limits free access.
+  const currentBalance = wallet?.balance ?? 10;
   const cost = AI_ACTION_COSTS[action];
 
   if (currentBalance < cost) {
@@ -80,7 +80,7 @@ export async function getCreditBalance(userId: string): Promise<number> {
     .eq('user_id', userId)
     .maybeSingle();
   
-  return data?.balance ?? 999;
+  return data?.balance ?? 10;
 }
 
 // ─── Daily free-tier limit check (non-wallet gating) ─────────────────────────

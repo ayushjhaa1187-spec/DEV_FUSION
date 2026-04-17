@@ -101,13 +101,7 @@ h1, h2, h3, .font-display {
   line-height: 1.1;
 }
 
-/* ── Canvas BG ── */
-#bg-canvas {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
+/* Canvas handled by React Component now */
 
 /* ── Marquee / Ticker ── */
 @keyframes marquee {

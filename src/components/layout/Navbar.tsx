@@ -13,6 +13,7 @@ import {
 import { NotificationBell } from './NotificationBell';
 import SearchModal from './SearchModal';
 import styles from './Navbar.module.css';
+import SkillBridgeIcon from '@/components/ui/SkillBridgeIcon';
 
 /**
  * Navbar component for SkillBridge Lean MVP
@@ -33,7 +34,8 @@ export default function Navbar() {
     { name: 'Mentors', href: '/mentors' },
     { name: 'Community', href: '/community' },
     { name: 'Practice', href: '/tests' },
-    { name: 'Pricing', href: '/pricing' },
+    { name: 'Pricing', href: '/billing/plans' },
+    { name: 'Certificates', href: '/certificates' },
     { name: 'Leaderboard', href: '/leaderboard' },
   ];
 
@@ -65,15 +67,7 @@ export default function Navbar() {
       <header className={styles.navbar}>
         <div className={styles.navContainer}>
           <Link href="/dashboard" className={styles.logo}>
-            <svg className={styles.logoIcon} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="navLogoGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#7c3aed" />
-                  <stop offset="100%" stopColor="#06d6a0" />
-                </linearGradient>
-              </defs>
-              <path d="M4 28 Q20 8 36 28" stroke="url(#navLogoGrad)" strokeWidth="3" fill="none" strokeLinecap="round" />
-            </svg>
+            <SkillBridgeIcon className={styles.logoIcon} />
             <span className={styles.logoText}>Skill<span>Bridge</span></span>
           </Link>
  

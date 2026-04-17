@@ -151,19 +151,22 @@ export default function AuthPageClient() {
                 required
               />
 
-              <div className="grid grid-cols-3 gap-2 p-1 bg-bg-secondary rounded-lg mb-4">
-                {(['student', 'mentor', 'organization'] as SignupRole[]).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={`py-2 text-sm font-semibold rounded-md transition-all ${
-                      role === r ? 'bg-white text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'
-                    }`}
-                  >
-                    {r.charAt(0).toUpperCase() + r.slice(1)}
-                  </button>
-                ))}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-text-secondary mb-2">Who are you?</label>
+                <div className="grid grid-cols-3 gap-2 p-1 bg-bg-secondary rounded-lg">
+                  {(['student', 'mentor', 'organization'] as SignupRole[]).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      className={`py-2 text-sm font-semibold rounded-md transition-all ${
+                        role === r ? 'bg-primary text-white shadow-sm' : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+                      }`}
+                    >
+                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
             </>
           )}

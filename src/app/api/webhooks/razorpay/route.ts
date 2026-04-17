@@ -96,7 +96,7 @@ export async function POST(req: Request) {
         // Top up Credit Wallet (Atomic increase)
         // Note: Using an RPC would be safer, but for this flow we use basic update
         const { data: wallet, error: walletError } = await supabaseAdmin
-          .from('credit_wallets')
+          .from('wallets')
           .select('balance')
           .eq('user_id', userId)
           .single();
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
 
         const currentBalance = wallet?.balance || 0;
         const { error: upsertError } = await supabaseAdmin
-          .from('credit_wallets')
+          .from('wallets')
           .upsert({ 
             user_id: userId, 
             balance: currentBalance + 50,

@@ -7,6 +7,11 @@ import './bottom-cta.css';
 export default function BottomCTA() {
   return (
     <section className="sb-bottom-cta">
+      {/* Oceanic Wave Orbs */}
+      <div className="sb-cta-wave-orb" />
+      <div className="sb-cta-wave-orb" />
+      <div className="sb-cta-wave-orb" />
+      
       <div className="sb-cta-container">
         <div className="sb-cta-content">
           <div className="sb-cta-badge">

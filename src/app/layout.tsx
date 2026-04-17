@@ -3,6 +3,7 @@ import './globals.css';
 // Components
 import ConditionalNavbar, { ConditionalFooter } from '@/components/layout/ConditionalNavbar';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import ConstellationBackground from '@/components/ui/ConstellationBackground';
 import Providers from '@/components/providers';
 import { NotificationToastProvider } from '@/components/providers/NotificationToastProvider';
 import { Suspense } from 'react';
@@ -54,9 +55,10 @@ export default function RootLayout({
       <body className="antialiased">
         <Providers>
           <NotificationToastProvider>
-            <div className="flex flex-col min-h-screen">
+            <div className="flex flex-col min-h-screen relative">
+              <ConstellationBackground opacity={0.3} interactive={true} />
               <ConditionalNavbar />
-              <main className="flex-grow pb-24 md:pb-0">{children}</main>
+              <main className="flex-grow pb-24 md:pb-0 relative z-10">{children}</main>
               <ConditionalFooter />
               <MobileBottomNav />
             </div>

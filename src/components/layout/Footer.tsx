@@ -32,9 +32,17 @@ export default function Footer() {
             <h3>Stay Updated</h3>
             <p>Subscribe to our newsletter and never miss an update on new courses and resources.</p>
           </div>
-          <form className="sb-newsletter-form" onSubmit={(e) => e.preventDefault()}>
+          <form className="sb-newsletter-form" onSubmit={(e) => {
+            e.preventDefault();
+            const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
+            import('sonner').then(({ toast }) => {
+              toast.success(`Subscribed successfully with ${email}!`);
+            });
+            e.currentTarget.reset();
+          }}>
             <input 
               type="email" 
+              name="email"
               placeholder="Enter your email address" 
               className="sb-newsletter-input" 
               required
@@ -84,9 +92,9 @@ export default function Footer() {
             <h4 className="sb-col-title quick-links">Quick Links</h4>
             <ul className="sb-footer-list">
               <li><Link href="/">Home <ChevronRight size={14} /></Link></li>
-              <li><Link href="/courses">Courses <ChevronRight size={14} /></Link></li>
+              <li><Link href="/certificates">Certificates <ChevronRight size={14} /></Link></li>
               <li><Link href="/mentors">Find Mentors <ChevronRight size={14} /></Link></li>
-              <li><Link href="/blog">Our Blog <ChevronRight size={14} /></Link></li>
+              <li><Link href="/billing/plans">Pricing & Plans <ChevronRight size={14} /></Link></li>
             </ul>
           </div>
 

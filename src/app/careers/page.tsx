@@ -48,9 +48,9 @@ export default function CareersPage() {
           <p className="text-indigo-100 text-lg mb-12 max-w-xl mx-auto font-medium">
             We're always looking for talented individuals. Send us your portfolio and we'll keep you in mind for future roles.
           </p>
-          <a href="mailto:careers@skillbridge.academy" className="inline-flex items-center gap-2 bg-white text-indigo-600 px-10 py-5 rounded-[24px] font-black hover:scale-105 transition-all">
+          <Link href="/contact?subject=careers" className="inline-flex items-center gap-2 bg-white text-indigo-600 px-10 py-5 rounded-[24px] font-black hover:scale-105 transition-all">
             Send Portfolio <ArrowRight size={20} />
-          </a>
+          </Link>
         </section>
       </div>
     </main>

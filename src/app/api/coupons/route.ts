@@ -23,24 +23,39 @@ export async function POST(req: NextRequest) {
     }
 
     const plan = COUPONS[cleanCode];
+    const now = new Date().toISOString();
+    const oneYearLater = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString();
 
-    // Update or Insert subscription for the user
-    const { error } = await supabase.from('subscriptions').upsert({
+    // First attempt: upsert with all columns
+    const { error: firstErr } = await supabase.from('subscriptions').upsert({
       user_id: user.id,
-      plan: plan,
+      plan,
       status: 'active',
-      razorpay_subscription_id: `free_${cleanCode}_${Date.now()}`, // Placeholder ID
-      razorpay_plan_id: `free_${plan}`,
-      current_period_start: new Date().toISOString(),
-      current_period_end: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString(), // 1 year free
+      razorpay_subscription_id: `coupon_${cleanCode}_${Date.now()}`,
+      razorpay_plan_id: `coupon_${plan}`,
+      current_period_start: now,
+      current_period_end: oneYearLater,
     }, { onConflict: 'user_id' });
 
-    if (error) throw error;
+    // Second attempt: fallback without period columns if schema mismatch
+    if (firstErr && firstErr.message.includes('current_period')) {
+      const { error: fallbackErr } = await supabase.from('subscriptions').upsert({
+        user_id: user.id,
+        plan,
+        status: 'active',
+        razorpay_subscription_id: `coupon_${cleanCode}_${Date.now()}`,
+        razorpay_plan_id: `coupon_${plan}`,
+      }, { onConflict: 'user_id' });
 
-    return NextResponse.json({ 
-      success: true, 
+      if (fallbackErr) throw fallbackErr;
+    } else if (firstErr) {
+      throw firstErr;
+    }
+
+    return NextResponse.json({
+      success: true,
       plan,
-      message: `Coupon applied! You now have ${plan === 'elite' ? 'Campus Pro' : 'Pro Scholar'} access.` 
+      message: `Coupon applied! You now have ${plan === 'elite' ? 'Campus Elite' : 'Pro Scholar'} access.`
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

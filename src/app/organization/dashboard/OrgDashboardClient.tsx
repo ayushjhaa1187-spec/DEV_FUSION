@@ -15,7 +15,8 @@ import {
   Calendar,
   Settings,
   ChevronRight,
-  Filter
+  Filter,
+  LineChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createSupabaseBrowser } from '@/lib/supabase/client';

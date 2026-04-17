@@ -9,58 +9,82 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
 
   try {
+    // Try dedicated views first, fall back to profiles table
     const viewName = period === 'weekly' ? 'leaderboard_weekly' : 'leaderboard_alltime';
     
-    let query = supabase
+    let rawEntries: any[] = [];
+    let usedFallback = false;
+
+    const { data: viewData, error: viewError } = await supabase
       .from(viewName)
       .select('*')
       .limit(limit);
 
-    if (branch && branch !== 'all') {
-      query = query.eq('branch', branch);
+    if (viewError || !viewData || viewData.length === 0) {
+      // Fallback: query profiles table directly
+      usedFallback = true;
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url, reputation_points, college, branch, recruitment_opt_in')
+        .order('reputation_points', { ascending: false })
+        .limit(limit);
+
+      if (profileError) throw profileError;
+      rawEntries = profileData || [];
+    } else {
+      rawEntries = viewData;
     }
-
-    const { data: entries, error } = await query;
-
-    if (error) throw error;
 
     // Fetch current user rank if authenticated
     const { data: { user } } = await supabase.auth.getUser();
     let currentUser = null;
 
     if (user) {
-      const { data: userEntry } = await supabase
-        .from(viewName)
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (userEntry) {
-        currentUser = {
-          ...userEntry,
-          is_current_user: true,
-          name: userEntry.full_name || userEntry.username,
-          points: period === 'weekly' ? userEntry.weekly_points : userEntry.reputation_points
-        };
+      if (usedFallback) {
+        const userEntry = rawEntries.find(e => e.id === user.id);
+        if (userEntry) {
+          currentUser = formatEntry(userEntry, period, true, rawEntries.findIndex(e => e.id === user.id) + 1);
+        }
+      } else {
+        // Try both id and user_id column names
+        const userEntry = rawEntries.find(e => e.id === user.id || e.user_id === user.id);
+        if (userEntry) {
+          const rank = rawEntries.findIndex(e => (e.id === user.id || e.user_id === user.id)) + 1;
+          currentUser = formatEntry(userEntry, period, true, rank);
+        }
       }
     }
 
-    const formattedEntries = (entries || []).map(e => ({
-      ...e,
-      user_id: e.id,
-      name: e.full_name || e.username,
-      points: period === 'weekly' ? e.weekly_points : e.reputation_points,
-      badge: getBadge(e.reputation_points),
-      change: 0 // View doesn't track change yet
-    }));
+    const formattedEntries = (rawEntries || []).map((e, idx) => formatEntry(e, period, false, idx + 1));
 
     return NextResponse.json({ 
       entries: formattedEntries, 
       currentUser 
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('[Leaderboard API Error]', err.message);
+    return NextResponse.json({ error: err.message, entries: [], currentUser: null }, { status: 500 });
   }
+}
+
+function formatEntry(e: any, period: string, isCurrentUser: boolean, rank: number) {
+  const points = period === 'weekly' 
+    ? (e.weekly_points ?? e.reputation_points ?? 0)
+    : (e.reputation_points ?? 0);
+
+  return {
+    rank,
+    user_id: e.id || e.user_id,
+    name: e.full_name || e.username || 'Anonymous',
+    username: e.username || 'user',
+    college: e.college || e.branch || '',
+    avatar_url: e.avatar_url || null,
+    badge: getBadge(e.reputation_points ?? 0),
+    points,
+    change: 0,
+    recruitment_opt_in: e.recruitment_opt_in ?? false,
+    is_current_user: isCurrentUser,
+  };
 }
 
 function getBadge(points: number): string {

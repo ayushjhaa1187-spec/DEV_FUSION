@@ -134,6 +134,13 @@ export default function LeaderboardPageClient() {
               {[...Array(6)].map((_, i) => <div key={i} className="h-16 bg-white/5 rounded-2xl animate-pulse" />)}
            </div>
         </div>
+      ) : entries.length === 0 ? (
+        <div className="py-24 text-center bg-[#13132b] rounded-[48px] border border-white/5 shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-amber-500/10 opacity-50"></div>
+          <Trophy size={48} className="text-gray-600 mx-auto mb-6" />
+          <h3 className="text-2xl font-black text-white mb-2">Constellation is Forming</h3>
+          <p className="text-gray-400 font-medium max-w-sm mx-auto">No scholars have amassed enough reputation points to chart the leaderboard in this sector yet. Be the first.</p>
+        </div>
       ) : (
         <>
           {/* Podium */}

@@ -70,12 +70,13 @@ export default function CouponWidget({ onSuccess }: CouponWidgetProps) {
             >
               <div className="relative flex-1">
                 <input 
-                  type="text" 
+                  type="password" 
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   onKeyDown={(e) => e.key === 'Enter' && applyCoupon()}
-                  placeholder="CODE (e.g. JAHNVI_FIND)"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-black tracking-widest outline-none focus:border-indigo-500/50 transition-all placeholder:text-gray-700"
+                  placeholder="Enter access key"
+                  autoComplete="off"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-black tracking-[0.3em] outline-none focus:border-indigo-500/50 transition-all placeholder:text-gray-700 placeholder:font-normal placeholder:tracking-normal"
                 />
               </div>
               <button 

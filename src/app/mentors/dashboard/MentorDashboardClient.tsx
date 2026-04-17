@@ -50,11 +50,11 @@ export default function MentorDashboardClient() {
 
         // 3. Fetch upcoming bookings
         const { data: bookingData } = await supabase
-          .from('bookings')
-          .select('*, profiles(full_name, avatar_url, username)')
+          .from('mentor_bookings')
+          .select('*, profiles!student_id(full_name, avatar_url, username)')
           .eq('mentor_id', user.id)
           .eq('status', 'confirmed')
-          .order('scheduled_at', { ascending: true })
+          .order('created_at', { ascending: false })
           .limit(3);
         setBookings(bookingData || []);
       }
@@ -247,7 +247,7 @@ export default function MentorDashboardClient() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                          <span className="text-[10px] font-black uppercase">{new Date(b.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="text-[10px] font-black uppercase">{new Date(b.created_at).toLocaleDateString()}</span>
                           <ChevronRight size={14} />
                         </div>
                       </div>

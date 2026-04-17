@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       // Note: We use maybeSingle() so data being null is expected for new users.
       if (!profile) {
         // Upsert a default profile from metadata
-        const defaultRole = user.user_metadata?.role || 'student';
+        const defaultRole = user.user_metadata?.role || null;
         await supabase.from('profiles').upsert({
           id: user.id,
           email: user.email,
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
       }
 
       // 3. Role-Aware Redirection
-      const role = profile.role || user.user_metadata?.role || 'student';
+      const role = profile.role || user.user_metadata?.role;
 
       // Organizations bypass student onboarding
       if (role === 'organization' || role === 'campus_admin') {
@@ -70,7 +70,7 @@ export async function GET(request: Request) {
       }
 
       // Students/Mentors without basic info go to onboarding
-      if (!profile.college || !profile.branch) {
+      if (!profile.college || !profile.branch || !role) {
         return NextResponse.redirect(`${origin}/onboarding`);
       }
 

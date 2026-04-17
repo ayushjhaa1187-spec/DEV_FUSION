@@ -76,12 +76,16 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[AI Solve Error]:', error);
-    // Note: Since we already deducted credits, in a real app we might want to refund 
-    // but for MVP we log and fail.
+    const errMsg = error.message?.toLowerCase();
+    let userFriendlyError = 'Neuro-link failure during generation.';
+    if (errMsg?.includes('api key') || errMsg?.includes('ai_key_missing') || errMsg?.includes('403')) {
+      userFriendlyError = 'Missing or invalid Gemini API Key. Please request your campus admin to sync standard configuration.';
+    }
+
     return NextResponse.json({ 
       success: false, 
-      error: error.message || "Neuro-link failure during generation." 
+      error: userFriendlyError,
+      details: error.message 
     }, { status: 500 });
   }
 }

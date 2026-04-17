@@ -22,19 +22,17 @@ export async function POST(req: NextRequest) {
        return NextResponse.json({ success: false, error: 'Missing slot_id' }, { status: 400 });
     }
 
-    // 1. Verify slot is available
-    const { data: slot, error: slotError } = await supabase
+    // 1. Atomically verify and lock the slot to prevent double-booking race conditions
+    const { data: slot, error: lockError } = await supabase
       .from('mentor_slots')
-      .select('mentor_id, status, start_time')
+      .update({ status: 'booked' })
       .eq('id', slot_id)
+      .eq('status', 'available')
+      .select('mentor_id, start_time')
       .single();
 
-    if (slotError || !slot) {
-      return NextResponse.json({ success: false, error: 'Slot not found' }, { status: 404 });
-    }
-
-    if (slot.status !== 'available') {
-      return NextResponse.json({ success: false, error: 'Slot already booked' }, { status: 400 });
+    if (lockError || !slot) {
+      return NextResponse.json({ success: false, error: 'Slot is already booked or unavailable' }, { status: 400 });
     }
 
     // 2. Create simplified booking
@@ -57,11 +55,7 @@ export async function POST(req: NextRequest) {
 
     if (bookingError) throw bookingError;
 
-    // 3. Mark slot as booked
-    await supabase
-      .from('mentor_slots')
-      .update({ status: 'booked' })
-      .eq('id', slot_id);
+    // 3. (Slot already marked as booked atomically in step 1)
 
     // 4. Log notification for Mentor (In-App)
     await supabase.from('notifications').insert({

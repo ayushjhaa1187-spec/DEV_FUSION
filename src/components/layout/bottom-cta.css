@@ -1,23 +1,91 @@
+/* ─── Oceanic Wave Animation ───────────────────────────────────────────────── */
+@keyframes waveShift {
+  0%   { transform: translateX(0) scaleY(1); }
+  50%  { transform: translateX(-3%) scaleY(1.05); }
+  100% { transform: translateX(0) scaleY(1); }
+}
+
+@keyframes waveShift2 {
+  0%   { transform: translateX(0) scaleY(1); }
+  50%  { transform: translateX(3%) scaleY(0.95); }
+  100% { transform: translateX(0) scaleY(1); }
+}
+
+@keyframes depthPulse {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.7; }
+}
+
 .sb-bottom-cta {
-  padding: 80px 24px;
-  background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%);
+  padding: 100px 24px;
+  background: linear-gradient(160deg, #003d2e 0%, #005c44 30%, #00836a 60%, #004d3a 100%);
   position: relative;
   overflow: hidden;
 }
 
-.sb-bottom-cta::before {
+/* Wave layers */
+.sb-bottom-cta::before,
+.sb-bottom-cta::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  left: -10%;
+  right: -10%;
+  border-radius: 50%;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
   pointer-events: none;
+}
+
+.sb-bottom-cta::before {
+  top: -60%;
+  height: 140%;
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(0, 210, 150, 0.18) 0%, transparent 70%);
+  animation: waveShift 6s infinite;
+}
+
+.sb-bottom-cta::after {
+  bottom: -60%;
+  height: 140%;
+  background: radial-gradient(ellipse 80% 60% at 50% 60%, rgba(0, 255, 180, 0.10) 0%, transparent 70%);
+  animation: waveShift2 8s infinite;
+}
+
+/* Floating bioluminescent orbs */
+.sb-cta-wave-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: depthPulse 4s ease-in-out infinite;
+}
+
+.sb-cta-wave-orb:nth-child(1) {
+  width: 400px; height: 400px;
+  top: -120px; left: -80px;
+  background: radial-gradient(circle, rgba(0, 210, 150, 0.15), transparent 70%);
+  animation-delay: 0s;
+}
+
+.sb-cta-wave-orb:nth-child(2) {
+  width: 300px; height: 300px;
+  bottom: -80px; right: 10%;
+  background: radial-gradient(circle, rgba(0, 255, 200, 0.12), transparent 70%);
+  animation-delay: 2s;
+}
+
+.sb-cta-wave-orb:nth-child(3) {
+  width: 200px; height: 200px;
+  top: 40%; left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(50, 220, 170, 0.08), transparent 70%);
+  animation-delay: 1s;
 }
 
 .sb-cta-container {
   max-width: 1200px;
   margin: 0 auto;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 
 .sb-cta-content {
@@ -28,23 +96,24 @@
 }
 
 .sb-cta-badge {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 8px 20px;
   border-radius: 99px;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  color: rgba(160, 255, 220, 0.9);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .sb-cta-badge svg {
-  color: #fbbf24;
+  color: #5ff5c0;
 }
 
 .sb-cta-title {
@@ -54,11 +123,12 @@
   margin: 0;
   line-height: 1.1;
   letter-spacing: -0.03em;
+  text-shadow: 0 0 80px rgba(0, 200, 140, 0.3);
 }
 
 .sb-cta-description {
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(200, 255, 235, 0.75);
   max-width: 700px;
   margin: 0;
   line-height: 1.6;
@@ -79,7 +149,7 @@
 }
 
 .sb-cta-btn {
-  padding: 16px 32px;
+  padding: 16px 36px;
   border-radius: 99px;
   font-weight: 800;
   font-size: 1rem;
@@ -92,27 +162,27 @@
 }
 
 .sb-cta-btn.primary {
-  background: #fff;
-  color: #7c3aed;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #00c892, #00e5b0);
+  color: #003d2e;
+  box-shadow: 0 12px 40px rgba(0, 200, 140, 0.35);
+  font-weight: 900;
 }
 
 .sb-cta-btn.primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-  background: #f8fafc;
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 20px 50px rgba(0, 200, 140, 0.45);
 }
 
 .sb-cta-btn.secondary {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(200, 255, 235, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .sb-cta-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(0, 200, 140, 0.5);
   transform: translateY(-3px);
 }
