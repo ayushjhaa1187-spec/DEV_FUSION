@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS answers (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS accepted_answer_id UUID;
 ALTER TABLE doubts ADD CONSTRAINT fk_accepted_answer FOREIGN KEY (accepted_answer_id) REFERENCES answers(id) ON DELETE SET NULL;
 
 -- 5. Answer Votes
@@ -228,46 +229,68 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 -- 16. RLS Policies
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public profiles viewable" ON profiles;
 CREATE POLICY "Public profiles viewable" ON profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users update own profile" ON profiles;
 CREATE POLICY "Users update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users insert own profile" ON profiles;
 CREATE POLICY "Users insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 ALTER TABLE doubts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Doubts viewable" ON doubts;
 CREATE POLICY "Doubts viewable" ON doubts FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Auth users create doubts" ON doubts;
 CREATE POLICY "Auth users create doubts" ON doubts FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Authors update doubts" ON doubts;
 CREATE POLICY "Authors update doubts" ON doubts FOR UPDATE USING (auth.uid() = author_id);
+DROP POLICY IF EXISTS "Authors delete doubts" ON doubts;
 CREATE POLICY "Authors delete doubts" ON doubts FOR DELETE USING (auth.uid() = author_id);
 
 ALTER TABLE answers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Answers viewable" ON answers;
 CREATE POLICY "Answers viewable" ON answers FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Auth users create answers" ON answers;
 CREATE POLICY "Auth users create answers" ON answers FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Authors update answers" ON answers;
 CREATE POLICY "Authors update answers" ON answers FOR UPDATE USING (auth.uid() = author_id);
 
 ALTER TABLE answer_votes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Votes viewable" ON answer_votes;
 CREATE POLICY "Votes viewable" ON answer_votes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Auth users vote" ON answer_votes;
 CREATE POLICY "Auth users vote" ON answer_votes FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 ALTER TABLE mentor_profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Mentor profiles viewable" ON mentor_profiles;
 CREATE POLICY "Mentor profiles viewable" ON mentor_profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Mentors update own" ON mentor_profiles;
 CREATE POLICY "Mentors update own" ON mentor_profiles FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Auth users apply mentor" ON mentor_profiles;
 CREATE POLICY "Auth users apply mentor" ON mentor_profiles FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 ALTER TABLE mentor_slots ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Slots viewable" ON mentor_slots;
 CREATE POLICY "Slots viewable" ON mentor_slots FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Mentors manage slots" ON mentor_slots;
 CREATE POLICY "Mentors manage slots" ON mentor_slots FOR INSERT WITH CHECK (
   auth.uid() = (SELECT user_id FROM mentor_profiles WHERE id = mentor_id)
 );
 
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Booking visibility" ON bookings;
 CREATE POLICY "Booking visibility" ON bookings FOR SELECT USING (
   auth.uid() = student_id OR
   auth.uid() = (SELECT user_id FROM mentor_profiles WHERE id = mentor_id)
 );
+DROP POLICY IF EXISTS "Students create bookings" ON bookings;
 CREATE POLICY "Students create bookings" ON bookings FOR INSERT WITH CHECK (auth.uid() = student_id);
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users view own notifications" ON notifications;
 CREATE POLICY "Users view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Insert notifications" ON notifications;
 CREATE POLICY "Insert notifications" ON notifications FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Users update notifications" ON notifications;
 CREATE POLICY "Users update notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
 
 ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
