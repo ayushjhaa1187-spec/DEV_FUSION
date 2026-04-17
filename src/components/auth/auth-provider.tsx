@@ -136,14 +136,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       setLoading(true);
-      // Clear Supabase session
-      await supabase.auth.signOut({ scope: 'global' });
       
-      // Explicitly clear any remaining auth-related storage
+      // 1. Attempt Supabase SignOut (wrap in try to ignore failure if session is already gone)
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (e) {
+        console.warn('Supabase signOut failed, proceeding with local cleanup:', e);
+      }
+      
+      // 2. Local Cleanup
       if (typeof window !== 'undefined') {
         localStorage.clear();
         sessionStorage.clear();
-        // Clear cookies that might be lingering
+        
+        // Clear cookies
         document.cookie.split(";").forEach((c) => {
           document.cookie = c
             .replace(/^ +/, "")
@@ -153,16 +159,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null);
         setProfile(null);
         
-        // Use window.location.href for a hard reset to ensure all states are cleared
-        window.location.href = '/';
+        // 3. Forced Navigation to Landing Page
+        // We use replace to prevent back-button issues
+        window.location.replace('/');
       }
     } catch (err) {
-      console.error('Error signing out:', err);
+      console.error('Logout error:', err);
       if (typeof window !== 'undefined') {
-        window.location.href = '/';
+        window.location.replace('/');
       }
     } finally {
-      if (typeof window === 'undefined') {
+      if (typeof window !== 'undefined') {
+        // Fallback in case location change is delayed
         setLoading(false);
       }
     }

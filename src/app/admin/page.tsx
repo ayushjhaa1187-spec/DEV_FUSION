@@ -12,7 +12,8 @@ import {
   ChevronRight,
   TrendingUp,
   Activity,
-  AlertCircle
+  AlertCircle,
+  Building2
 } from 'lucide-react';
 import Link from 'next/link';
 
