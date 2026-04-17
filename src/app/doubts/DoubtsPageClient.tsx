@@ -11,6 +11,7 @@ import { Search, X, Sparkles, Send, Filter, Clock, TrendingUp, CheckCircle2, Che
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 import { toast } from 'sonner';
+import ErrorState from '@/components/ui/ErrorState';
 
 export default function DoubtsPageClient() {
 // ... existing state ...

@@ -149,22 +149,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .replace(/^ +/, "")
             .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
         });
+        
+        setUser(null);
+        setProfile(null);
+        
+        // Use window.location.href for a hard reset to ensure all states are cleared
+        window.location.href = '/';
       }
-
-      setUser(null);
-      setProfile(null);
-      
-      // Force immediate navigation and refresh
-      router.replace('/');
-      router.refresh();
     } catch (err) {
       console.error('Error signing out:', err);
-      setUser(null);
-      setProfile(null);
-      router.replace('/');
-      router.refresh();
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     } finally {
-      setLoading(false);
+      if (typeof window === 'undefined') {
+        setLoading(false);
+      }
     }
   };
 
