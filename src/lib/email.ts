@@ -294,7 +294,7 @@ export async function sendMentorStatusEmail(args: MentorStatusArgs) {
       <p>Hi ${args.name},</p>
       <p>Your application to become a verified mentor on SkillBridge has been <strong>${args.status}</strong>.</p>
       ${args.reason ? `<p style="color:#fca5a5"><strong>Reason:</strong> ${args.reason}</p>` : ''}
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/mentors/dashboard" class="cta">Go to Mentor Dashboard →</a>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://skillbridge.edu'}/mentors/dashboard" class="cta">Go to Mentor Dashboard →</a>
     </div>
     <div class="footer">SkillBridge Mentor Program</div>
   `);

@@ -94,8 +94,7 @@ export async function POST(
       await sendMentorStatusEmail({
         to: applicantProfile.email,
         status: status as 'approved' | 'rejected',
-        mentorName: applicantProfile.full_name || applicantProfile.username || 'Mentor',
-        dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+        name: applicantProfile.full_name || applicantProfile.username || 'Mentor'
       });
     }
 
