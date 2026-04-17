@@ -1,8 +1,12 @@
-// src/app/organization/dashboard/page.tsx
-
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { Metadata } from 'next';
 import OrgDashboardClient from './OrgDashboardClient';
+
+export const metadata: Metadata = {
+  title: 'Organization Dashboard | SkillBridge',
+  description: 'Manage your talent pool, affiliated mentors, and recruitment pipeline.',
+};
 
 export default async function OrganizationDashboardPage() {
   const supabase = await createSupabaseServer();
@@ -24,7 +28,7 @@ export default async function OrganizationDashboardPage() {
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
     
     if (profile?.role === 'organization') {
       redirect('/onboarding');

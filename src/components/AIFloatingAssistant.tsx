@@ -9,12 +9,28 @@ import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function AIFloatingAssistant() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{role:'user'|'ai', content:string}[]>([
-    { role: 'ai', content: 'Academic challenges? Doubt solved. Insight earned. I\'m your SkillBridge AI tutor!' }
-  ]);
+  const [messages, setMessages] = useState<{role:'user'|'ai', content:string}[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sb_ai_history');
+      return saved ? JSON.parse(saved) : [
+        { role: 'ai', content: 'Academic challenges? Doubt solved. Insight earned. I\'m your SkillBridge AI tutor!' }
+      ];
+    }
+    return [{ role: 'ai', content: 'Academic challenges? Doubt solved. Insight earned. I\'m your SkillBridge AI tutor!' }];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('sb_ai_history', JSON.stringify(messages));
+  }, [messages]);
+
+  const clearHistory = () => {
+    const defaultMsg = [{ role: 'ai' as const, content: 'Academic challenges? Doubt solved. Insight earned. I\'m your SkillBridge AI tutor!' }];
+    setMessages(defaultMsg);
+    localStorage.removeItem('sb_ai_history');
+  };
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -138,12 +154,21 @@ export default function AIFloatingAssistant() {
                   </div>
                 </div>
               </div>
-              <button 
-                onClick={() => setIsOpen(false)} 
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
-              >
-                <X size={18} className="opacity-40" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={clearHistory} 
+                  title="Clear History"
+                  className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors text-gray-400 hover:text-white"
+                >
+                  <RotateCcw size={16} />
+                </button>
+                <button 
+                  onClick={() => setIsOpen(false)} 
+                  className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                >
+                  <X size={18} className="opacity-40" />
+                </button>
+              </div>
             </div>
 
             {/* Chat Area */}

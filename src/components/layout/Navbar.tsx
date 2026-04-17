@@ -28,16 +28,44 @@ export default function Navbar() {
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   // Lean MVP Primary Navigation
-  const mainLinks = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Doubts', href: '/doubts' },
-    { name: 'Mentors', href: '/mentors' },
-    { name: 'Community', href: '/community' },
-    { name: 'Practice', href: '/tests' },
-    { name: 'Pricing', href: '/billing/plans' },
-    { name: 'Certificates', href: '/certificates' },
-    { name: 'Leaderboard', href: '/leaderboard' },
-  ];
+  // Dynamic Navigation based on Auth State
+  const getMainLinks = () => {
+    if (!user) {
+      return [
+        { name: 'Features', href: '/#features' },
+        { name: 'Mentors', href: '/mentors' },
+        { name: 'Pricing', href: '/pricing' },
+        { name: 'University Hubs', href: '/organization' },
+        { name: 'Verification', href: '/verify' },
+      ];
+    }
+
+    const links = [
+      { name: 'Resources', href: '/resources' },
+      { name: 'Doubts', href: '/doubts' },
+      { name: 'Practice', href: '/tests' },
+    ];
+
+    // Role-specific entry points
+    if (profile?.role === 'mentor') {
+      links.push({ name: 'Mentor Hub', href: '/mentors/dashboard' });
+    }
+    
+    if (profile?.role === 'org' || profile?.role === 'admin' || profile?.organization_id) {
+      links.push({ name: 'Org Hub', href: '/organization/dashboard' });
+    }
+
+    links.push(
+      { name: 'Mentors', href: '/mentors' },
+      { name: 'Community', href: '/community' },
+      { name: 'Certificates', href: '/certificates' },
+      { name: 'Leaderboard', href: '/leaderboard' }
+    );
+
+    return links;
+  };
+
+  const mainLinks = getMainLinks();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -66,7 +94,7 @@ export default function Navbar() {
     <>
       <header className={styles.navbar}>
         <div className={styles.navContainer}>
-          <Link href="/dashboard" className={styles.logo}>
+          <Link href={user ? "/dashboard" : "/"} className={styles.logo}>
             <SkillBridgeIcon className={styles.logoIcon} />
             <span className={styles.logoText}>Skill<span>Bridge</span></span>
           </Link>
@@ -135,11 +163,11 @@ export default function Navbar() {
                           <p className={styles.dropdownEmail}>{user?.email}</p>
                         </div>
                         <div className={styles.divider} />
-                        <Link href="/dashboard" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>
-                           My Dashboard
+                        <Link href="/billing" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>
+                           Billing & Plans
                         </Link>
                         <Link href="/settings" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>
-                           Identity Settings
+                           Identity Profile
                         </Link>
                         <div className={styles.divider} />
                         <button className={`${styles.dropdownItem} ${styles.logout}`} onClick={() => { signOut(); setIsProfileOpen(false); }}>

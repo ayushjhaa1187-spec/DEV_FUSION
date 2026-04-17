@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { Metadata } from 'next';
 import MentorDashboardClient from './MentorDashboardClient';
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default async function MentorDashboardPage() {
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   const role = profile?.role || user.user_metadata?.role;
   

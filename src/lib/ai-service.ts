@@ -8,17 +8,31 @@ export const getGeminiApiKey = () =>
   process.env.GOOGLE_AI_API_KEY || 
   '';
 
-const API_KEY = getGeminiApiKey();
-const genAI = new GoogleGenerativeAI(API_KEY);
+// Canonical stable model names for production
+export const PRIMARY_MODEL = 'gemini-1.5-flash'; 
+export const FALLBACK_MODEL = 'gemini-1.5-flash-8b';
 
-// Canonical model names
-export const PRIMARY_MODEL = 'gemini-2.0-flash'; 
-export const FALLBACK_MODEL = 'gemini-2.0-flash-lite';
+/**
+ * Returns the configured Gemini AI instance.
+ */
+let _genAI: GoogleGenerativeAI | null = null;
+const getAIClient = () => {
+  const key = getGeminiApiKey();
+  if (!key) return null;
+  if (!_genAI) {
+    _genAI = new GoogleGenerativeAI(key);
+  }
+  return _genAI;
+};
 
 /**
  * Returns a configured Gemini model instance.
  */
-export const getModel = (name: string = PRIMARY_MODEL) => genAI.getGenerativeModel({ model: name });
+export const getModel = (name: string = PRIMARY_MODEL) => {
+  const client = getAIClient();
+  if (!client) throw new Error('AI_KEY_MISSING');
+  return client.getGenerativeModel({ model: name });
+};
 
 // ─── Types & Schemas ─────────────────────────────────────────────────────────
 export interface AIResult<T> {
@@ -76,7 +90,7 @@ function extractJSON<T>(text: string, schema: z.ZodSchema<T>): T {
  * Generic wrapper for Gemini calls with retry and timeout logic.
  */
 async function callGemini(prompt: string, modelName: string = PRIMARY_MODEL): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: modelName });
+  const model = getModel(modelName);
   
   // Create a timeout promise (~30s as requested)
   const timeoutPromise = new Promise<never>((_, reject) =>
@@ -135,7 +149,7 @@ async function executeWithRetry<T>(
  * Solves an academic doubt with structured output.
  */
 export async function askAIDoubt(question: string, context?: string): Promise<AIResult<AIDoubtResponse>> {
-  if (!API_KEY) return { success: false, error: 'AI_KEY_MISSING' };
+  if (!getGeminiApiKey()) return { success: false, error: 'AI_KEY_MISSING' };
 
   const prompt = `You are SkillBridge AI, an elite academic expert. 
 Answer the following concisely and pedagogically.
@@ -157,7 +171,7 @@ Strict Valid JSON ONLY:
  * Generates a practice quiz for a subject/topic.
  */
 export async function generatePracticeQuiz(subject: string, topic: string, count: number = 10): Promise<AIResult<any[]>> {
-  if (!API_KEY) return { success: false, error: 'AI_KEY_MISSING' };
+  if (!getGeminiApiKey()) return { success: false, error: 'AI_KEY_MISSING' };
 
   const prompt = `Generate exactly ${count} Multiple Choice Questions (MCQs) for ${subject} on ${topic}.
 Strict Valid JSON Array:
@@ -178,7 +192,7 @@ Ensure exactly ${count} items are returned. No preamble. No markdown code blocks
  * Suggests curiosity-building follow-up questions.
  */
 export async function getFollowUpQuestions(question: string, answer: string): Promise<string[]> {
-  if (!API_KEY) return [];
+  if (!getGeminiApiKey()) return [];
 
   const prompt = `Based on: "${question}" and response: "${answer}", suggest 3 deep follow-up questions.
 JSON Array: ["Q1", "Q2", "Q3"]`;
@@ -191,9 +205,9 @@ JSON Array: ["Q1", "Q2", "Q3"]`;
  * Streams an academic doubt response.
  */
 export async function streamAIDoubt(question: string, context?: string) {
-  if (!API_KEY) throw new Error('AI_KEY_MISSING');
+  if (!getGeminiApiKey()) throw new Error('AI_KEY_MISSING');
 
-  const model = genAI.getGenerativeModel({ model: PRIMARY_MODEL });
+  const model = getModel(PRIMARY_MODEL);
   const prompt = `You are SkillBridge AI, an elite academic expert. 
 Answer the following concisely and pedagogically. 
 Format your response using Markdown. 

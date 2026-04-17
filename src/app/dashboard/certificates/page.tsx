@@ -18,10 +18,10 @@ export default async function CertificatesDashboardPage() {
   if (!user) redirect("/auth");
 
   const { data: profile } = await supabase
-    .from("users")
+    .from("profiles")
     .select("full_name")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   // 2. Fetch User's Certificates
   const { data: certificates, error } = await supabase

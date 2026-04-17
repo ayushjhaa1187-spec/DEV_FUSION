@@ -7,6 +7,7 @@ import SkillBridgeIcon from '@/components/ui/SkillBridgeIcon';
 
 // ── CONSTELLATION BACKGROUND IMPORTED GLOBALLY OR VIA COMPONENT ──
 import ConstellationBackground from '@/components/ui/ConstellationBackground';
+import HeroConstellations from '@/components/ui/HeroConstellations';
 
 
 // ── COUNTER ANIMATION ──
@@ -82,6 +83,7 @@ export default function HomePageClient() {
 
       {/* ── HERO ── */}
       <section className="hero">
+        <HeroConstellations />
         <div>
           <div className="hero-badge">
             <div className="dot" />

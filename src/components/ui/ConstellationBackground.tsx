@@ -165,9 +165,6 @@ export default function ConstellationBackground({
       });
 
       // --- Render Constellation Clusters ---
-      ctx.font = '500 14px Inter, sans-serif';
-      ctx.textAlign = 'center';
-
       clusters.forEach(cl => {
         // Move the whole cluster
         cl.x += cl.vx;
@@ -181,20 +178,13 @@ export default function ConstellationBackground({
 
         let clusterHovered = false;
         let maxHoverFactor = 0;
-        let cx = 0, cy = 0; 
 
         // Update absolute coordinates of points for this frame
         cl.points.forEach(p => {
           p.x = cl.x + (p.relX! - 0.5) * cl.scale;
           p.y = cl.y + (p.relY! - 0.5) * cl.scale;
-          cx += p.x;
-          cy += p.y;
         });
         
-        // Centroid for the label
-        cx /= cl.points.length;
-        cy /= cl.points.length;
-
         // Render point-to-point connections within cluster
         for (let i = 0; i < cl.points.length; i++) {
           const p1 = cl.points[i];
@@ -215,14 +205,12 @@ export default function ConstellationBackground({
           }
 
           // Render Star Point
-          // Drastically increase size and brightness on hover
           const radius = clusterHovered ? 2 + hoverFactor * 2.5 : 1.5;
           const alpha = clusterHovered ? Math.max(cl.baseAlpha, 0.6) + (hoverFactor * 0.4) : cl.baseAlpha;
           
           ctx.beginPath();
           ctx.arc(p1.x, p1.y, radius, 0, Math.PI * 2);
           
-          // Switch to bright white on high hover
           if (hoverFactor > 0.4) {
              ctx.fillStyle = `rgba(${brightColor}, ${alpha * opacity})`;
              ctx.shadowBlur = 20;
@@ -240,9 +228,7 @@ export default function ConstellationBackground({
             const p2 = cl.points[j];
             const dist = Math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2);
             
-            // Only connect if moderately close relative to cluster size
             if (dist < cl.scale * 0.85) {
-              // Brighter lines when cluster is hovered
               let lineAlpha = clusterHovered 
                 ? 0.5 * (1 - dist/(cl.scale*0.85)) + (maxHoverFactor * 0.5) 
                 : 0.12 * (1 - dist/(cl.scale*0.85));
@@ -260,34 +246,9 @@ export default function ConstellationBackground({
               }
               
               ctx.lineWidth = lineWidth;
-              
-              if (clusterHovered) {
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = hoverFactor > 0.3 ? `rgba(${brightColor}, 0.8)` : `rgba(${baseThemeColor}, 0.8)`;
-              }
-              
               ctx.stroke();
-              ctx.shadowBlur = 0;
             }
           }
-        }
-
-        // Draw Discovery Label when hovered
-        if (clusterHovered && maxHoverFactor > 0.15) {
-          ctx.fillStyle = `rgba(${brightColor}, ${maxHoverFactor * 1.5 * opacity})`;
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = 'rgba(0, 0, 0, 1)'; // Heavy shadow to stand out against background
-          ctx.fillText(cl.name, cx, cy - (cl.scale * 0.4) - 10);
-          
-          // Small decorative line under text
-          ctx.beginPath();
-          ctx.moveTo(cx - 15, cy - (cl.scale * 0.4) - 4);
-          ctx.lineTo(cx + 15, cy - (cl.scale * 0.4) - 4);
-          ctx.strokeStyle = `rgba(${brightColor}, ${(maxHoverFactor) * opacity})`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-          
-          ctx.shadowBlur = 0;
         }
       });
 

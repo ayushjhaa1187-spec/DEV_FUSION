@@ -6,6 +6,37 @@ import { FileText, Download, Play, Search, BookOpen, ExternalLink } from 'lucide
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 
+const curatedPlaylists = [
+  { 
+    id: 'dsa-roadmap', 
+    title: 'DSA Roadmap', 
+    description: 'Master data structures and algorithms from scratch to expert levels.', 
+    image: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400&h=250&fit=crop', 
+    category: 'Prep Guide' 
+  },
+  { 
+    id: 'os-concepts', 
+    title: 'OS Concepts', 
+    description: 'Deep dive into process management, memory, and file systems.', 
+    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=250&fit=crop', 
+    category: 'Core Knowledge' 
+  },
+  { 
+    id: 'dbms-guide', 
+    title: 'DBMS Guide', 
+    description: 'Master SQL, NoSQL, and database design patterns.', 
+    image: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&h=250&fit=crop', 
+    category: 'SQL & NoSQL' 
+  },
+  { 
+    id: 'practice-hub', 
+    title: 'Practice Hub', 
+    description: 'Interactive peer challenges and real-world coding problems.', 
+    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&h=250&fit=crop', 
+    category: 'Peer Challenges' 
+  }
+];
+
 export default function ResourcesPageClient() {
   const [resources, setResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

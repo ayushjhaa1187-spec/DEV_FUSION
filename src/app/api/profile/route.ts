@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       { data: history },
       { data: badges }
     ] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
       supabase.from('answers').select('*', { count: 'exact', head: true })
         .eq('author_id', user.id),
       supabase.from('answers').select('*', { count: 'exact', head: true })
@@ -32,7 +32,22 @@ export async function GET(req: NextRequest) {
         .eq('user_id', user.id)
     ]);
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('[Profile API] Database connection stability issue:', profileError);
+      return NextResponse.json({ success: false, error: 'Database stability issue. Check your neural link.' }, { status: 500 });
+    }
+
+    if (!profile) {
+      return NextResponse.json({ 
+        success: true, 
+        data: { 
+          profile: { id: user.id, full_name: 'New Scholar', role: 'student' },
+          stats: { answers: 0, accepted: 0, doubts: 0 },
+          history: [],
+          badges: []
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -89,8 +104,10 @@ export async function PATCH(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('profiles')
-      .update(allowed)
-      .eq('id', user.id)
+      .upsert({
+        ...allowed,
+        id: user.id
+      })
       .select()
       .single();
 

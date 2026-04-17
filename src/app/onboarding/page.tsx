@@ -1,6 +1,12 @@
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { Metadata } from 'next';
 import OnboardingClient from './OnboardingClient';
+
+export const metadata: Metadata = {
+  title: 'Onboarding | SkillBridge',
+  description: 'Setup your profile and specialized traits to start your journey.',
+};
 
 export default async function OnboardingPage() {
   const supabase = await createSupabaseServer();
