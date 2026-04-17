@@ -1,228 +1,210 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { motion, useSpring, useMotionValue } from 'framer-motion';
 
-// ── TYPES & CONSTANTS ──
-interface Point { x: number; y: number; id: string; }
-interface ConstellationProps {
-  homeX: number;
-  homeY: number;
-  size: number;
-  starsCount: number;
-  delay: number;
-  mouseX: any;
-  mouseY: any;
-  isBright?: boolean;
-  isSmall?: boolean;
-}
-
-const POSITIONS = [
-  // Top (x, y=6%)
-  { x: 6, y: 6 }, { x: 14, y: 5 }, { x: 24, y: 7 }, { x: 36, y: 6 }, { x: 73, y: 5 }, { x: 84, y: 7 },
-  // Left (x, y)
-  { x: 3, y: 22 }, { x: 5, y: 40 }, { x: 4, y: 58 }, { x: 8, y: 76 },
-  // Right (x, y)
-  { x: 92, y: 25 }, { x: 95, y: 43 }, { x: 93, y: 61 }, { x: 89, y: 79 },
-  // Bottom (x, y)
-  { x: 18, y: 88 }, { x: 47, y: 90 }, { x: 78, y: 87 }
+// ── CONFIG ──
+const CONSTELLATION_CONFIG = [
+  // Top (5)
+  { id: 't1', x: 8, y: 8, size: 100, stars: 8 },
+  { id: 't2', x: 28, y: 6, size: 90, stars: 6 },
+  { id: 't3', x: 50, y: 8, size: 110, stars: 10 },
+  { id: 't4', x: 72, y: 6, size: 90, stars: 6 },
+  { id: 't5', x: 92, y: 8, size: 100, stars: 8 },
+  // Left (4)
+  { id: 'l1', x: 5, y: 25, size: 140, stars: 9 },
+  { id: 'l2', x: 4, y: 45, size: 130, stars: 8 },
+  { id: 'l3', x: 6, y: 65, size: 140, stars: 10 },
+  { id: 'l4', x: 5, y: 85, size: 120, stars: 7 },
+  // Right (4)
+  { id: 'r1', x: 95, y: 25, size: 140, stars: 9 },
+  { id: 'r2', x: 96, y: 45, size: 130, stars: 8 },
+  { id: 'r3', x: 94, y: 65, size: 140, stars: 10 },
+  { id: 'r4', x: 95, y: 85, size: 120, stars: 7 },
+  // Bottom (3)
+  { id: 'b1', x: 20, y: 92, size: 110, stars: 8 },
+  { id: 'b2', x: 50, y: 94, size: 130, stars: 12 },
+  { id: 'b3', x: 80, y: 92, size: 110, stars: 8 }
 ];
 
-// ── HELPER: RANDOM CONSTELLATION GENERATOR ──
-const generateStars = (count: number): Point[] => {
-  return Array.from({ length: count }).map((_, i) => ({
+const REVEAL_START_PX = 200;
+const PEAK_VISIBLE_PX = 80;
+const MAX_OPACITY = 0.85;
+const EXCLUSION_RADIUS_PCT = 22; // Hard center exclusion (44% width/height zone)
+
+// ── HELPER: RANDOM CONSTELLATION NODES ──
+const generateNodes = (count: number) => {
+  const nodes = Array.from({ length: count }).map((_, i) => ({
     x: 10 + Math.random() * 80,
     y: 10 + Math.random() * 80,
-    id: `star-${i}-${Math.random().toString(36).substr(2, 5)}`
   }));
-};
-
-const Constellation: React.FC<ConstellationProps> = ({ 
-  homeX, homeY, size, starsCount, delay, mouseX, mouseY, isBright, isSmall 
-}) => {
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [stars] = useState(() => generateStars(starsCount));
-  
-  // Reposition cycle: 8 to 14 seconds
-  useEffect(() => {
-    const cycle = () => {
-      const range = 40; // 20 to 60px roughly
-      setOffset({
-        x: (Math.random() - 0.5) * range * 2,
-        y: (Math.random() - 0.5) * range * 2
-      });
-      setTimeout(cycle, 8000 + Math.random() * 6000);
-    };
-    const initialTimeout = setTimeout(cycle, delay * 1000);
-    return () => clearTimeout(initialTimeout);
-  }, [delay]);
-
-  // Parallax offset
-  const px = useSpring(0, { stiffness: 50, damping: 20 });
-  const py = useSpring(0, { stiffness: 50, damping: 20 });
-
-  useEffect(() => {
-    return mouseX.on("change", (latest: number) => {
-      const factor = isSmall ? 15 : 30; // Further back layers move less
-      px.set((latest - homeX) * factor * 0.01);
-    });
-  }, [mouseX, homeX, isSmall, px]);
-
-  useEffect(() => {
-    return mouseY.on("change", (latest: number) => {
-      const factor = isSmall ? 15 : 30;
-      py.set((latest - homeY) * factor * 0.01);
-    });
-  }, [mouseY, homeY, isSmall, py]);
-
-  return (
-    <motion.div
-      className={`absolute pointer-events-none ${isSmall ? 'opacity-40' : 'opacity-70'}`}
-      style={{
-        left: `${homeX}%`,
-        top: `${homeY}%`,
-        width: size,
-        height: size,
-        x: offset.x,
-        y: offset.y,
-        translateX: px,
-        translateY: py,
-        transform: 'translate(-50%, -50%)',
-      }}
-      transition={{
-        x: { duration: 10, ease: "linear", repeat: Infinity, repeatType: "alternate" },
-        y: { duration: 12, ease: "linear", repeat: Infinity, repeatType: "alternate" },
-      }}
-    >
-      <svg 
-        viewBox="0 0 100 100" 
-        style={{ 
-          width: '100%', height: '100%',
-          filter: isBright ? 'drop-shadow(0 0 8px rgba(167, 139, 250, 0.4))' : 'none'
-        }}
-      >
-        {/* Connector lines loop */}
-        <motion.path
-          d={`M ${stars[0].x} ${stars[0].y} ${stars.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ')} Z`}
-          fill="none"
-          stroke="rgba(167, 139, 250, 0.2)"
-          strokeWidth="0.5"
-          animate={{ opacity: [0.15, 0.35, 0.15] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        />
-        {/* Individual stars */}
-        {stars.map((star, i) => (
-          <motion.circle
-            key={star.id}
-            cx={star.x}
-            cy={star.y}
-            r={0.8 + Math.random() * 0.8}
-            fill={i % 4 === 0 ? "#a78bfa" : "#fff"}
-            initial={{ opacity: 0.3 + Math.random() * 0.4 }}
-            animate={{ 
-              opacity: [0.3, 1, 0.3],
-              scale: [1, 1.2, 1]
-            }}
-            transition={{
-              duration: 2 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 4
-            }}
-          />
-        ))}
-      </svg>
-    </motion.div>
-  );
+  return nodes;
 };
 
 export default function HeroConstellations() {
   const [mounted, setMounted] = useState(false);
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const constellationsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const cursorRef = useRef({ x: -1000, y: -1000 });
+  const opacityStates = useRef<number[]>(new Array(16).fill(0));
+  const lastVisibleTime = useRef<number[]>(new Array(16).fill(0));
+
+  // Layer 1: Ambient Stars
+  const ambientStars = useMemo(() => Array.from({ length: 60 }).map(() => ({
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    s: 0.5 + Math.random() * 1,
+    o: 0.05 + Math.random() * 0.1
+  })), []);
+
+  // Node data for each constellation
+  const nodeData = useMemo(() => CONSTELLATION_CONFIG.map(c => generateNodes(c.stars)), []);
 
   useEffect(() => {
     setMounted(true);
     const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set((e.clientX / window.innerWidth) * 100);
-      mouseY.set((e.clientY / window.innerHeight) * 100);
+      cursorRef.current = { x: e.clientX, y: e.clientY };
     };
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
 
-  const staticStars = useMemo(() => {
-    return Array.from({ length: 100 }).map((_, i) => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: 0.5 + Math.random() * 1,
-      opacity: 0.1 + Math.random() * 0.4,
-      delay: Math.random() * 5
-    }));
+    let rafId: number;
+    const update = (time: number) => {
+      if (!containerRef.current) return;
+      
+      const rect = containerRef.current.getBoundingClientRect();
+      const cx = cursorRef.current.x - rect.left;
+      const cy = cursorRef.current.y - rect.top;
+      
+      const width = rect.width;
+      const height = rect.height;
+
+      // Hard Center Exclusion Zone Check
+      const centerDistX = Math.abs((cx / width) * 100 - 50);
+      const centerDistY = Math.abs((cy / height) * 100 - 50);
+      const isInExclusionZone = centerDistX < EXCLUSION_RADIUS_PCT && centerDistY < EXCLUSION_RADIUS_PCT;
+
+      CONSTELLATION_CONFIG.forEach((config, i) => {
+        const el = constellationsRef.current[i];
+        if (!el) return;
+
+        const hx = (config.x / 100) * width;
+        const hy = (config.y / 100) * height;
+
+        // Euclidean Distance
+        const dx = cx - hx;
+        const dy = cy - hy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        let targetOpacity = 0;
+        if (!isInExclusionZone) {
+          if (dist < PEAK_VISIBLE_PX) {
+            targetOpacity = MAX_OPACITY;
+          } else if (dist < REVEAL_START_PX) {
+            const factor = 1 - (dist - PEAK_VISIBLE_PX) / (REVEAL_START_PX - PEAK_VISIBLE_PX);
+            targetOpacity = factor * MAX_OPACITY;
+          }
+        }
+
+        // Exit Logic: 200ms hold + 300ms fade
+        let currentOpacity = opacityStates.current[i];
+        
+        if (targetOpacity > 0.1) {
+          lastVisibleTime.current[i] = time;
+          // Fast fade in
+          currentOpacity += (targetOpacity - currentOpacity) * 0.15;
+        } else {
+          const timeSinceVisible = time - lastVisibleTime.current[i];
+          if (timeSinceVisible > 200) { // Hold finished
+            // Slow fade out
+            currentOpacity *= 0.92; 
+            if (currentOpacity < 0.01) currentOpacity = 0;
+          }
+        }
+
+        opacityStates.current[i] = currentOpacity;
+        
+        // Apply Style Directly
+        el.style.opacity = currentOpacity.toString();
+        
+        // Active drift/twinkle logic (CSS handle)
+        if (currentOpacity > 0.2) {
+          el.classList.add('is-active');
+        } else {
+          el.classList.remove('is-active');
+        }
+
+        // Parallax: slight shift
+        const pFactor = 0.02;
+        el.style.transform = `translate(${(cx - hx) * pFactor}px, ${(cy - hy) * pFactor}px) translate(-50%, -50%)`;
+      });
+
+      rafId = requestAnimationFrame(update);
+    };
+
+    rafId = requestAnimationFrame(update);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(rafId);
+    };
   }, []);
 
   if (!mounted) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-      {/* ── LAYER 1: STATIC BACKGROUND STARS ── */}
-      <div className="absolute inset-0 z-0">
-        {staticStars.map((s, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              left: `${s.x}%`,
-              top: `${s.y}%`,
-              width: s.size,
-              height: s.size,
-              opacity: s.opacity,
-            }}
-            animate={{ opacity: [s.opacity, s.opacity * 2, s.opacity] }}
-            transition={{ duration: 3 + s.delay, repeat: Infinity }}
+    <div ref={containerRef} className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+      {/* ── LAYER 1: AMBIENT STATIC STARS ── */}
+      <div className="absolute inset-0 opacity-40">
+        {ambientStars.map((s, i) => (
+          <div 
+            key={i} 
+            className="absolute rounded-full bg-white" 
+            style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.s, height: s.s, opacity: s.o }} 
           />
         ))}
       </div>
 
-      {/* ── LAYER 3: BLURRED GLOWS (Outer Edges) ── */}
-      <div className="absolute inset-0 z-1 hide-mobile">
-        <div className="absolute top-[10%] left-[5%] w-[400px] height-[400px] rounded-full bg-violet-600/5 blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[20%] right-[10%] w-[500px] height-[500px] rounded-full bg-emerald-600/5 blur-[150px] animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
-
       {/* ── LAYER 2: INTERACTIVE CONSTELLATIONS ── */}
-      <div className="absolute inset-0 z-2">
-        {POSITIONS.map((pos, idx) => {
-          // Logic for size and brightness based on position
-          const isNearNav = pos.y < 15;
-          const isNearCTA = pos.x > 40 && pos.x < 60 && pos.y > 50 && pos.y < 80;
-          const isNearStats = pos.y > 80;
-          const isSide = pos.x < 15 || pos.x > 85;
-
-          return (
-            <div key={idx} className={idx > 9 ? 'hide-mobile' : ''}>
-              <Constellation
-                homeX={pos.x}
-                homeY={pos.y}
-                size={isSide ? 140 : isNearNav ? 80 : 110}
-                starsCount={isNearStats ? 12 : 7}
-                delay={idx * 0.2}
-                mouseX={mouseX}
-                mouseY={mouseY}
-                isBright={isNearCTA}
-                isSmall={isNearNav}
+      <div className="absolute inset-0">
+        {CONSTELLATION_CONFIG.map((config, i) => (
+          <div
+            key={config.id}
+            ref={el => { constellationsRef.current[i] = el; }}
+            className="constellation-wrapper"
+            style={{
+              left: `${config.x}%`,
+              top: `${config.y}%`,
+              width: config.size,
+              height: config.size,
+              opacity: 0
+            }}
+          >
+            <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+              <path
+                d={`M ${nodeData[i][0].x} ${nodeData[i][0].y} ${nodeData[i].slice(1).map(n => `L ${n.x} ${n.y}`).join(' ')} Z`}
+                fill="none"
+                stroke="rgba(167, 139, 250, 0.2)"
+                strokeWidth="0.5"
+                className="connector-line"
               />
-            </div>
-          );
-        })}
+              {nodeData[i].map((node, ni) => (
+                <circle
+                  key={ni}
+                  cx={node.x}
+                  cy={node.y}
+                  r={0.8 + Math.random() * 0.4}
+                  fill={ni % 3 === 0 ? "#a78bfa" : "#fff"}
+                  className="star-node"
+                />
+              ))}
+            </svg>
+          </div>
+        ))}
       </div>
 
-      {/* Safe Area Exclusion Mask (Radial Gradient) */}
-      <div 
-        className="absolute inset-0 z-10 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at 50% 50%, transparent 0%, transparent 40%, rgba(9, 9, 15, 0.1) 60%, rgba(9, 9, 15, 0.4) 100%)'
-        }}
-      />
+      {/* ── EXTRA GLOWS (Edges) ── */}
+      <div className="absolute inset-0 z-[-1] hide-mobile">
+        <div className="absolute top-[5%] left-[-5%] w-[400px] h-[400px] bg-violet-600/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-10 right-[-5%] w-[500px] h-[500px] bg-emerald-600/5 blur-[150px] rounded-full" />
+      </div>
     </div>
   );
 }
