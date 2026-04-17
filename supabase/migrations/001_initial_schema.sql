@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS badges (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE user_badges (
+CREATE TABLE IF NOT EXISTS user_badges (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   badge_id UUID REFERENCES badges(id) ON DELETE CASCADE,
