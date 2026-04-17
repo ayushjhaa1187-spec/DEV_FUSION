@@ -70,7 +70,9 @@ Subject Context: "${body.subject}"`;
 
     return NextResponse.json({ 
       success: true, 
-      analysis: text,
+      data: {
+        analysis: text
+      },
       balance: creditCheck.balance - 1
     });
 

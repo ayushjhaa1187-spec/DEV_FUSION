@@ -73,15 +73,17 @@ export default function AIFloatingAssistant() {
       const data = resData.data;
       let aiContent = '';
       
-      if (typeof data === 'string') {
+      if (!data) {
+        aiContent = 'The AI engine returned an empty response. Please try clarifying your question.';
+      } else if (typeof data === 'string') {
         aiContent = data;
-      } else if (data.explanation) {
-        aiContent = data.explanation;
-        if (data.steps && data.steps.length > 0) {
+      } else if (data.analysis || data.explanation) {
+        aiContent = data.analysis || data.explanation;
+        if (data.steps && Array.isArray(data.steps) && data.steps.length > 0) {
           aiContent += '\n\n**Resolution Steps:**\n' + data.steps.map((s: string, i: number) => `${i + 1}. ${s}`).join('\n');
         }
       } else {
-        aiContent = 'No response generated.';
+        aiContent = 'I processed your request but couldn\'t synthesize a structured answer. Please try again.';
       }
 
       setMessages(prev => [...prev, { role: 'ai', content: aiContent }]);

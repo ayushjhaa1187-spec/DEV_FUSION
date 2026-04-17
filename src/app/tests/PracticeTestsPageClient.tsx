@@ -12,7 +12,7 @@ import {
   BrainCircuit, Lock, ArrowRight, Timer, 
   ChevronRight, Trophy, Sparkles, BookOpen, 
   Target, BarChart3, AlertCircle, CheckCircle2,
-  Clock, History as HistoryIcon, Layout, Filter, X
+  Clock, History as HistoryIcon, Layout, Filter, X, Award
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
@@ -225,7 +225,7 @@ export default function PracticeTestsPageClient() {
     );
   }
 
-  const filteredHistory = history.filter(h => 
+  const filteredHistory = (history || []).filter(h => 
     filterSubjectId === 'all' || h.subject_id === filterSubjectId
   );
 
