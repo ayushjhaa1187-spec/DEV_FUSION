@@ -16,7 +16,9 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}, time
     const json = await response.json().catch(() => ({ success: false, error: `Server error (${response.status})` }));
     
     if (!response.ok) {
-       throw new Error(json.error || json.message || `HTTP ${response.status}`);
+       const error: any = new Error(json.error || json.message || `HTTP ${response.status}`);
+       error.status = response.status;
+       throw error;
     }
 
     // Auto-unwrap standardized { success: true, data: ... } responses

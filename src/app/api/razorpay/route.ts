@@ -36,9 +36,15 @@ export async function POST(req: NextRequest) {
       }
     };
 
-    const order = await getRazorpayClient().orders.create(options);
+    const order = await razorpay.orders.create(options);
 
-    return NextResponse.json(order);
+    return NextResponse.json({
+      ...order,
+      order_id: order.id, // Compatibility for frontend
+      key_id: process.env.RAZORPAY_KEY_ID,
+      currency: order.currency || 'INR',
+      amount: order.amount
+    });
   } catch (error: any) {
     console.error('Razorpay Order Error:', error);
     return NextResponse.json({ error: error.message || 'Payment service error' }, { status: 500 });

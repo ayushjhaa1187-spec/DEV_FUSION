@@ -96,6 +96,7 @@ export default function DoubtsPageClient() {
       if (activeSubject) params.subject_id = activeSubject;
       if (filterType === 'unanswered') params.filter = 'unanswered';
       if (filterType === 'my-branch' && userProfile?.branch) params.branch = userProfile.branch;
+      if (filterType === 'my-semester' && userProfile?.semester) params.semester = userProfile.semester;
       if (filterType === 'my-subjects' && userSubjects.length > 0) params.filter = 'my_subjects';
       if (searchQuery.trim()) params.q = searchQuery.trim();
 
@@ -153,6 +154,7 @@ export default function DoubtsPageClient() {
     { key: 'trending', label: 'Trending', icon: <TrendingUp size={14} /> },
     { key: 'unanswered', label: 'Unanswered', icon: <Filter size={14} /> },
     ...(userProfile?.branch ? [{ key: 'my-branch', label: 'My Branch', icon: <Sparkles size={14} /> }] : []),
+    ...(userProfile?.semester ? [{ key: 'my-semester', label: `Sem ${userProfile.semester}`, icon: <Target size={14} /> }] : []),
   ];
 
   return (
@@ -222,9 +224,21 @@ export default function DoubtsPageClient() {
                   <Link href={`/doubts/${doubt.id}`} className="sb-card !p-0 h-full flex flex-col group relative overflow-hidden shadow-premium">
                     <div className="p-8 pb-0">
                       <div className="flex items-center justify-between mb-8">
-                        <span className="px-4 py-1.5 rounded-xl bg-violet-500/10 text-violet-400 text-[10px] font-black uppercase tracking-widest border border-violet-500/20">
-                          {doubt.subjects?.name || 'General'}
-                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="px-4 py-1.5 rounded-xl bg-violet-500/10 text-violet-400 text-[10px] font-black uppercase tracking-widest border border-violet-500/20">
+                            {doubt.subjects?.name || 'General'}
+                          </span>
+                          {doubt.branch && (
+                            <span className="px-3 py-1.5 rounded-xl bg-white/5 text-gray-500 text-[10px] font-black uppercase tracking-widest border border-white/5">
+                              {doubt.branch}
+                            </span>
+                          )}
+                          {doubt.semester && (
+                            <span className="px-3 py-1.5 rounded-xl bg-white/5 text-gray-500 text-[10px] font-black uppercase tracking-widest border border-white/5">
+                              Sem {doubt.semester}
+                            </span>
+                          )}
+                        </div>
                         {doubt.status === 'resolved' && <CheckCircle2 size={16} className="text-emerald-500" />}
                       </div>
 

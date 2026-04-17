@@ -76,10 +76,12 @@ export async function GET(req: NextRequest) {
   const filter      = searchParams.get('filter')   || 'all';
   const subjectId   = searchParams.get('subject_id');
   const search      = searchParams.get('q') || searchParams.get('search');
+  const branch      = searchParams.get('branch');
+  const semester    = searchParams.get('semester');
   const page        = Math.max(1, parseInt(searchParams.get('page') || '1'));
   const limit       = 20;
   const offset      = (page - 1) * limit;
-
+ 
   let query = supabase
     .from('doubts')
     .select(`
@@ -88,8 +90,10 @@ export async function GET(req: NextRequest) {
       subjects (id, name),
       answers ( id )
     `, { count: 'exact' });
-
+ 
   if (subjectId)  query = query.eq('subject_id', subjectId);
+  if (branch)     query = query.eq('branch', branch);
+  if (semester)   query = query.eq('semester', parseInt(semester));
   if (search)     query = query.or(`title.ilike.%${search}%,content_markdown.ilike.%${search}%`);
 
   if (filter === 'unanswered') {

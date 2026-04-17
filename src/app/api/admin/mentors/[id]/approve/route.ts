@@ -55,12 +55,18 @@ export async function POST(
         .update({ role: 'mentor' })
         .eq('id', id);
 
+      // Specialty extraction
+      const expertiseArr = typeof appData.expertise === 'string' 
+        ? JSON.parse(appData.expertise || '[]') 
+        : (appData.expertise || []);
+      const specialty = expertiseArr[0] || 'Domain Expert';
+
       // Initialize/Update mentor profile with data from application
       const { error: mentorProfileError } = await supabase
         .from('mentor_profiles')
         .upsert({
           id: id,
-          specialty: appData.expertise?.[0] || 'Domain Expert',
+          specialty: specialty,
           bio: appData.bio,
           linkedin_url: appData.linkedin_url,
           github_url: appData.github_url,
