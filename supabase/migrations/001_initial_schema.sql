@@ -8,22 +8,23 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. Profiles Table
 CREATE TABLE IF NOT EXISTS profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  username TEXT UNIQUE,
-  full_name TEXT,
-  email TEXT UNIQUE,
-  avatar_url TEXT,
-  role TEXT DEFAULT 'student' CHECK (role IN ('student', 'mentor', 'admin')),
-  college TEXT,
-  branch TEXT,
-  semester INT CHECK (semester BETWEEN 1 AND 8),
-  bio TEXT,
-  social_links JSONB DEFAULT '{}',
-  reputation_points INT DEFAULT 0,
-  login_streak INT DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE
 );
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email TEXT UNIQUE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'student' CHECK (role IN ('student', 'mentor', 'admin'));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS college TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS branch TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS semester INT CHECK (semester BETWEEN 1 AND 8);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS social_links JSONB DEFAULT '{}';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS reputation_points INT DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS login_streak INT DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- 2. Subjects Table
 CREATE TABLE IF NOT EXISTS subjects (
@@ -36,22 +37,22 @@ CREATE TABLE IF NOT EXISTS subjects (
 
 -- 3. Doubts Table
 CREATE TABLE IF NOT EXISTS doubts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  author_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  subject_id UUID REFERENCES subjects(id),
-  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'closed')),
-  source_type TEXT DEFAULT 'manual' CHECK (source_type IN ('manual', 'ai_escalated')),
-  accepted_answer_id UUID,
-  answer_count INT DEFAULT 0,
-  votes INT DEFAULT 0,
-  views_count INT DEFAULT 0,
-  academic_context_snapshot JSONB DEFAULT '{}',
-  last_activity_at TIMESTAMPTZ DEFAULT NOW(),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4()
 );
+
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS author_id UUID REFERENCES profiles(id) ON DELETE CASCADE;
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT 'Untitled Doubt';
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '';
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS subject_id UUID REFERENCES subjects(id);
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'closed'));
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS source_type TEXT DEFAULT 'manual' CHECK (source_type IN ('manual', 'ai_escalated'));
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS answer_count INT DEFAULT 0;
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS votes INT DEFAULT 0;
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS views_count INT DEFAULT 0;
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS academic_context_snapshot JSONB DEFAULT '{}';
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE doubts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- 4. Answers Table
 CREATE TABLE IF NOT EXISTS answers (
@@ -99,20 +100,21 @@ CREATE TABLE IF NOT EXISTS ai_attempts (
 
 -- 7. Mentor Profiles
 CREATE TABLE IF NOT EXISTS mentor_profiles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
-  headline TEXT,
-  bio TEXT,
-  specialty TEXT,
-  subjects TEXT[],
-  verification_status TEXT DEFAULT 'pending' CHECK (verification_status IN ('pending', 'approved', 'rejected')),
-  hourly_rate INT DEFAULT 0,
-  rating_avg DECIMAL(3,2) DEFAULT 0,
-  rating_count INT DEFAULT 0,
-  sessions_completed INT DEFAULT 0,
-  is_free_session_available BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4()
 );
+
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES profiles(id) ON DELETE CASCADE UNIQUE;
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS headline TEXT;
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS bio TEXT;
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS specialty TEXT;
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS subjects TEXT[];
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS verification_status TEXT DEFAULT 'pending' CHECK (verification_status IN ('pending', 'approved', 'rejected'));
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS hourly_rate INT DEFAULT 0;
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS rating_avg DECIMAL(3,2) DEFAULT 0;
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS rating_count INT DEFAULT 0;
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS sessions_completed INT DEFAULT 0;
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS is_free_session_available BOOLEAN DEFAULT FALSE;
+ALTER TABLE mentor_profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
 -- 8. Mentor Slots
 CREATE TABLE IF NOT EXISTS mentor_slots (
