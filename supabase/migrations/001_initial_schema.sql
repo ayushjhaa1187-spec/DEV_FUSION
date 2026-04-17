@@ -7,7 +7,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. Profiles Table
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username TEXT UNIQUE,
   full_name TEXT,
@@ -26,7 +26,7 @@ CREATE TABLE profiles (
 );
 
 -- 2. Subjects Table
-CREATE TABLE subjects (
+CREATE TABLE IF NOT EXISTS subjects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT UNIQUE NOT NULL,
   slug TEXT UNIQUE NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE subjects (
 );
 
 -- 3. Doubts Table
-CREATE TABLE doubts (
+CREATE TABLE IF NOT EXISTS doubts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   author_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE doubts (
 );
 
 -- 4. Answers Table
-CREATE TABLE answers (
+CREATE TABLE IF NOT EXISTS answers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   doubt_id UUID REFERENCES doubts(id) ON DELETE CASCADE,
   author_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -71,7 +71,7 @@ CREATE TABLE answers (
 ALTER TABLE doubts ADD CONSTRAINT fk_accepted_answer FOREIGN KEY (accepted_answer_id) REFERENCES answers(id) ON DELETE SET NULL;
 
 -- 5. Answer Votes
-CREATE TABLE answer_votes (
+CREATE TABLE IF NOT EXISTS answer_votes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   answer_id UUID REFERENCES answers(id) ON DELETE CASCADE,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -81,7 +81,7 @@ CREATE TABLE answer_votes (
 );
 
 -- 6. AI Attempts
-CREATE TABLE ai_attempts (
+CREATE TABLE IF NOT EXISTS ai_attempts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   question_text TEXT NOT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE ai_attempts (
 );
 
 -- 7. Mentor Profiles
-CREATE TABLE mentor_profiles (
+CREATE TABLE IF NOT EXISTS mentor_profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
   headline TEXT,
@@ -114,7 +114,7 @@ CREATE TABLE mentor_profiles (
 );
 
 -- 8. Mentor Slots
-CREATE TABLE mentor_slots (
+CREATE TABLE IF NOT EXISTS mentor_slots (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   mentor_id UUID REFERENCES mentor_profiles(id) ON DELETE CASCADE,
   start_time TIMESTAMPTZ NOT NULL,
@@ -125,7 +125,7 @@ CREATE TABLE mentor_slots (
 );
 
 -- 9. Bookings
-CREATE TABLE bookings (
+CREATE TABLE IF NOT EXISTS bookings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   student_id UUID REFERENCES profiles(id),
   mentor_id UUID REFERENCES mentor_profiles(id),
@@ -143,7 +143,7 @@ CREATE TABLE bookings (
 );
 
 -- 10. Tests
-CREATE TABLE tests (
+CREATE TABLE IF NOT EXISTS tests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   subject_id UUID REFERENCES subjects(id),
@@ -156,7 +156,7 @@ CREATE TABLE tests (
 );
 
 -- 11. Test Questions
-CREATE TABLE test_questions (
+CREATE TABLE IF NOT EXISTS test_questions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   test_id UUID REFERENCES tests(id) ON DELETE CASCADE,
   prompt TEXT NOT NULL,
@@ -168,7 +168,7 @@ CREATE TABLE test_questions (
 );
 
 -- 12. Test Submissions
-CREATE TABLE test_submissions (
+CREATE TABLE IF NOT EXISTS test_submissions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   test_id UUID REFERENCES tests(id) ON DELETE CASCADE,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -182,7 +182,7 @@ CREATE TABLE test_submissions (
 );
 
 -- 13. Reputation Ledger
-CREATE TABLE reputation_ledger (
+CREATE TABLE IF NOT EXISTS reputation_ledger (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   event_type TEXT NOT NULL,
@@ -194,7 +194,7 @@ CREATE TABLE reputation_ledger (
 );
 
 -- 14. Badges
-CREATE TABLE badges (
+CREATE TABLE IF NOT EXISTS badges (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT UNIQUE NOT NULL,
   description TEXT,
@@ -214,7 +214,7 @@ CREATE TABLE user_badges (
 );
 
 -- 15. Notifications
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   type TEXT NOT NULL,
@@ -274,15 +274,15 @@ ALTER TABLE badges ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Badges viewable" ON badges FOR SELECT USING (true);
 
 -- 17. Indexes
-CREATE INDEX idx_doubts_subject ON doubts(subject_id);
-CREATE INDEX idx_doubts_author ON doubts(author_id);
-CREATE INDEX idx_doubts_created ON doubts(created_at DESC);
-CREATE INDEX idx_answers_doubt ON answers(doubt_id);
-CREATE INDEX idx_answers_author ON answers(author_id);
-CREATE INDEX idx_reputation_user ON reputation_ledger(user_id);
-CREATE INDEX idx_notifications_user ON notifications(user_id, is_read);
-CREATE INDEX idx_profiles_reputation ON profiles(reputation_points DESC);
-CREATE INDEX idx_profiles_branch ON profiles(branch);
+CREATE INDEX IF NOT EXISTS idx_doubts_subject ON doubts(subject_id);
+CREATE INDEX IF NOT EXISTS idx_doubts_author ON doubts(author_id);
+CREATE INDEX IF NOT EXISTS idx_doubts_created ON doubts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_answers_doubt ON answers(doubt_id);
+CREATE INDEX IF NOT EXISTS idx_answers_author ON answers(author_id);
+CREATE INDEX IF NOT EXISTS idx_reputation_user ON reputation_ledger(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_profiles_reputation ON profiles(reputation_points DESC);
+CREATE INDEX IF NOT EXISTS idx_profiles_branch ON profiles(branch);
 
 -- 18. Auto-create profile on signup
 CREATE OR REPLACE FUNCTION handle_new_user()
