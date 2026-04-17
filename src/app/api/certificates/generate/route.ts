@@ -40,7 +40,10 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Eligibility Check
-  // Certificates are free for Pro/Elite users. Free users must pay ₹99 per certificate.
+  // Tiered Pricing: 
+  // - Pro/Elite: All Free
+  // - Campus/Institutional: All Free
+  // - Free Tier: "Standard" is Free, "Professional" is ₹42.
   const { data: sub } = await supabase
     .from("subscriptions")
     .select("plan")
@@ -49,12 +52,15 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   const isPro = ["pro", "elite", "campus_pro", "campus_enterprise", "institutional"].includes(sub?.plan || "");
+  const isPremiumCert = body.certType === "domain" || body.certType === "mentor_reviewed" || body.score >= 90;
 
-  if (!isPro && !body.razorpayPaymentId) {
+  // If a standard student wants a premium certificate, they must pay ₹42
+  if (!isPro && isPremiumCert && !body.razorpayPaymentId) {
     return NextResponse.json({
       error: "payment_required",
-      message: "Free tier users must complete payment to issue certificates.",
-      checkoutUrl: "/payment/certificate-fee"
+      message: "Professional Domain Certification requires a validation fee of ₹42.",
+      price: 42,
+      checkoutUrl: `/payment/certificate-fee?id=${verificationHash}`
     }, { status: 402 });
   }
 

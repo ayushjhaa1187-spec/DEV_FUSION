@@ -98,10 +98,46 @@ export default function PracticeTestsPageClient() {
       setLastResult(data);
       setView('result');
       testApi.getHistory().then(setHistory);
+
+      // Auto-award reputation for passing
+      if (data.score >= 80) {
+        leaderboardApi.getTop(10).then(res => {
+          if (res?.entries) setGlobalLeaderboard(res.entries);
+        });
+      }
     } catch (err) {
       console.error('Submission failed', err);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const [isIssuing, setIsIssuing] = useState(false);
+  const handleClaimCertificate = async () => {
+    if (!lastResult || isIssuing) return;
+    setIsIssuing(true);
+    try {
+      const res = await apiFetch('/api/certificates/generate', {
+        method: 'POST',
+        body: JSON.stringify({
+          subject: subjects.find(s => s.id === selectedSubjectId)?.name || 'Subject Expert',
+          score: lastResult.score,
+          certType: lastResult.score >= 90 ? 'domain' : 'subject'
+        })
+      });
+
+      if (res.success) {
+        router.push('/dashboard/certificates');
+      }
+    } catch (err: any) {
+      if (err.message.includes('payment_required')) {
+        // Handle payment flow (₹42 for free users)
+        router.push('/upgrade?plan=professional_cert'); // Unified upgrade path
+      } else {
+        alert(err.message || 'Issuance failed');
+      }
+    } finally {
+      setIsIssuing(false);
     }
   };
 
@@ -533,9 +569,28 @@ export default function PracticeTestsPageClient() {
                 <h2 className="text-4xl font-extrabold text-white mb-3">
                   {lastResult.score >= 80 ? 'Exceptional Performance!' : lastResult.score >= 50 ? 'Strong Foundation!' : 'Practice Makes Perfect!'}
                 </h2>
-                <p className="text-gray-400 max-w-sm mb-10">
+                <p className="text-gray-400 max-w-sm mx-auto mb-10 leading-relaxed">
                   You answered <strong className="text-indigo-400">{lastResult.correct} questions</strong> correctly. Continue your trajectory to achieve mastery.
                 </p>
+
+                {lastResult.score >= 80 && (
+                  <div className="bg-indigo-500/10 border border-indigo-500/20 p-8 rounded-[40px] mb-12 max-w-lg mx-auto relative overflow-hidden group">
+                     <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:rotate-12 transition-transform">
+                        <Award size={80} />
+                     </div>
+                     <div className="relative z-10">
+                        <h4 className="text-xl font-black text-white mb-2">Certification Eligible!</h4>
+                        <p className="text-gray-500 text-xs font-medium mb-6">Your score qualifies for a verified digital certificate on the SkillBridge registry.</p>
+                        <button 
+                          onClick={handleClaimCertificate}
+                          disabled={isIssuing}
+                          className="w-full py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-xl flex items-center justify-center gap-2"
+                        >
+                          {isIssuing ? 'Securing Registry...' : 'Issue & Secure Certificate'} <CheckCircle2 size={16} />
+                        </button>
+                     </div>
+                  </div>
+                )}
              </div>
 
              <div className="flex flex-col md:flex-row gap-4 w-full max-w-md">

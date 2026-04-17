@@ -76,11 +76,14 @@ export default function CoursesPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {cat.courses.map(course => (
                     <Link 
-                      href={`/courses/${course.toLowerCase().replace(/ /g, '-')}`} 
+                      href={`/tests?target=${course.toLowerCase().replace(/ /g, '-')}`} 
                       key={course}
-                      className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group/item"
+                      className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-indigo-500/30 transition-all group/item"
                     >
-                      <span className="font-bold text-gray-300 group-hover/item:text-white transition-colors">{course}</span>
+                      <div>
+                        <span className="block font-bold text-gray-300 group-hover/item:text-white transition-colors">{course}</span>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-indigo-400 group-hover/item:text-indigo-300">Take Final Exam</span>
+                      </div>
                       <ChevronRight size={16} className="text-gray-600 group-hover/item:text-indigo-400 transition-colors" />
                     </Link>
                   ))}

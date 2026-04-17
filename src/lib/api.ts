@@ -110,3 +110,9 @@ export const leaderboardApi = {
   getTop: (limit: number = 10) => apiFetch(`/api/leaderboard?limit=${limit}&timeframe=allTime`),
   getWeekly: (limit: number = 10) => apiFetch(`/api/leaderboard?limit=${limit}&timeframe=weekly`),
 };
+
+export const certificateApi = {
+  generate: (data: { subject: string; score: number; certType: string; razorpayPaymentId?: string }) => 
+    apiFetch('/api/certificates/generate', { method: 'POST', body: JSON.stringify(data) }),
+  getMyCertificates: () => apiFetch('/api/dashboard/certificates'), // This will likely reach the page's fetch logic or a dedicated route
+};
