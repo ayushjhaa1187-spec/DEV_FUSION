@@ -7,10 +7,12 @@ export default function AdminApplicationsPageClient() {
   const [apps, setApps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const supabase = createSupabaseBrowser();
 
   useEffect(() => {
     async function checkAdminAndLoad() {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -25,13 +27,14 @@ export default function AdminApplicationsPageClient() {
         const { data } = await supabase
           .from('mentor_applications')
           .select('*, profiles(username, full_name, avatar_url, reputation_points)')
-          .eq('status', 'pending');
+          .eq('status', filter)
+          .order('created_at', { ascending: false });
         setApps(data || []);
       }
       setLoading(false);
     }
     checkAdminAndLoad();
-  }, []);
+  }, [filter]);
 
   const handleAction = async (userId: string, status: 'approved' | 'rejected') => {
     try {
@@ -75,6 +78,23 @@ export default function AdminApplicationsPageClient() {
           <h1 className="text-4xl font-black font-heading tracking-tighter mb-4">Mentor <span>Vetting</span></h1>
           <p className="text-gray-500 font-medium">Review and approve applications for the next generation of SkillBridge mentors.</p>
         </header>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-4 mb-12 bg-white/5 p-1.5 rounded-2xl w-fit">
+          {(['pending', 'approved', 'rejected'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                filter === s 
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' 
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              {s} ({apps.length && filter === s ? apps.length : (s === 'pending' ? '...' : '0+')})
+            </button>
+          ))}
+        </div>
         
         {apps.length === 0 ? (
           <div className="bg-[#13132b] border border-dashed border-white/10 p-20 text-center rounded-[40px]">
@@ -97,15 +117,26 @@ export default function AdminApplicationsPageClient() {
                 <div className="mb-10 flex-1">
                   <label className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-4 block">Expertise Areas</label>
                   <div className="flex flex-wrap gap-2">
-                    {app.expertise_areas?.map((ex: string) => (
+                    {/* Handle both expertise and expertise_areas for backward compatibility */}
+                    {(app.expertise_areas || (typeof app.expertise === 'string' ? JSON.parse(app.expertise || '[]') : app.expertise))?.map((ex: string) => (
                       <span key={ex} className="px-3 py-1 bg-white/5 border border-white/5 rounded-full text-[10px] font-black uppercase tracking-widest text-gray-400">{ex}</span>
                     ))}
                   </div>
                 </div>
 
                 <div className="flex gap-4 pt-8 border-t border-white/5">
-                  <button onClick={() => handleAction(app.user_id, 'approved')} className="flex-1 py-4 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-500 hover:text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Approve</button>
-                  <button onClick={() => handleAction(app.user_id, 'rejected')} className="flex-1 py-4 bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Reject</button>
+                  {filter === 'pending' ? (
+                    <>
+                      <button onClick={() => handleAction(app.user_id, 'approved')} className="flex-1 py-4 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-500 hover:text-white rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Approve</button>
+                      <button onClick={() => handleAction(app.user_id, 'rejected')} className="flex-1 py-4 bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-500 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all">Reject</button>
+                    </>
+                  ) : (
+                    <div className={`flex-1 py-4 text-center rounded-xl font-black uppercase tracking-widest text-[10px] border ${
+                      filter === 'approved' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-500' : 'bg-red-500/5 border-red-500/20 text-red-500'
+                    }`}>
+                      Application {filter}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
