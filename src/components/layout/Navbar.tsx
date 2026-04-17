@@ -163,15 +163,18 @@ export default function Navbar() {
                           <p className={styles.dropdownEmail}>{user?.email}</p>
                         </div>
                         <div className={styles.divider} />
+                        <Link href="/dashboard" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>
+                           Dashboard Central
+                        </Link>
                         <Link href="/billing" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>
                            Billing & Plans
                         </Link>
                         <Link href="/settings" className={styles.dropdownItem} onClick={() => setIsProfileOpen(false)}>
-                           Identity Profile
+                           Settings
                         </Link>
                         <div className={styles.divider} />
                         <button className={`${styles.dropdownItem} ${styles.logout}`} onClick={() => { signOut(); setIsProfileOpen(false); }}>
-                          Logout
+                          Logout System
                         </button>
                       </motion.div>
                     )}

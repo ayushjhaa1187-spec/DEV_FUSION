@@ -10,7 +10,7 @@ export const getGeminiApiKey = () =>
 
 // Canonical stable model names for production
 export const PRIMARY_MODEL = 'gemini-1.5-flash'; 
-export const FALLBACK_MODEL = 'gemini-1.5-flash-8b';
+export const FALLBACK_MODEL = 'gemini-1.5-flash';
 
 /**
  * Returns the configured Gemini AI instance.

@@ -70,6 +70,8 @@ export default function AskDoubtPageClient() {
       });
       setAiAnalysis(analysis);
       setStep(2);
+      // Log momentum activity
+      try { aiApi.logActivity(); } catch (e) { console.warn('Activity log failed', e); }
       fetchUsage(); // Refresh usage after successful solve
     } catch (err: any) {
       setError('AI analysis failed. You can skip to community post.');
@@ -92,6 +94,8 @@ export default function AskDoubtPageClient() {
       };
 
       await doubtApi.createDoubt(payload);
+      // Log momentum activity
+      try { aiApi.logActivity(); } catch (e) { console.warn('Activity log failed', e); }
       setStep(3);
       setTimeout(() => router.push('/doubts'), 2000);
     } catch (err: any) {

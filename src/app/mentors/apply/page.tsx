@@ -36,7 +36,8 @@ export default function MentorApplyPage() {
     linkedin_url: '',
     github_url: '',
     sample_work_url: '',
-    availability_type: 'weekdays'
+    availability_type: 'weekdays',
+    work_mode: 'independent'
   });
 
   useEffect(() => {
@@ -282,6 +283,28 @@ export default function MentorApplyPage() {
                     </select>
                     <div className="mt-2 text-[10px] text-gray-600 font-bold ml-1">
                       This helps us recommend you for the right sessions.
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-widest text-gray-500 mb-3 ml-1">Collaborative Preference</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button 
+                        type="button"
+                        onClick={() => setFormData({...formData, work_mode: 'independent'})}
+                        className={`p-4 rounded-2xl border text-center transition-all ${formData.work_mode === 'independent' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                      >
+                         <span className="block text-xs font-black uppercase tracking-widest mb-1">Independent</span>
+                         <span className="text-[10px] opacity-60">Teach solo</span>
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setFormData({...formData, work_mode: 'organization'})}
+                        className={`p-4 rounded-2xl border text-center transition-all ${formData.work_mode === 'organization' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                      >
+                         <span className="block text-xs font-black uppercase tracking-widest mb-1">Organization</span>
+                         <span className="text-[10px] opacity-60">Join a team</span>
+                      </button>
                     </div>
                   </div>
                 </div>

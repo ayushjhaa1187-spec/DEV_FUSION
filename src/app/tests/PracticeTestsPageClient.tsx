@@ -113,6 +113,9 @@ export default function PracticeTestsPageClient() {
       const testData = await testApi.generate({ subject_id: selectedSubjectId, topic });
       setTest(testData);
       
+      // Log momentum activity
+      try { aiApi.logActivity(); } catch (e) { console.warn('Activity log failed', e); }
+      
       // 2. Initial Attempt
       const startData = await testApi.start(testData.id);
       setAttempt(startData.attempt);
@@ -238,14 +241,17 @@ export default function PracticeTestsPageClient() {
                   <div className="space-y-6">
                     <div>
                       <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Academic Subject</label>
-                      <select 
-                        value={selectedSubjectId}
-                        onChange={(e) => setSelectedSubjectId(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none appearance-none cursor-pointer"
-                      >
-                        <option value="">Select a subject...</option>
-                        {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
+                      <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2 sb-scrollbar">
+                        {subjects.map(s => (
+                          <button 
+                            key={s.id}
+                            onClick={() => setSelectedSubjectId(s.id)}
+                            className={`p-4 rounded-2xl border text-sm font-bold transition-all text-left ${selectedSubjectId === s.id ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg' : 'bg-white/5 border-white/10 text-gray-500 hover:text-white hover:bg-white/10'}`}
+                          >
+                            {s.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div>

@@ -278,3 +278,24 @@ h1, h2, h3, .font-display {
   );
   animation: shimmer 1.5s infinite;
 }
+
+/* 🧬 Dynamic Grid Utilities for Momentum Pulse */
+.grid-cols-15 { grid-template-columns: repeat(15, minmax(0, 1fr)); }
+.grid-cols-30 { grid-template-columns: repeat(30, minmax(0, 1fr)); }
+
+/* 🌊 Modern Scrollbar */
+.sb-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.sb-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+.sb-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+}
+.sb-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4);
+}
+
