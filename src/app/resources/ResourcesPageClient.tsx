@@ -60,11 +60,11 @@ export default function ResourcesPageClient() {
         .range(from, to);
 
       // Simple type filtering based on tab
-      if (activeTab === 'notes') {
+      /* if (activeTab === 'notes') {
         query = query.eq('resource_type', 'note');
       } else {
         query = query.eq('resource_type', 'video');
-      }
+      } */
 
       const { data, error } = await query;
       

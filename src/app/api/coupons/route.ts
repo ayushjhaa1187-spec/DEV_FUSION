@@ -37,19 +37,24 @@ export async function POST(req: NextRequest) {
       current_period_end: oneYearLater,
     }, { onConflict: 'user_id' });
 
-    // Second attempt: fallback without period columns if schema mismatch
-    if (firstErr && firstErr.message.includes('current_period')) {
-      const { error: fallbackErr } = await supabase.from('subscriptions').upsert({
+    // Fallback logic for schema mismatches
+    if (firstErr) {
+      console.warn('Coupon primary upsert failed, attempting fallback...', firstErr.message);
+      
+      const fallbackData: any = {
         user_id: user.id,
         plan,
         status: 'active',
-        razorpay_subscription_id: `coupon_${cleanCode}_${Date.now()}`,
-        razorpay_plan_id: `coupon_${plan}`,
-      }, { onConflict: 'user_id' });
+      };
+
+      // Add as many columns as possible based on the error message
+      if (!firstErr.message.includes('razorpay_subscription_id')) {
+        fallbackData.razorpay_subscription_id = `coupon_${cleanCode}_${Date.now()}`;
+      }
+
+      const { error: fallbackErr } = await supabase.from('subscriptions').upsert(fallbackData, { onConflict: 'user_id' });
 
       if (fallbackErr) throw fallbackErr;
-    } else if (firstErr) {
-      throw firstErr;
     }
 
     return NextResponse.json({

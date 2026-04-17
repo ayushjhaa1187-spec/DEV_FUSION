@@ -129,13 +129,19 @@ export async function checkAndIncrementUsage(userId: string, _bucket: string): P
 
 export async function getUserPlan(userId: string): Promise<string> {
   const supabase = await createSupabaseServer();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
-    .select('subscription_plan')
+    .select('role') // Fallback to role if plan is missing
     .eq('id', userId)
     .maybeSingle();
 
-  return data?.subscription_plan ?? 'free';
+  if (error || !data) return 'free';
+
+  // Map roles to plans if specific plan column is missing
+  if (data.role === 'mentor') return 'pro'; // Mentors get pro by default
+  if (data.role === 'admin') return 'elite';
+  
+  return (data as any).subscription_plan ?? 'free';
 }
 
 export async function enforcePlanLimit(

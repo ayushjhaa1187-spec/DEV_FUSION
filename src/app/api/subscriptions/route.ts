@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { getRazorpayClient } from '@/lib/razorpay';
 import { PLAN_DETAILS, type PlanTier } from '@/lib/plans';
+import { sendSubscriptionConfirmationEmail } from '@/lib/email';
 
 /**
  * Utility to map plan IDs to SkillBridge plan tiers
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
     endDate.setMonth(endDate.getMonth() + 1);
 
     // Upsert subscription into database
-    const { data: sub, error: dbError } = await supabase.from('subscriptions').upsert({
+    let { data: sub, error: dbError } = await supabase.from('subscriptions').upsert({
       user_id: user.id,
       plan: plan || getPlanFromPlanId(razorpay_plan_id || ''),
       status: 'active',
@@ -70,7 +71,38 @@ export async function POST(req: NextRequest) {
       current_period_end: endDate.toISOString(),
     }, { onConflict: 'user_id' }).select().single();
 
+    // Fallback if schema is missing Razorpay columns
+    if (dbError && (dbError.message.includes('razorpay_plan_id') || dbError.message.includes('current_period'))) {
+      const { data: fallbackSub, error: fallbackError } = await supabase.from('subscriptions').upsert({
+        user_id: user.id,
+        plan: plan || getPlanFromPlanId(razorpay_plan_id || ''),
+        status: 'active'
+      }, { onConflict: 'user_id' }).select().single();
+      
+      sub = fallbackSub;
+      dbError = fallbackError;
+    }
+
     if (dbError) throw dbError;
+
+    // Trigger Success Email (Priority 3)
+    try {
+      const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).single();
+      const { sendSubscriptionConfirmationEmail } = await import('@/lib/email');
+      
+      if (profile?.email) {
+        await sendSubscriptionConfirmationEmail({
+          email: profile.email,
+          name: profile.full_name || user.email?.split('@')[0] || 'Scholar',
+          plan: plan || getPlanFromPlanId(razorpay_plan_id || ''),
+          amount: plan === 'elite' ? 499 : 149, // Approx values based on PlanTier
+          nextBillingDate: endDate.toISOString(),
+          invoiceId: razorpay_payment_id || `INV-${Date.now()}`
+        });
+      }
+    } catch (emailErr) {
+      console.error('Failed to send confirmation email:', emailErr);
+    }
 
     return NextResponse.json({ success: true, data: sub });
   } catch (error: any) {

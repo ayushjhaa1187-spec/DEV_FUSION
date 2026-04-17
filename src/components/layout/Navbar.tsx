@@ -55,6 +55,10 @@ export default function Navbar() {
       links.push({ name: 'Org Hub', href: '/organization/dashboard' });
     }
 
+    if (profile?.role === 'admin') {
+      links.push({ name: 'Admin Central', href: '/admin' });
+    }
+
     links.push(
       { name: 'Mentors', href: '/mentors' },
       { name: 'Community', href: '/community' },
@@ -173,7 +177,7 @@ export default function Navbar() {
                            Settings
                         </Link>
                         <div className={styles.divider} />
-                        <button className={`${styles.dropdownItem} ${styles.logout}`} onClick={() => { signOut(); setIsProfileOpen(false); }}>
+                        <button className={`${styles.dropdownItem} ${styles.logout}`} onClick={async () => { await signOut(); setIsProfileOpen(false); }}>
                           Logout System
                         </button>
                       </motion.div>
@@ -252,7 +256,7 @@ export default function Navbar() {
 
               <div className="mt-auto pt-10">
                 {user ? (
-                   <button onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="w-full sb-btn-secondary py-4 font-black uppercase tracking-widest text-xs">Shutdown Session</button>
+                   <button onClick={async () => { await signOut(); setIsMobileMenuOpen(false); }} className="w-full sb-btn-secondary py-4 font-black uppercase tracking-widest text-xs">Shutdown Session</button>
                 ) : (
                    <Link href="/auth" onClick={() => setIsMobileMenuOpen(false)} className="w-full sb-btn-primary py-4 text-center font-black uppercase tracking-widest text-xs">Initialize Access</Link>
                 )}

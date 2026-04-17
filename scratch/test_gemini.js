@@ -1,38 +1,30 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const dotenv = require("dotenv");
-dotenv.config({ path: ".env.local" });
+const fs = require('fs');
+const path = require('path');
 
-const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_AI_API_KEY;
-
-async function testStream() {
-    if (!apiKey) {
-        console.error("No API key found");
-        return;
+const envPath = path.join(__dirname, '..', '.env.local');
+const envContent = fs.readFileSync(envPath, 'utf8');
+const lines = envContent.split('\n');
+const env = {};
+lines.forEach(line => {
+    const match = line.match(/^([^#=]+)=(.*)$/);
+    if (match) {
+        env[match[1].trim()] = match[2].trim();
     }
+});
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    console.log("--- Testing gemini-2.5-flash ---");
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const result = await model.generateContentStream("Hi");
-        for await (const chunk of result.stream) {
-            console.log("2.5 Chunk:", chunk.text());
-        }
-    } catch (err) {
-        console.error("2.5 Error:", err.message);
-    }
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
-    console.log("\n--- Testing gemini-flash-latest ---");
+async function test() {
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-        const result = await model.generateContentStream("Hi");
-        for await (const chunk of result.stream) {
-            console.log("Flash Chunk:", chunk.text());
-        }
-    } catch (err) {
-        console.error("Flash Error:", err.message);
+        console.log('Testing Gemini API Key with gemini-flash-latest...');
+        const result = await model.generateContent("Hello, respond with 'Success'.");
+        const response = await result.response;
+        console.log('Gemini Response:', response.text());
+    } catch (e) {
+        console.error('Gemini Error:', e.message);
     }
 }
 
-testStream();
+test();
