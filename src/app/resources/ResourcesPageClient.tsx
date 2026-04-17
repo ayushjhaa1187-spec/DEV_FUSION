@@ -8,40 +8,28 @@ import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 
 const curatedPlaylists = [
   { 
-    id: 'PL2_aWCzGMAwL39_RPP6LDPt90i0NTPu0z', 
-    title: 'Data Structures Masterclass', 
-    channel: 'MyCodeSchool',
-    color: '#ef4444',
-    description: 'Master data structures and algorithms from scratch to expert levels.', 
-    image: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400&h=250&fit=crop', 
-    category: 'Prep Guide' 
+    id: 'PL8p2I9Gdg4t0hWpPvhNfXox_eSxt5fQ-k', // CS50 Hardcore
+    title: 'Computer Science Fundamental',
+    channel: 'EDX / HARVARD',
+    color: '#6366f1'
   },
   { 
-    id: 'PLBlnK6fEyqRiVhbXD97N78E7K4S2a89m-', 
-    title: 'Operating Systems Essentials', 
-    channel: 'Gate Smashers',
-    color: '#3b82f6',
-    description: 'Deep dive into process management, memory, and file systems.', 
-    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=250&fit=crop', 
-    category: 'Core Knowledge' 
+    id: 'PLillGF-RfqbZ2ybcoD2Oa_6spQnOtLrS2', // Web Development
+    title: 'Web System architecture',
+    channel: 'Traversy Media',
+    color: '#f43f5e'
   },
   { 
-    id: 'PLxCzCOWd7aiFAN6I8KuIsVinmlyscF7-X', 
-    title: 'Advanced DBMS Guide', 
-    channel: 'Knowledge Gate',
-    color: '#a855f7',
-    description: 'Master SQL, NoSQL, and database design patterns.', 
-    image: 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=400&h=250&fit=crop', 
-    category: 'SQL & NoSQL' 
+    id: 'PL4cUxeGkcL9g9gP2onazU5iF0xYnlsYpx', // React/Frontend
+    title: 'Modern Frontend engineering',
+    channel: 'NET NINJA',
+    color: '#10b981'
   },
   { 
-    id: 'PL4cUxeGkcL9g9gP2onazU5iF0xYnlsYpx', 
-    title: 'Modern Web Engineering', 
-    channel: 'Net Ninja',
-    color: '#f59e0b',
-    description: 'Full-stack engineering with React, Next.js, and Supabase.', 
-    image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&h=250&fit=crop', 
-    category: 'Full Stack' 
+    id: 'PLu0W_9lII9agS67Uiat82nrV0scwy-SNo', // Full Stack
+    title: 'Full Stack Deployment Scale',
+    channel: 'CodeWithHarry',
+    color: '#f59e0b'
   }
 ];
 

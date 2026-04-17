@@ -151,23 +151,29 @@ function UpgradeContent() {
 
            <div className="space-y-6 mb-10">
               <div>
-                 <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest block mb-2">Neural Card UID</label>
-                 <div className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-gray-500 font-mono text-sm">
-                    **** **** **** 8888
-                 </div>
+                  <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest block mb-2">Neural Card UID</label>
+                  <input 
+                    type="text" 
+                    placeholder="**** **** **** 8888"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white font-mono text-sm outline-none focus:border-indigo-500/30 transition-all"
+                  />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                    <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest block mb-2">Expiry</label>
-                   <div className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-gray-500 font-mono text-sm">
-                      12/28
-                   </div>
+                   <input 
+                     type="text" 
+                     placeholder="12/28"
+                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white font-mono text-sm outline-none focus:border-indigo-500/30 transition-all"
+                   />
                 </div>
                 <div>
                    <label className="text-[10px] font-black text-gray-600 uppercase tracking-widest block mb-2">CVV</label>
-                   <div className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-gray-500 font-mono text-sm">
-                      ***
-                   </div>
+                   <input 
+                     type="password" 
+                     placeholder="***"
+                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white font-mono text-sm outline-none focus:border-indigo-500/30 transition-all"
+                   />
                 </div>
               </div>
            </div>
