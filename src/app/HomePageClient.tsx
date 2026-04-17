@@ -62,7 +62,8 @@ export default function HomePageClient() {
 
   return (
     <div style={{ background: 'var(--bg)' }}>
-      <ConstellationBackground opacity={0.65} interactive={true} />
+      {/* ── GLOBAL BACKGROUND ── */}
+      <ConstellationBackground opacity={0.5} interactive={false} />
 
       {/* ── LANDING NAVBAR ── */}
       <nav className="landing-nav">
@@ -84,7 +85,8 @@ export default function HomePageClient() {
       {/* ── HERO ── */}
       <section className="hero">
         <HeroConstellations />
-        <div>
+        <div className="hero-headline-spotlight" />
+        <div className="relative z-10">
           <div className="hero-badge">
             <div className="dot" />
             Now live · Powered by Gemini AI
@@ -96,7 +98,7 @@ export default function HomePageClient() {
           </p>
           <div className="hero-btns">
             <Link href="/auth" className="btn-hero-primary">Start for Free</Link>
-            <a href="#features" className="btn-ghost">See how it works ↓</a>
+            <a href="#features" className="btn-ghost" style={{ opacity: 0.8 }}>See how it works ↓</a>
           </div>
           <div className="hero-stats" ref={statsRef}>
             <div className="stat"><div className="stat-num" data-target="4800">0</div><div className="stat-label">Doubts Solved</div></div>
