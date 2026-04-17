@@ -90,7 +90,9 @@ export default function AskDoubtPageClient() {
       const payload = {
         title: formData.title,
         body: typeof formData.content === 'string' ? formData.content : JSON.stringify(formData.content),
-        subject: selectedSubject?.name || formData.subject_id || 'General'
+        subject: selectedSubject?.name || formData.subject_id || 'General',
+        branch: formData.branch,
+        semester: formData.semester
       };
 
       await doubtApi.createDoubt(payload);
@@ -146,7 +148,7 @@ export default function AskDoubtPageClient() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="form-group">
               <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Subject</label>
               <select 
@@ -160,14 +162,32 @@ export default function AskDoubtPageClient() {
               </select>
             </div>
             <div className="form-group">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Academic Year (Opt.)</label>
-              <input 
-                type="text" 
-                placeholder="e.g. 2nd Year / Sem 4" 
+              <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Branch</label>
+              <select 
+                value={formData.branch}
+                onChange={e => setFormData({...formData, branch: e.target.value})}
+                required
+                className="w-full bg-white/5 border border-white/5 p-4 rounded-xl outline-none focus:border-indigo-500/20 transition-all font-bold appearance-none"
+              >
+                <option value="">Select Branch</option>
+                {['Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'Civil', 'AI & ML', 'Data Science', 'Other'].map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Semester</label>
+              <select 
                 value={formData.semester}
                 onChange={e => setFormData({...formData, semester: e.target.value})}
-                className="w-full bg-white/5 border border-white/5 p-4 rounded-xl outline-none focus:border-indigo-500/20 transition-all font-bold"
-              />
+                required
+                className="w-full bg-white/5 border border-white/5 p-4 rounded-xl outline-none focus:border-indigo-500/20 transition-all font-bold appearance-none"
+              >
+                <option value="">Select Semester</option>
+                {[1,2,3,4,5,6,7,8].map(s => (
+                  <option key={s} value={s.toString()}>Semester {s}</option>
+                ))}
+              </select>
             </div>
           </div>
 

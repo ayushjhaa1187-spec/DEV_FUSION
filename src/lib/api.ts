@@ -75,6 +75,7 @@ export const mentorApi = {
   },
   getSlots: (mentorId: string) => apiFetch(`/api/mentor-slots?mentor_id=${mentorId}`),
   getProfile: (id: string) => apiFetch(`/api/mentors/${id}`),
+  createOrder: (slotId: string) => apiFetch('/api/razorpay', { method: 'POST', body: JSON.stringify({ slot_id: slotId, amount: 250 }) }), // Fixed price for baseline session
 };
 
 export const bookingApi = {

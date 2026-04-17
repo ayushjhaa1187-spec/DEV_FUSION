@@ -7,6 +7,8 @@ const DoubtSchema = z.object({
   title: z.string().min(5).max(200),
   body: z.string().min(10),
   subject: z.string().min(2).max(100),
+  branch: z.string().optional(),
+  semester: z.string().or(z.number()).optional(),
 });
 
 /**
@@ -35,6 +37,8 @@ export async function POST(req: NextRequest) {
         content_markdown: parsed.body,
         // Map subject to subject_id if it's a UUID, else generic
         subject_id: parsed.subject.length > 20 ? parsed.subject : null,
+        branch: parsed.branch,
+        semester: parsed.semester ? parseInt(parsed.semester.toString()) : null,
         is_resolved: false,
       })
       .select('id, title')

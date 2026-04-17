@@ -35,7 +35,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Slot is already booked or unavailable' }, { status: 400 });
     }
 
-    // 2. Create simplified booking
+    // 2. Fetch mentor price to determine if it's a free session
+    const { data: mentor } = await supabase
+      .from('mentor_profiles')
+      .select('price_per_session, is_free_session_available')
+      .eq('id', slot.mentor_id)
+      .single();
+
+    const isFree = !mentor || mentor.price_per_session === 0 || mentor.is_free_session_available;
+
+    // 3. Create booking (Pending if paid, Confirmed if free)
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
     const jitsiRoomName = generateJitsiRoomName(`${slot_id}-${user.id}-${Date.now()}`);
     
     const { data: booking, error: bookingError } = await supabase
@@ -44,27 +54,30 @@ export async function POST(req: NextRequest) {
         student_id: user.id,
         mentor_id: slot.mentor_id,
         slot_id: slot_id,
-        status: 'confirmed', 
+        status: isFree ? 'confirmed' : 'pending', 
         jitsi_room_name: jitsiRoomName,
         meeting_link: getJitsiMeetUrl(jitsiRoomName),
-        payment_status: 'free',
-        amount_paid: 0
+        payment_status: isFree ? 'free' : 'pending',
+        amount_paid: isFree ? 0 : (mentor?.price_per_session || 0),
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature
       })
       .select()
       .single();
 
     if (bookingError) throw bookingError;
 
-    // 3. (Slot already marked as booked atomically in step 1)
-
-    // 4. Log notification for Mentor (In-App)
-    await supabase.from('notifications').insert({
-        user_id: slot.mentor_id,
-        type: 'session_booked',
-        title: 'New Session Booked',
-        message: `A student has booked your slot for ${new Date(slot.start_time).toLocaleString()}`,
-        link: `/mentors/dashboard`
-    });
+    // 4. Log notification for Mentor (Only if confirmed immediately)
+    if (isFree) {
+      await supabase.from('notifications').insert({
+          user_id: slot.mentor_id,
+          type: 'session_booked',
+          title: 'New Session Booked',
+          message: `A student has booked your slot for ${new Date(slot.start_time).toLocaleString()}`,
+          link: `/mentors/dashboard`
+      });
+    }
 
     return NextResponse.json({ success: true, data: booking });
 
