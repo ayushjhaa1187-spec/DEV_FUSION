@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { logAuditEvent } from '@/lib/audit';
 import { sendMentorStatusEmail } from '@/lib/email';

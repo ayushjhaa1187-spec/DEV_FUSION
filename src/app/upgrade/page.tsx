@@ -37,16 +37,30 @@ function UpgradeContent() {
     await new Promise(resolve => setTimeout(resolve, 2500));
 
     try {
-      // 1. Update/Insert into subscriptions
-      const { error: subError } = await supabase
+      // 1. Update/Insert into subscriptions with resilience
+      let { error: subError } = await supabase
         .from('subscriptions')
         .upsert({
           user_id: user.id,
           plan: plan,
           status: 'active',
+          tier: plan, // Syncing tier and plan
           current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           updated_at: new Date().toISOString()
         });
+
+      // Fallback if status column is missing
+      if (subError?.message?.includes('status') || subError?.message?.includes('column')) {
+        const { error: fallbackError } = await supabase
+          .from('subscriptions')
+          .upsert({
+            user_id: user.id,
+            tier: plan,
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        subError = fallbackError;
+      }
 
       if (subError) throw subError;
 

@@ -40,19 +40,32 @@ export async function POST(req: NextRequest) {
 
     if (txError) throw txError;
 
-    // 2. Handle Business Logic
+      // 2. Handle Business Logic
     if (type === 'subscription') {
-      // Activate Pro tier
-      const { error: subError } = await supabase
-        .from('subscriptions')
-        .upsert({
+      // Activate Pro tier with resilience
+      const fullPayload = {
+        user_id: entity_id,
+        tier: 'pro',
+        plan: 'pro',
+        start_date: new Date().toISOString(),
+        is_active: true,
+        status: 'active',
+        updated_at: new Date().toISOString()
+      };
+
+      let { error: subError } = await supabase.from('subscriptions').upsert(fullPayload);
+      
+      // Fallback if schema mismatch (status, is_active, start_date might be missing)
+      if (subError?.message?.includes('column')) {
+        const fallbackPayload = {
           user_id: entity_id,
           tier: 'pro',
-          start_date: new Date().toISOString(),
-          is_active: true,
           updated_at: new Date().toISOString()
-        });
-      
+        };
+        const { error: fallbackError } = await supabase.from('subscriptions').upsert(fallbackPayload);
+        subError = fallbackError;
+      }
+
       if (subError) throw subError;
 
       // Also update profiles tier for efficiency

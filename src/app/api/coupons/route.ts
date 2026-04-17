@@ -44,10 +44,13 @@ export async function POST(req: NextRequest) {
       const fallbackData: any = {
         user_id: user.id,
         plan,
-        status: 'active',
       };
 
-      // Add as many columns as possible based on the error message
+      // Only add columns if they weren't the cause of the previous failure
+      if (!firstErr.message.includes('status')) {
+        fallbackData.status = 'active';
+      }
+      
       if (!firstErr.message.includes('razorpay_subscription_id')) {
         fallbackData.razorpay_subscription_id = `coupon_${cleanCode}_${Date.now()}`;
       }

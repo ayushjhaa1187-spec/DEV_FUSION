@@ -33,6 +33,49 @@ const curatedPlaylists = [
   }
 ];
 
+const VideoPlayer = ({ url, thumbnail, isPlaylist = false }: { url: string; thumbnail?: string; isPlaylist?: boolean }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  if (!isLoaded) {
+    return (
+      <div 
+        className="relative w-full h-full cursor-pointer bg-black/40 flex items-center justify-center group"
+        onClick={() => setIsLoaded(true)}
+      >
+        {thumbnail && <img src={thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 transition-opacity" />}
+        <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all z-10">
+          <Play className="text-white fill-current w-6 h-6" />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-6">
+           <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Click to Synchronize Feed</span>
+        </div>
+      </div>
+    );
+  }
+
+  const isYoutube = url?.includes('youtube.com') || url?.includes('youtu.be');
+
+  return (
+    <div className="w-full h-full animate-in fade-in duration-700">
+      {isYoutube ? (
+        <iframe 
+          src={isPlaylist ? url : url.replace('watch?v=', 'embed/')}
+          className="w-full h-full border-none"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      ) : (
+        <video 
+          src={url} 
+          controls 
+          autoPlay
+          className="w-full h-full object-cover"
+        />
+      )}
+    </div>
+  );
+};
+
 export default function ResourcesPageClient() {
   const [resources, setResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,34 +96,16 @@ export default function ResourcesPageClient() {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      let query = supabase
+      const { data, error } = await supabase
         .from('resources')
         .select('*, profiles(username), subjects(name)')
         .order('created_at', { ascending: false })
         .range(from, to);
-
-      // Simple type filtering based on tab
-      /* if (activeTab === 'notes') {
-        query = query.eq('resource_type', 'note');
-      } else {
-        query = query.eq('resource_type', 'video');
-      } */
-
-      const { data, error } = await query;
       
       if (error) throw error;
 
-      if (isLoadMore) {
-        setResources(prev => [...prev, ...(data || [])]);
-      } else {
-        setResources(data || []);
-      }
-      
-      if ((data?.length || 0) < PAGE_SIZE) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
-      }
+      setResources(prev => isLoadMore ? [...prev, ...(data || [])] : (data || []));
+      setHasMore((data?.length || 0) === PAGE_SIZE);
     } catch (err) {
       console.error('Failed to load resources:', err);
     } finally {
@@ -89,36 +114,21 @@ export default function ResourcesPageClient() {
     }
   };
 
+  // Single trigger for data loading
   useEffect(() => {
+    loadResources(page > 0);
+  }, [page, activeTab]);
+
+  // Tab change resets page
+  const handleTabChange = (tab: 'notes' | 'videos') => {
+    setActiveTab(tab);
     setPage(0);
-    loadResources(false);
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (page > 0) {
-      loadResources(true);
-    }
-  }, [page]);
-
-  // Use Centralized Safe Realtime
-  useSafeRealtime(
-    'knowledge_hub_updates',
-    {
-      event: '*',
-      schema: 'public',
-      table: 'resources',
-    },
-    () => {
-      setPage(0);
-      loadResources(false);
-    },
-    []
-  );
+    setResources([]); 
+  };
 
   const filteredResources = resources.filter(r => {
-    const titleMatch = r.title?.toLowerCase().includes(searchTerm.toLowerCase());
-    const subjectMatch = r.subjects?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    return titleMatch || subjectMatch;
+    const term = searchTerm.toLowerCase();
+    return r.title?.toLowerCase().includes(term) || r.subjects?.name?.toLowerCase().includes(term);
   });
 
   return (
@@ -151,13 +161,13 @@ export default function ResourcesPageClient() {
         {/* Tab Switcher */}
         <div className="flex gap-4 p-2 bg-white/5 w-fit rounded-2xl border border-white/5 mb-12">
            <button 
-             onClick={() => setActiveTab('notes')}
+             onClick={() => handleTabChange('notes')}
              className={`px-8 py-3 rounded-xl font-black text-sm transition-all ${activeTab === 'notes' ? 'bg-indigo-600 shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white'}`}
            >
              Study Materials
            </button>
            <button 
-             onClick={() => setActiveTab('videos')}
+             onClick={() => handleTabChange('videos')}
              className={`px-8 py-3 rounded-xl font-black text-sm transition-all ${activeTab === 'videos' ? 'bg-indigo-600 shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-white'}`}
            >
              Video Lectures
@@ -213,10 +223,10 @@ export default function ResourcesPageClient() {
                     {curatedPlaylists.map((playlist) => (
                       <div key={playlist.id} className="bg-[#13132b] border border-white/5 rounded-[40px] overflow-hidden group hover:border-indigo-500/20 transition-all">
                          <div className="aspect-video relative overflow-hidden bg-black">
-                            <iframe 
-                              src={`https://www.youtube.com/embed/videoseries?list=${playlist.id}`}
-                              className="w-full h-full border-none"
-                              allowFullScreen
+                            <VideoPlayer 
+                              url={`https://www.youtube.com/embed/videoseries?list=${playlist.id}`}
+                              thumbnail={`https://img.youtube.com/vi/${playlist.id}/maxresdefault.jpg`}
+                              isPlaylist
                             />
                          </div>
                          <div className="p-8 flex items-center justify-between">
@@ -257,22 +267,12 @@ export default function ResourcesPageClient() {
                             </div>
                          </div>
                          
-                         {/* Video Preview/Player for Community Uploads */}
+                         {/* Video Player for Community Uploads */}
                          <div className="aspect-video mb-6 rounded-2xl bg-black overflow-hidden border border-white/5">
-                            {res.file_url?.includes('youtube.com') || res.file_url?.includes('youtu.be') ? (
-                               <iframe 
-                                 src={res.file_url.replace('watch?v=', 'embed/')}
-                                 className="w-full h-full border-none"
-                                 allowFullScreen
-                               />
-                            ) : (
-                               <video 
-                                 src={res.file_url} 
-                                 controls 
-                                 className="w-full h-full object-cover"
-                                 poster="/video-placeholder.png"
-                               />
-                            )}
+                            <VideoPlayer 
+                              url={res.file_url}
+                              thumbnail="/video-placeholder.png"
+                            />
                          </div>
 
                          <h3 className="text-xl font-black mb-2 line-clamp-1">{res.title}</h3>
