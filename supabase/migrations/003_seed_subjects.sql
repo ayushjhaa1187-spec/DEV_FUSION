@@ -3,6 +3,21 @@
 -- Subjects and badges initial data
 -- ============================================================
 
+-- Ensure subjects table has required columns
+ALTER TABLE IF EXISTS subjects ADD COLUMN IF NOT EXISTS slug TEXT;
+ALTER TABLE IF EXISTS subjects ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE IF EXISTS subjects ADD COLUMN IF NOT EXISTS description TEXT;
+
+-- Add unique constraint on slug if not exists
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'subjects_slug_key'
+  ) THEN
+    ALTER TABLE subjects ADD CONSTRAINT subjects_slug_key UNIQUE (slug);
+  END IF;
+END $$;
+
 -- Seed Subjects
 INSERT INTO subjects (id, name, slug, description) VALUES
   (uuid_generate_v4(), 'Data Structures and Algorithms', 'dsa', 'Fundamental data structures and algorithmic problem solving'),
@@ -15,7 +30,7 @@ INSERT INTO subjects (id, name, slug, description) VALUES
   (uuid_generate_v4(), 'Computer Architecture', 'coa', 'CPU design, memory hierarchy, instruction sets'),
   (uuid_generate_v4(), 'Theory of Computation', 'toc', 'Automata, formal languages, complexity theory'),
   (uuid_generate_v4(), 'Software Engineering', 'se', 'SDLC, design patterns, agile methodology')
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- Seed Badges
 INSERT INTO badges (name, description, icon, requirement_type, requirement_value) VALUES
