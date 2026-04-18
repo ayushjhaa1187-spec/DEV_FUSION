@@ -14,15 +14,10 @@ export async function GET(req: NextRequest, context: RouteContext) {
   }
 
   const supabase = await createSupabaseServer();
-
-  // Validate session — getUser() revalidates with Supabase Auth server
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const { data: { user } } = await supabase.auth.getUser();
 
   // Fetch doubt with author profile, subjects, and answers
-  // Adjusted user_id -> author_id to match original schema
+  // Adjusted author:profiles!author_id to match specific foreign key requirement
   const { data: doubt, error } = await supabase
     .from('doubts')
     .select(`
@@ -70,7 +65,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
     return NextResponse.json({ success: false, error: 'Failed to fetch doubt' }, { status: 500 });
   }
 
-  // Increment view count (fire-and-forget — do NOT await, don't block response)
+  // Increment view count (fire-and-forget)
   supabase
     .from('doubts')
     .update({ views_count: (doubt.views_count ?? 0) + 1 })
@@ -79,10 +74,20 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
   // Compute per-answer vote totals and current user's vote
   const answersWithVotes = (doubt.answers ?? []).map((answer: any) => {
-    const votes: { vote_type: string; user_id: string }[] = answer.votes ?? [];
-    const upvotes   = votes.filter(v => v.vote_type === 'up').length;
-    const downvotes = votes.filter(v => v.vote_type === 'down').length;
-    const userVote  = votes.find(v => v.user_id === user.id)?.vote_type ?? null;
+    const rawVotes: any[] = answer.votes ?? [];
+    
+    // Robust vote counting: handles both Legacy INT (1/-1) and Modern TEXT ('up'/'down')
+    const upvotes   = rawVotes.filter(v => v.vote_type === 'up' || v.vote_type === 1 || v.vote_type === '1').length;
+    const downvotes = rawVotes.filter(v => v.vote_type === 'down' || v.vote_type === -1 || v.vote_type === '-1').length;
+    
+    // Identify current user's vote status
+    let userVote = null;
+    if (user) {
+      const found = rawVotes.find(v => v.user_id === user.id);
+      if (found) {
+        userVote = (found.vote_type === 'up' || found.vote_type === 1 || found.vote_type === '1') ? 'up' : 'down';
+      }
+    }
 
     return {
       ...answer,
@@ -90,10 +95,9 @@ export async function GET(req: NextRequest, context: RouteContext) {
       downvotes,
       net_votes: upvotes - downvotes,
       user_vote: userVote,
-      votes: undefined, // strip raw votes array from response
+      votes: undefined, // strip raw relations from response
     };
   }).sort((a: any, b: any) => {
-    // Accepted answer always first, then by net votes
     if (a.is_accepted && !b.is_accepted) return -1;
     if (!a.is_accepted && b.is_accepted) return 1;
     return b.net_votes - a.net_votes;
@@ -103,7 +107,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
     success: true,
     data: {
       ...doubt,
-      is_author: doubt.author_id === user.id,
+      is_author: user ? (doubt.author_id === user.id) : false,
       answers: answersWithVotes,
     }
   });

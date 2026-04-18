@@ -32,18 +32,24 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [usage, setUsage] = useState({ used: 0, total: 5 });
 
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
+
   const fetchData = useCallback(async () => {
     try {
+      setErrorStatus(null);
       const doubtData = await doubtApi.getDoubt(id);
+      
       const recsData = await fetch(`/api/doubts/${id}/recommendations`)
-        .then(res => res.json())
+        .then(res => res.status === 200 ? res.json() : [])
         .catch(() => []);
       
       setDoubt(doubtData);
       setAnswers(doubtData.answers || []);
       setRecommendations(recsData || []);
-    } catch (err) {
-      console.error('Failed to load doubt details');
+    } catch (err: any) {
+      console.error('Failed to load doubt details', err);
+      // Try to extract status if available from API client
+      setErrorStatus(err.status || 500);
     } finally {
       setLoading(false);
     }
@@ -196,18 +202,36 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
   };
 
   if (loading) return <LoadingPage />;
-  if (!doubt) return (
-    <div className="min-h-screen bg-[#06060c] flex flex-col items-center justify-center p-6">
-      <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center text-gray-500 mb-8">
-        <X size={40} />
+
+  // Handle errors or missing doubt
+  if (!doubt) {
+    const is404 = errorStatus === 404;
+    return (
+      <div className="min-h-screen bg-[#06060c] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center text-gray-500 mb-8 border border-white/5">
+          {is404 ? <X size={40} /> : <Flag size={40} className="text-indigo-400" />}
+        </div>
+        <h2 className="text-3xl font-black text-white mb-2">
+          {is404 ? 'Doubt Not Found' : 'Synaptic Connection Error'}
+        </h2>
+        <p className="text-gray-500 mb-8 max-w-sm">
+          {is404 
+            ? 'This record has been deleted or moved to a different sector.' 
+            : 'We encountered an issue retrieving this doubt. Please ensure your neural link is stable and try again.'}
+        </p>
+        <div className="flex gap-4">
+          <Link href="/doubts" className="px-8 py-3 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-500 transition shadow-[0_10px_30px_rgba(99,102,241,0.2)]">
+            Return to Feed
+          </Link>
+          {!is404 && (
+             <button onClick={() => window.location.reload()} className="px-8 py-3 rounded-2xl bg-white/5 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10 transition border border-white/5">
+              Retry
+            </button>
+          )}
+        </div>
       </div>
-      <h2 className="text-3xl font-black text-white mb-2">Doubt Not Found</h2>
-      <p className="text-gray-500 mb-8">This synaptic record has been deleted or moved.</p>
-      <Link href="/doubts" className="px-8 py-3 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-500 transition shadow-[0_10px_30px_rgba(99,102,241,0.2)]">
-        Return to Feed
-      </Link>
-    </div>
-  );
+    );
+  }
 
   const isAuthor = user?.id === (doubt.author_id || doubt.user_id);
   const isResolved = doubt.status === 'resolved';

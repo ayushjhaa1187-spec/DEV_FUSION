@@ -62,15 +62,11 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/doubts
- * Fetches doubts with filters.
+ * Fetches doubts with filters. Public view accessible.
  */
 export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser(); // Harden auth even on GET for Student view
-
-  if (!user) {
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-  }
+  const { data: { user } } = await supabase.auth.getUser(); // Try to get user, but don't block
 
   const { searchParams } = new URL(req.url);
   const filter      = searchParams.get('filter')   || 'all';
