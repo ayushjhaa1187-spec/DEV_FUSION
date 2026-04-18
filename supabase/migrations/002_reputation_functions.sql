@@ -1,12 +1,25 @@
-                                        -- ============================================================
+-- ============================================================
 -- Migration 002: Reputation Functions, Triggers, Views
 -- SkillBridge / DEV_FUSION Platform
 -- ============================================================
-
 -- 1. Compatibility view: reputation_events -> reputation_ledger
 -- Exposes 'points' column alias for leaderboard API compatibility
-DROP VIEW IF EXISTS reputation_events CASCADE;
-DROP TABLE IF EXISTS reputation_events CASCADE;
+-- Idempotency guard: drop reputation_events whether it is a table or a view
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'reputation_events' AND n.nspname = 'public' AND c.relkind = 'r'
+  ) THEN
+    DROP TABLE public.reputation_events CASCADE;
+  ELSIF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'reputation_events' AND n.nspname = 'public' AND c.relkind = 'v'
+  ) THEN
+    DROP VIEW public.reputation_events CASCADE;
+  END IF;
+END $$;
 CREATE OR REPLACE VIEW reputation_events AS
   SELECT
     id,
@@ -19,7 +32,6 @@ CREATE OR REPLACE VIEW reputation_events AS
     metadata,
     created_at
   FROM reputation_ledger;
-
 -- 2. Core function: Award reputation points
 CREATE OR REPLACE FUNCTION award_reputation(
   p_user_id UUID,
@@ -34,11 +46,10 @@ BEGIN
   INSERT INTO reputation_ledger (user_id, event_type, points_delta, entity_type, entity_id, metadata)
   VALUES (p_user_id, p_event_type, p_points, p_entity_type, p_entity_id, p_metadata);
   UPDATE profiles
-    SET reputation_points = reputation_points + p_points, updated_at = NOW()
-    WHERE id = p_user_id;
+  SET reputation_points = reputation_points + p_points, updated_at = NOW()
+  WHERE id = p_user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- 3. Trigger: Award points when an answer is accepted
 CREATE OR REPLACE FUNCTION handle_accepted_answer()
 RETURNS TRIGGER AS $$
@@ -55,7 +66,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS on_answer_accepted ON answers;
 CREATE TRIGGER on_answer_accepted AFTER UPDATE OF is_accepted ON answers
   FOR EACH ROW EXECUTE PROCEDURE handle_accepted_answer();
-
 -- 4. Trigger: Award points for posting a new answer
 CREATE OR REPLACE FUNCTION handle_new_answer()
 RETURNS TRIGGER AS $$
@@ -66,14 +76,13 @@ BEGIN
   END IF;
   -- Increment answer_count on the doubt
   UPDATE doubts SET answer_count = answer_count + 1, last_activity_at = NOW()
-    WHERE id = NEW.doubt_id;
+  WHERE id = NEW.doubt_id;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS on_new_answer ON answers;
 CREATE TRIGGER on_new_answer AFTER INSERT ON answers
   FOR EACH ROW EXECUTE PROCEDURE handle_new_answer();
-
 -- 5. Trigger: Handle answer votes
 CREATE OR REPLACE FUNCTION handle_answer_vote()
 RETURNS TRIGGER AS $$
@@ -94,7 +103,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS on_answer_vote ON answer_votes;
 CREATE TRIGGER on_answer_vote AFTER INSERT ON answer_votes
   FOR EACH ROW EXECUTE PROCEDURE handle_answer_vote();
-
 -- 6. Trigger: Award reputation for completing a practice test
 CREATE OR REPLACE FUNCTION handle_test_submission()
 RETURNS TRIGGER AS $$
@@ -112,7 +120,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS on_test_submitted ON test_submissions;
 CREATE TRIGGER on_test_submitted AFTER INSERT ON test_submissions
   FOR EACH ROW EXECUTE PROCEDURE handle_test_submission();
-
 -- 7. Function: Check and award badges
 CREATE OR REPLACE FUNCTION check_and_award_badges(p_user_id UUID)
 RETURNS VOID AS $$
@@ -129,7 +136,6 @@ BEGIN
   END LOOP;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- 8. Trigger: Auto-run badge check after every reputation award
 CREATE OR REPLACE FUNCTION after_reputation_award()
 RETURNS TRIGGER AS $$
@@ -141,7 +147,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS on_reputation_awarded ON reputation_ledger;
 CREATE TRIGGER on_reputation_awarded AFTER INSERT ON reputation_ledger
   FOR EACH ROW EXECUTE PROCEDURE after_reputation_award();
-
 -- 9. Function: Increment view count for doubts
 CREATE OR REPLACE FUNCTION increment_view_count(doubt_id_param UUID)
 RETURNS VOID AS $$
@@ -149,17 +154,14 @@ BEGIN
   UPDATE doubts SET views_count = views_count + 1 WHERE id = doubt_id_param;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- 10. RLS for reputation_ledger
 ALTER TABLE reputation_ledger ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users view own reputation" ON reputation_ledger FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Service insert reputation" ON reputation_ledger FOR INSERT WITH CHECK (true);
-
 -- 11. RLS for user_badges
 ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Badges publicly viewable" ON user_badges FOR SELECT USING (true);
 CREATE POLICY "Service award badges" ON user_badges FOR INSERT WITH CHECK (true);
-
 -- 12. Seed default badges
 INSERT INTO badges (name, description, icon, requirement_type, requirement_value) VALUES
   ('First Answer', 'Posted your first answer in the community', '🌱', 'reputation_points', 2),
@@ -168,7 +170,6 @@ INSERT INTO badges (name, description, icon, requirement_type, requirement_value
   ('Expert', 'Reached 500 reputation points', '🏆', 'reputation_points', 500),
   ('Legend', 'Reached 1000 reputation points', '👑', 'reputation_points', 1000)
 ON CONFLICT (name) DO NOTHING;
-
 -- 13. Seed sample subjects
 INSERT INTO subjects (name, slug, description) VALUES
   ('Mathematics', 'mathematics', 'Calculus, Linear Algebra, Discrete Maths'),
