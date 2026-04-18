@@ -63,23 +63,36 @@ export async function POST(
         : (appData.expertise || []);
       const specialty = expertiseArr[0] || 'Domain Expert';
 
-      // Initialize/Update mentor profile with data from application
-      const { error: mentorProfileError } = await supabase
-        .from('mentor_profiles')
-        .upsert({
-          id: id,
-          specialty: specialty,
-          bio: appData.bio,
-          linkedin_url: appData.linkedin_url,
-          github_url: appData.github_url,
-          availability: appData.availability_type || 'weekdays',
-          is_verified: true,
-          hourly_rate: 0, // Default to 0, mentor can update later
-          rating: 5.0
-        });
+      // Initialize/Update mentor profile with data from application.
+      // We set BOTH is_verified + verification_status, and BOTH hourly_rate + price_per_session
+      // to be compatible with either schema version that may be live in production.
+      const upsertPayload: Record<string, unknown> = {
+        specialty,
+        bio: appData.bio || null,
+        linkedin_url: appData.linkedin_url || null,
+        github_url: appData.github_url || null,
+        availability: appData.availability_type || 'weekdays',
+        is_verified: true,
+        verification_status: 'approved',
+        hourly_rate: 0,
+        price_per_session: 0, // Displayed in student-facing /mentors page
+        rating: 5.0,
+      };
 
-      if (mentorProfileError) {
-        console.error('Error upserting mentor profile:', mentorProfileError);
+      // Attempt upsert using 'id' as PK (phase5 schema where id IS the user FK)
+      const { error: upsertByIdError } = await supabase
+        .from('mentor_profiles')
+        .upsert({ id, ...upsertPayload }, { onConflict: 'id' });
+
+      if (upsertByIdError) {
+        // Fallback: try using user_id column (migration 001 schema)
+        console.error('[approve] upsert-by-id failed, trying user_id fallback:', upsertByIdError.message);
+        const { error: upsertByUserIdError } = await supabase
+          .from('mentor_profiles')
+          .upsert({ user_id: id, ...upsertPayload }, { onConflict: 'user_id' });
+        if (upsertByUserIdError) {
+          console.error('[approve] upsert-by-user_id also failed:', upsertByUserIdError.message);
+        }
       }
 
       // Notify User

@@ -16,25 +16,64 @@ export async function GET(req: NextRequest) {
   const minRating = searchParams.get('min_rating');
 
   try {
-    let query = supabase
+    // ── Stage 1: id-as-FK schema (phase5) + status filter ───────────────────
+    // mentor_profiles.id IS the user's UUID, so `profiles!inner` joins on that.
+    // The `.or` filter only works after migration 037 adds those columns.
+    const buildFilters = (q: any) => {
+      if (specialty) q = q.ilike('specialty', `%${specialty}%`);
+      if (branch)    q = q.eq('profiles.branch', branch);
+      if (isFree === 'true') q = q.eq('is_free_session_available', true);
+      if (minRating) q = q.gte('rating', parseFloat(minRating));
+      return q.order('rating', { ascending: false });
+    };
+
+    let q1 = buildFilters(
+      supabase
+        .from('mentor_profiles')
+        .select('*, profiles!inner(username, avatar_url, full_name, branch, college)')
+        .or('is_verified.eq.true,verification_status.eq.approved')
+    );
+    const { data: d1, error: e1 } = await q1;
+
+    if (!e1) return NextResponse.json(d1 ?? []);
+
+    console.warn('[GET /api/mentors] stage-1 failed:', e1.message);
+
+    // ── Stage 2: user_id-as-FK schema (001) + status filter ─────────────────
+    let q2 = buildFilters(
+      supabase
+        .from('mentor_profiles')
+        .select('*, profiles:user_id(username, avatar_url, full_name, branch, college)')
+        .or('is_verified.eq.true,verification_status.eq.approved')
+    );
+    const { data: d2, error: e2 } = await q2;
+
+    if (!e2) return NextResponse.json(d2 ?? []);
+
+    console.warn('[GET /api/mentors] stage-2 failed:', e2.message);
+
+    // ── Stage 3: No status filter (pre-migration fallback) ───────────────────
+    // If the is_verified / verification_status columns don't exist yet, show
+    // all mentor_profiles so approved mentors are at least visible.
+    // Migration 037 should be run to fix this permanently.
+    let q3 = buildFilters(
+      supabase
+        .from('mentor_profiles')
+        .select('*, profiles!inner(username, avatar_url, full_name, branch, college)')
+    );
+    const { data: d3, error: e3 } = await q3;
+
+    if (!e3) return NextResponse.json(d3 ?? []);
+
+    // ── Stage 4: Absolute last resort — no join, no filter ──────────────────
+    console.error('[GET /api/mentors] stage-3 failed:', e3.message);
+    const { data: d4 } = await supabase
       .from('mentor_profiles')
-      .select('*, profiles!inner(username, avatar_url, full_name, branch, college)');
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    if (specialty) query = query.ilike('specialty', `%${specialty}%`);
-    if (branch) query = query.eq('profiles.branch', branch);
-    if (isFree === 'true') query = query.eq('is_free_session_available', true);
-    if (minRating) query = query.gte('rating', parseFloat(minRating));
+    return NextResponse.json(d4 ?? []);
 
-    query = query.order('rating', { ascending: false });
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('[GET /api/mentors] error:', error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json(data ?? []);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error';
     return NextResponse.json({ error: message }, { status: 500 });

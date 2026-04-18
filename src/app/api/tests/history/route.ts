@@ -5,39 +5,50 @@ export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const url = new URL(req.url);
-  const subjectId = url.searchParams.get('subjectId');
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
-    let query = supabase
-      .from('practice_attempts')
+    // 1. Fetch user's completed test attempts, joining the global_tests for subject/topic info
+    const { data: attempts, error } = await supabase
+      .from('test_attempts')
       .select(`
-        *,
-        practice_tests (
-          topic,
-          duration_minutes,
-          subjects (
-            id,
-            name
-          )
+        id,
+        started_at,
+        completed_at,
+        status,
+        score,
+        total_questions,
+        global_tests (
+            subject,
+            topic
         )
       `)
       .eq('user_id', user.id)
-      .order('started_at', { ascending: false });
+      .in('status', ['COMPLETED', 'AUTO_SUBMITTED'])
+      .order('completed_at', { ascending: false });
 
-    if (subjectId) {
-      query = query.eq('subject_id', subjectId);
+    if (error) {
+      console.error('[GET /api/tests/history] DB Error:', error.message);
+      return NextResponse.json({ error: 'Failed to fetch history' }, { status: 500 });
     }
 
-    const { data: attempts, error } = await query;
+    // 2. Format neatly for the frontend Dashboard view
+    const formattedHistory = attempts?.map((attempt: any) => ({
+      attempt_id: attempt.id,
+      subject: attempt.global_tests?.subject || 'Unknown Subject',
+      topic: attempt.global_tests?.topic || 'Unknown Topic',
+      score: attempt.score,
+      total_questions: attempt.total_questions,
+      completed_at: attempt.completed_at,
+      status: attempt.status,
+    })) || [];
 
-    if (error) throw error;
+    return NextResponse.json({ success: true, history: formattedHistory });
 
-    return NextResponse.json(attempts || []);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[GET /api/tests/history] Server Error:', error.message || error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
-
