@@ -18,6 +18,23 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- Ensure badges table has required columns
+ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS icon TEXT;
+ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS requirement_type TEXT;
+ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS requirement_value INTEGER;
+
+-- Add unique constraint on badges name if not exists
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'badges_name_key'
+  ) THEN
+    ALTER TABLE badges ADD CONSTRAINT badges_name_key UNIQUE (name);
+  END IF;
+END $$;
+
 -- Seed Subjects
 INSERT INTO subjects (id, name, slug, description) VALUES
   (uuid_generate_v4(), 'Data Structures and Algorithms', 'dsa', 'Fundamental data structures and algorithmic problem solving'),
