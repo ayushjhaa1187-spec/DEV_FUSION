@@ -54,31 +54,49 @@ export async function POST(req: NextRequest) {
 
     const toRemind = upcomingBookings?.filter((b: any) => {
       const startTime = new Date(b.mentor_slots?.start_time);
+      // Only remind if it's within the window AND hasn't started yet
       return startTime > now && startTime <= thirtyMinutesFromNow;
     }) || [];
 
-    // 2. Insert notifications for each
+    // 2. Insert notifications for each participant (Student & Mentor)
     const results = await Promise.all(toRemind.map(async (booking) => {
-      // Check if already reminded (optional but good)
-      const { data: existing } = await supabase
-        .from('notifications')
-        .select('id')
-        .eq('user_id', booking.student_id)
-        .eq('type', 'session_reminder')
-        .contains('message', [new Date(booking.mentor_slots.start_time).toLocaleTimeString()])
-        .single();
+      const sessionLink = `/sessions/${booking.id}`;
+      const startTimeStr = new Date(booking.mentor_slots.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
-      if (existing) return { id: booking.id, status: 'already_reminded' };
+      const prepareNotification = async (userId: string, targetType: 'student' | 'mentor') => {
+         // Check if already reminded for this specific session link
+         const { data: existing } = await supabase
+           .from('notifications')
+           .select('id')
+           .eq('user_id', userId)
+           .eq('type', 'session_reminder')
+           .eq('link', sessionLink)
+           .maybeSingle();
+         
+         if (existing) return { userId, status: 'already_reminded' };
 
-      await supabase.from('notifications').insert({
-        user_id: booking.student_id,
-        title: 'Upcoming Session Reminder!',
-        message: `Your session starts at ${new Date(booking.mentor_slots.start_time).toLocaleTimeString()}. Get ready!`,
-        type: 'session_reminder',
-        link: '/dashboard/sessions'
-      });
+         const title = targetType === 'mentor' ? 'Mentorship Session Soon' : 'Session Reminder';
+         const message = targetType === 'mentor' 
+            ? `Reminder: Your mentorship session with a student starts at ${startTimeStr}.` 
+            : `Your session starts at ${startTimeStr}. Get ready!`;
 
-      return { id: booking.id, status: 'reminded' };
+         await supabase.from('notifications').insert({
+           user_id: userId,
+           title,
+           message,
+           type: 'session_reminder',
+           link: sessionLink
+         });
+
+         return { userId, status: 'reminded' };
+      };
+
+      const [studentRes, mentorRes] = await Promise.all([
+        prepareNotification(booking.student_id, 'student'),
+        prepareNotification(booking.mentor_id, 'mentor')
+      ]);
+
+      return { bookingId: booking.id, studentRes, mentorRes };
     }));
 
     return NextResponse.json({ 

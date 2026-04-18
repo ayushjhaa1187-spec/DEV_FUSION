@@ -7,7 +7,7 @@ import { doubtApi, subjectApi, authApi } from '@/lib/api';
 import { DoubtCardSkeleton } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import { Search, X, Sparkles, Send, Filter, Clock, TrendingUp, CheckCircle2, ChevronRight, MessageSquare as MsgIcon } from 'lucide-react';
+import { Search, X, Sparkles, Send, Filter, Clock, TrendingUp, CheckCircle2, ChevronRight, MessageSquare as MsgIcon, BookOpen, Target } from 'lucide-react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 import { toast } from 'sonner';
@@ -122,11 +122,24 @@ export default function DoubtsPageClient() {
           .select('*, subjects(name), profiles(username, avatar_url, reputation_points)')
           .eq('id', payload.new.id).single();
         if (!newDoubt) return;
+        
         setDoubts(prev => {
           if (prev.find(d => d.id === newDoubt.id)) return prev;
-          if (typeof window !== 'undefined' && window.scrollY < 100) return [newDoubt, ...prev];
-          toast.info('New doubt posted!', {
-            action: { label: 'View', onClick: () => { window.scrollTo({ top: 0, behavior: 'smooth' }); setDoubts(current => [newDoubt, ...current.filter(d => d.id !== newDoubt.id)]); } }
+          
+          // Auto-inject if at the top, otherwise show toast
+          if (typeof window !== 'undefined' && window.scrollY < 100) {
+            return [newDoubt, ...prev];
+          }
+          
+          toast.info('New doubt posted in the community!', {
+            icon: '💬',
+            action: { 
+              label: 'View', 
+              onClick: () => { 
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                setDoubts(current => [newDoubt, ...current.filter(d => d.id !== newDoubt.id)]); 
+              } 
+            }
           });
           return prev;
         });
@@ -135,8 +148,17 @@ export default function DoubtsPageClient() {
     {
       event: 'UPDATE',
       table: 'doubts',
-      handler: () => {
-        loadDoubts(false);
+      handler: (payload) => {
+        console.log('[Realtime] Doubt updated in feed:', payload.new.id);
+        setDoubts(prev => prev.map(d => d.id === payload.new.id ? { ...d, ...payload.new } : d));
+      }
+    },
+    {
+      event: 'DELETE',
+      table: 'doubts',
+      handler: (payload) => {
+        console.log('[Realtime] Doubt purged from feed:', payload.old.id);
+        setDoubts(prev => prev.filter(d => d.id !== payload.old.id));
       }
     }
   ]);
@@ -153,6 +175,7 @@ export default function DoubtsPageClient() {
     { key: 'all', label: 'Recent', icon: <Clock size={14} /> },
     { key: 'trending', label: 'Trending', icon: <TrendingUp size={14} /> },
     { key: 'unanswered', label: 'Unanswered', icon: <Filter size={14} /> },
+    ...(userSubjects.length > 0 ? [{ key: 'my-subjects', label: 'My Subjects', icon: <BookOpen size={14} /> }] : []),
     ...(userProfile?.branch ? [{ key: 'my-branch', label: 'My Branch', icon: <Sparkles size={14} /> }] : []),
     ...(userProfile?.semester ? [{ key: 'my-semester', label: `Sem ${userProfile.semester}`, icon: <Target size={14} /> }] : []),
   ];

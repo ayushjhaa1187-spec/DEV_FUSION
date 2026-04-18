@@ -88,12 +88,15 @@ export async function POST(req: NextRequest) {
     // Trigger Success Email (Priority 3)
     try {
       const { data: profile } = await supabase.from('profiles').select('full_name, email').eq('id', user.id).single();
+      const targetEmail = profile?.email || user.email; // Priority: profile sync > auth user primary
+      const targetName = profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Scholar';
+
       const { sendSubscriptionConfirmationEmail } = await import('@/lib/email');
       
-      if (profile?.email) {
+      if (targetEmail) {
         await sendSubscriptionConfirmationEmail({
-          email: profile.email,
-          name: profile.full_name || user.email?.split('@')[0] || 'Scholar',
+          email: targetEmail,
+          name: targetName,
           plan: plan || getPlanFromPlanId(razorpay_plan_id || ''),
           amount: plan === 'elite' ? 499 : 149, // Approx values based on PlanTier
           nextBillingDate: endDate.toISOString(),

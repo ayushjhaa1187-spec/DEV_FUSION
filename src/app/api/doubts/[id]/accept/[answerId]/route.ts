@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
+import { checkAndAwardBadges } from '@/lib/reputation/badges';
 
 /**
  * PATCH /api/doubts/[id]/accept/[answerId]
@@ -85,6 +86,9 @@ export async function PATCH(
       message: 'Your answer was marked as the accepted solution! You earned +25 reputation.',
       link: `/doubts/${id}`
     });
+
+    // 6. Check for badges
+    await checkAndAwardBadges(answer.author_id);
 
     return NextResponse.json({ success: true, data: { status: 'resolved' } });
   } catch (error: any) {

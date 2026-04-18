@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { slot_id } = await req.json();
+    const body = await req.json();
+    const { slot_id, razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
     if (!slot_id) {
        return NextResponse.json({ success: false, error: 'Missing slot_id' }, { status: 400 });
@@ -38,14 +39,13 @@ export async function POST(req: NextRequest) {
     // 2. Fetch mentor price to determine if it's a free session
     const { data: mentor } = await supabase
       .from('mentor_profiles')
-      .select('price_per_session, is_free_session_available')
+      .select('hourly_rate, is_free_session_available')
       .eq('id', slot.mentor_id)
       .single();
 
-    const isFree = !mentor || mentor.price_per_session === 0 || mentor.is_free_session_available;
+    const isFree = !mentor || mentor.hourly_rate === 0 || mentor.is_free_session_available;
 
     // 3. Create booking (Pending if paid, Confirmed if free)
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
     const jitsiRoomName = generateJitsiRoomName(`${slot_id}-${user.id}-${Date.now()}`);
     
     const { data: booking, error: bookingError } = await supabase
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         jitsi_room_name: jitsiRoomName,
         meeting_link: getJitsiMeetUrl(jitsiRoomName),
         payment_status: isFree ? 'free' : 'pending',
-        amount_paid: isFree ? 0 : (mentor?.price_per_session || 0),
+        amount_paid: isFree ? 0 : (mentor?.hourly_rate || 0),
         razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature

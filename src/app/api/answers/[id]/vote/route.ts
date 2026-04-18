@@ -18,11 +18,13 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid vote type: must be "up" or "down"' }, { status: 400 });
     }
 
+    const vote_val = vote_type === 'up' ? 1 : -1;
+
     // Upsert vote (prevents double-voting and handles mutual exclusivity)
     const { data: vote, error: voteError } = await supabase
       .from('answer_votes')
       .upsert(
-        { user_id: user.id, answer_id: id, vote_type },
+        { user_id: user.id, answer_id: id, vote_type: vote_val },
         { onConflict: 'user_id,answer_id' }
       )
       .select()
@@ -39,7 +41,7 @@ export async function POST(
 
     const totalVotes = updatedAnswer?.votes ?? 0;
 
-    // Task 7: Notify Author if upvoted + Update Reputation
+    // Use 'answer_upvoted' as per the update_reputation function definition
     if (vote_type === 'up') {
       const { data: authorData } = await supabase
         .from('answers')
@@ -53,11 +55,11 @@ export async function POST(
         // Update reputation via RPC
         await supabase.rpc('update_reputation', {
           p_user_id:   authorData.author_id,
-          p_action:    'vote_up',
+          p_action:    'answer_upvoted',
           p_entity_id: id,
         });
 
-        // Send notification (Using reputation_gain as vote_up is not in the ENUM yet)
+        // Send notification
         await supabase.from('notifications').insert({
           user_id: authorData.author_id,
           title: '⭐ New Upvote!',

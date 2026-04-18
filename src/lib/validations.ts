@@ -65,7 +65,7 @@ export const rateSessionSchema = z.object({
 export const mentorApplicationSchema = z.object({
   subjects: z.array(z.string()).min(1).max(5),
   bio: z.string().min(50).max(1000),
-  hourly_rate: z.number().min(99).max(2000),
+  hourly_rate: z.number().min(0).max(500),
   experience_years: z.number().int().min(0).max(30),
   linkedin_url: z.string().url().optional(),
 });

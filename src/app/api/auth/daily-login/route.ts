@@ -42,6 +42,9 @@ export async function POST(req: NextRequest) {
       const { error: streakError } = await supabase.rpc('update_login_streak', { u_id: user.id });
       if (streakError) console.warn('[daily-login] Streak sync failed (ignoring):', streakError.message);
 
+      // 3. Check for badges
+      await checkAndAwardBadges(user.id);
+
     } catch (bgErr) {
       console.warn('[daily-login] Background gamification skipped due to link instability.');
     }

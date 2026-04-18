@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
       *,
       author:profiles!author_id (username, full_name, avatar_url, reputation_points),
       subjects (id, name),
-      answers ( id )
+      answers!doubt_id ( id )
     `, { count: 'exact' });
  
   if (subjectId)  query = query.eq('subject_id', subjectId);
@@ -100,6 +100,17 @@ export async function GET(req: NextRequest) {
     query = query.is('accepted_answer_id', null);
   } else if (filter === 'trending') {
     query = query.order('views_count', { ascending: false });
+  } else if (filter === 'my_subjects') {
+    // 1. Get user subjects
+    const { data: userSubjects } = await supabase
+      .from('user_subjects')
+      .select('subject_id')
+      .eq('user_id', user.id);
+    
+    if (userSubjects && userSubjects.length > 0) {
+      const subjectIds = userSubjects.map(s => s.subject_id);
+      query = query.in('subject_id', subjectIds);
+    }
   }
 
   query = query

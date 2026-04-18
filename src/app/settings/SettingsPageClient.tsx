@@ -42,7 +42,11 @@ export default function SettingsPageClient() {
   const [uploading, setUploading] = useState(false);
   const [subjectInput, setSubjectInput] = useState('');
   const [profileData, setProfileData] = useState<any>(null);
+  const [mentorData, setMentorData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'profile' | 'mentorship' | 'subscription'>('profile');
+  const [mentorPrice, setMentorPrice] = useState<number>(0);
+  const [mentorSpecialty, setMentorSpecialty] = useState<string>('');
+  const [mentorBio, setMentorBio] = useState<string>('');
 
   const { register, handleSubmit, setValue, watch, control, reset } = useForm<ProfileFormData>({
     defaultValues: {
@@ -74,11 +78,17 @@ export default function SettingsPageClient() {
     let isMounted = true;
     async function loadProfile() {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s hard timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000); 
 
       try {
         setLoading(true);
-        const res = await fetch('/api/profile', { signal: controller.signal });
+        const [res, mentorRes] = await Promise.all([
+          fetch('/api/profile', { signal: controller.signal }),
+          user?.role === 'mentor' || profileData?.role === 'mentor' 
+            ? fetch('/api/mentors/profile', { signal: controller.signal }) 
+            : Promise.resolve(null)
+        ]);
+        
         clearTimeout(timeoutId);
         
         const resData = await res.json();
@@ -96,6 +106,16 @@ export default function SettingsPageClient() {
             website_url: resData.data.profile.website_url || '',
             subjects: resData.data.profile.subjects || []
           });
+        }
+
+        if (mentorRes?.ok) {
+          const mData = await mentorRes.json();
+          if (mData.success) {
+            setMentorData(mData.data);
+            setMentorPrice(mData.data.hourly_rate || 0);
+            setMentorSpecialty(mData.data.specialty || '');
+            setMentorBio(mData.data.bio || '');
+          }
         }
       } catch (err: any) {
         console.warn('[Settings] Profile sync encounterd latency:', err.message);
@@ -190,6 +210,32 @@ export default function SettingsPageClient() {
     }
   };
 
+  const saveMentorProfile = async () => {
+    if (mentorPrice > 500) {
+      toast.error('Session fee cannot exceed ₹500');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/mentors/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hourly_rate: mentorPrice,
+          specialty: mentorSpecialty,
+          bio: mentorBio
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update');
+      toast.success('Professional expert profile updated!');
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (authLoading) return (
     <div className="flex flex-col items-center justify-center p-20 gap-6 min-h-[60vh]">
        <div className="relative">
@@ -269,38 +315,55 @@ export default function SettingsPageClient() {
             >
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                  {/* Identity Content */}
-                 <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
-                   <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                     <User className="w-5 h-5 text-indigo-400" />
-                     Public Identity
-                   </h2>
-                   <div className="flex flex-col md:flex-row gap-8 items-start">
-                     <div className="relative group">
-                       <div className="w-32 h-32 rounded-3xl bg-white/10 overflow-hidden ring-4 ring-white/5 group-hover:ring-indigo-500/30 transition-all">
-                         {avatarUrl ? (
-                           <Image src={avatarUrl} alt="Avatar" width={128} height={128} loading="lazy" className="w-full h-full object-cover" />
-                         ) : (
-                           <div className="w-full h-full bg-indigo-500/20 flex items-center justify-center text-3xl font-black">{watchedFields.full_name?.[0] || 'U'}</div>
-                         )}
-                       </div>
-                       <label className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 rounded-xl cursor-pointer hover:bg-indigo-500 transition-all shadow-xl">
-                         <Upload className="w-4 h-4 text-white" />
-                         <input type="file" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
-                       </label>
-                     </div>
-                     
-                     <div className="flex-1 w-full space-y-4">
-                       <div>
-                         <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Full Display Name</label>
-                         <input {...register('full_name')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="e.g. Ayush Jha" />
-                       </div>
-                       <div>
-                         <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Bio / Mission Statement</label>
-                         <textarea {...register('bio')} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="Tell the community about your expertise..." />
-                       </div>
-                     </div>
-                   </div>
-                 </section>
+                  <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
+                    <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                      <User className="w-5 h-5 text-indigo-400" />
+                      Public Identity
+                    </h2>
+                    <div className="flex flex-col md:flex-row gap-8 items-start">
+                      <div className="relative group">
+                        <div className="w-32 h-32 rounded-3xl bg-white/10 overflow-hidden ring-4 ring-white/5 group-hover:ring-indigo-500/30 transition-all">
+                          {avatarUrl ? (
+                            <Image src={avatarUrl} alt="Avatar" width={128} height={128} loading="lazy" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-indigo-500/20 flex items-center justify-center text-3xl font-black">{watchedFields.full_name?.[0] || 'U'}</div>
+                          )}
+                        </div>
+                        <label className="absolute -bottom-2 -right-2 p-2 bg-indigo-600 rounded-xl cursor-pointer hover:bg-indigo-500 transition-all shadow-xl">
+                          <Upload className="w-4 h-4 text-white" />
+                          <input type="file" className="hidden" onChange={handleAvatarUpload} disabled={uploading} />
+                        </label>
+                      </div>
+                      
+                      <div className="flex-1 w-full space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Full Display Name</label>
+                            <input {...register('full_name')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="e.g. Ayush Jha" />
+                          </div>
+                          <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-indigo-500/30 transition-all">
+                            <div>
+                              <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Weekly News Letter</p>
+                              <p className="text-[9px] text-gray-500 font-medium">Community highlights & solutions</p>
+                            </div>
+                            <input 
+                              type="checkbox" 
+                              className="w-5 h-5 rounded-lg accent-indigo-500 bg-black/40 border-white/10"
+                              defaultChecked={profileData?.newsletter_subscribed !== false}
+                              onChange={async (e) => {
+                                const { error } = await supabase.from('profiles').update({ newsletter_subscribed: e.target.checked }).eq('id', user.id);
+                                if (!error) toast.success(`Newsletter preference: ${e.target.checked ? 'Active' : 'Muted'}`);
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-400 mb-1 font-bold uppercase text-[10px] tracking-widest">Bio / Mission Statement</label>
+                          <textarea {...register('bio')} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500/50" placeholder="Tell the community about your expertise..." />
+                        </div>
+                      </div>
+                    </div>
+                  </section>
 
                  <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
                    <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
@@ -415,7 +478,60 @@ export default function SettingsPageClient() {
                        <button className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 font-bold text-sm">COMING SOON</button>
                     </div>
                  ) : (
-                    <AvailabilityGrid initialData={profileData?.availability} onSave={saveAvailability} saving={saving} />
+                    <div className="space-y-8">
+                       <section className="bg-white/5 rounded-3xl p-8 border border-white/5 backdrop-blur-xl">
+                          <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                             <Sparkles className="w-5 h-5 text-indigo-400" />
+                             Professional Parameters
+                          </h2>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3">Core Specialty</label>
+                                <input 
+                                   value={mentorSpecialty} 
+                                   onChange={e => setMentorSpecialty(e.target.value)}
+                                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white outline-none focus:border-indigo-500/50"
+                                   placeholder="e.g. Full Stack Architect"
+                                />
+                             </div>
+                             <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3">Session Fee (₹0 - ₹500)</label>
+                                <div className="relative">
+                                   <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-indigo-400">₹</div>
+                                   <input 
+                                      type="number"
+                                      min={0}
+                                      max={500}
+                                      value={mentorPrice} 
+                                      onChange={e => setMentorPrice(Number(e.target.value))}
+                                      className="w-full bg-white/5 border border-white/10 rounded-2xl pl-8 pr-4 py-3 text-white outline-none focus:border-indigo-500/50"
+                                   />
+                                </div>
+                             </div>
+                             <div className="md:col-span-2">
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3">Professional Bio</label>
+                                <textarea 
+                                   rows={4}
+                                   value={mentorBio} 
+                                   onChange={e => setMentorBio(e.target.value)}
+                                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white outline-none focus:border-indigo-500/50"
+                                   placeholder="Describe your mentorship style and expertise..."
+                                />
+                             </div>
+                          </div>
+                          <div className="flex justify-end mt-6">
+                             <button 
+                                onClick={saveMentorProfile}
+                                disabled={saving}
+                                className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20"
+                             >
+                                Update Professional Info
+                             </button>
+                          </div>
+                       </section>
+
+                       <AvailabilityGrid initialData={profileData?.availability} onSave={saveAvailability} saving={saving} />
+                    </div>
                  )}
               </section>
             </motion.div>

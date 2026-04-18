@@ -108,6 +108,41 @@ export default function HomePageClient() {
         </div>
       </section>
 
+      {/* ── PULSE MARQUEE ── */}
+      <div className="pulse-wrap">
+        <div className="pulse-track">
+          {[
+            { username: 'ayush_jha', doubt_title: 'Recursion Depth' },
+            { username: 'sarah_chen', doubt_title: 'React Hooks' },
+            { username: 'neil_p', doubt_title: 'Dockerizing Node' },
+            { username: 'priya_k', doubt_title: 'SQL Joins' },
+            { username: 'marco_s', doubt_title: 'Pandas DataFrames' },
+            { username: 'lin_d', doubt_title: 'CSS Grid' },
+          ].map((item, i) => (
+            <div key={i} className="pulse-item">
+              <div className="avatar">{item.username[0].toUpperCase()}</div>
+              <div className="glow-dot" />
+              <span><strong>{item.username}</strong> just solved a doubt.</span>
+            </div>
+          ))}
+          {/* Double for scroll */}
+          {[
+            { username: 'ayush_jha', doubt_title: 'Recursion Depth' },
+            { username: 'sarah_chen', doubt_title: 'React Hooks' },
+            { username: 'neil_p', doubt_title: 'Dockerizing Node' },
+            { username: 'priya_k', doubt_title: 'SQL Joins' },
+            { username: 'marco_s', doubt_title: 'Pandas DataFrames' },
+            { username: 'lin_d', doubt_title: 'CSS Grid' },
+          ].map((item, i) => (
+            <div key={`dup-${i}`} className="pulse-item">
+              <div className="avatar">{item.username[0].toUpperCase()}</div>
+              <div className="glow-dot" />
+              <span><strong>{item.username}</strong> just solved a doubt.</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ── TICKER ── */}
       <div className="ticker-wrap">
         <div className="ticker">

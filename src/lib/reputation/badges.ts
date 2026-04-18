@@ -3,11 +3,12 @@ import { createSupabaseServer } from '@/lib/supabase/server';
 export async function checkAndAwardBadges(userId: string) {
   const supabase = await createSupabaseServer();
 
-  // 1. Fetch user's current stats and existing badges
-  // 1. Fetch user data with individual handling to prevent catch-all failure
-  const profileRes = await supabase.from('profiles').select('reputation_points, login_streak').eq('id', userId).maybeSingle();
-  const badgesRes = await supabase.from('user_badges').select('badge_id').eq('user_id', userId);
-  const allBadgesRes = await supabase.from('badges').select('*');
+  // 1. Fetch user data and existing badges
+  const [profileRes, badgesRes, allBadgesRes] = await Promise.all([
+    supabase.from('profiles').select('reputation_points, login_streak').eq('id', userId).maybeSingle(),
+    supabase.from('user_badges').select('badge_id').eq('user_id', userId),
+    supabase.from('badges').select('*')
+  ]);
 
   const profile = profileRes.data;
   const existingBadges = badgesRes.data;
@@ -22,12 +23,45 @@ export async function checkAndAwardBadges(userId: string) {
     if (currentBadgeIds.has(badge.id)) continue;
 
     let shouldAward = false;
-    switch (badge.criteria_type) {
+    const { criteria_type, criteria_value } = badge;
+
+    switch (criteria_type) {
       case 'reputation':
-        if (profile.reputation_points >= badge.criteria_value) shouldAward = true;
+        if (profile.reputation_points >= (criteria_value || 0)) shouldAward = true;
         break;
       case 'streak':
-        if (profile.login_streak >= (badge.criteria_value || 0)) shouldAward = true;
+        if (profile.login_streak >= (criteria_value || 0)) shouldAward = true;
+        break;
+      case 'answers_count':
+        const { count: ansCount } = await supabase
+          .from('answers')
+          .select('id', { count: 'exact', head: true })
+          .eq('author_id', userId);
+        if ((ansCount || 0) >= (criteria_value || 0)) shouldAward = true;
+        break;
+      case 'mentor_rating':
+        const { data: mProfile } = await supabase
+          .from('mentor_profiles')
+          .select('rating, sessions_completed')
+          .eq('id', userId)
+          .maybeSingle();
+        if (mProfile && mProfile.rating >= 4.5 && mProfile.sessions_completed >= (criteria_value || 0)) shouldAward = true;
+        break;
+      case 'subject_mastery':
+        const { data: attempts } = await supabase
+          .from('practice_attempts')
+          .select('test_id, score, practice_tests:test_id(subject_id)')
+          .eq('user_id', userId)
+          .gte('score', 90);
+        
+        // Defensive mapping for nested join data
+        const masterySubjects = new Set(
+          (attempts || []).map(a => {
+            const test = (a as any).practice_tests;
+            return test?.subject_id;
+          }).filter(Boolean)
+        );
+        if (masterySubjects.size >= (criteria_value || 0)) shouldAward = true;
         break;
     }
 
@@ -46,8 +80,8 @@ export async function checkAndAwardBadges(userId: string) {
         type: 'badge_earned',
         title: 'New Badge Unlocked!',
         message: `Congratulations! You've earned the ${badge?.name || 'Achievement'} badge.`,
-        metadata: { badge_id: badgeId }
-      }).catch(() => null); // Non-fatal
+        link: '/profile'
+      }).catch(() => null); 
     }
   }
 }

@@ -2,7 +2,7 @@
  * apiFetch
  * Optimized fetch wrapper with timeout and robust error handling.
  */
-export async function apiFetch(endpoint: string, options: RequestInit = {}, timeoutMs = 8000) {
+export async function apiFetch(endpoint: string, options: RequestInit = {}, timeoutMs = 15000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -77,7 +77,10 @@ export const mentorApi = {
   },
   getSlots: (mentorId: string) => apiFetch(`/api/mentor-slots?mentor_id=${mentorId}`),
   getProfile: (id: string) => apiFetch(`/api/mentors/${id}`),
-  createOrder: (slotId: string) => apiFetch('/api/razorpay', { method: 'POST', body: JSON.stringify({ slot_id: slotId, amount: 250 }) }), // Fixed price for baseline session
+  createOrder: (slotId: string, mentorId: string, amount: number) => apiFetch('/api/razorpay', { 
+    method: 'POST', 
+    body: JSON.stringify({ slot_id: slotId, mentor_id: mentorId, amount }) 
+  }),
 };
 
 export const bookingApi = {
@@ -91,7 +94,7 @@ export const subjectApi = {
 
 export const testApi = {
   getHistory: (subjectId?: string) => apiFetch(`/api/tests/history${subjectId ? `?subjectId=${subjectId}` : ''}`),
-  generate: (data: { subject_id: string; topic: string }) => apiFetch('/api/tests/generate', { method: 'POST', body: JSON.stringify(data) }),
+  generate: (data: { subject_id: string; topic: string }) => apiFetch('/api/tests/generate', { method: 'POST', body: JSON.stringify(data) }, 60000),
   start: (testId: string) => apiFetch(`/api/tests/${testId}/start`, { method: 'POST' }),
   saveAnswer: (data: { attempt_id: string; question_id: string; selected_index: number }) => apiFetch('/api/tests/save-answer', { method: 'POST', body: JSON.stringify(data) }),
   submit: (attemptId: string) => apiFetch(`/api/tests/${attemptId}/submit`, { method: 'POST', body: JSON.stringify({ attemptId }) }),
@@ -99,7 +102,7 @@ export const testApi = {
 
 export const aiApi = {
   getUsage: () => apiFetch('/api/usage/status'),
-  solveDoubt: (data: unknown) => apiFetch('/api/ai/solve', { method: 'POST', body: JSON.stringify(data) }),
+  solveDoubt: (data: unknown) => apiFetch('/api/ai/solve', { method: 'POST', body: JSON.stringify(data) }, 60000),
   logActivity: () => apiFetch('/api/usage/log', { method: 'POST' }),
 };
 

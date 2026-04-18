@@ -116,6 +116,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (event === 'SIGNED_IN') {
              fetch('/api/auth/daily-login', { method: 'POST' }).catch(() => {});
           }
+
+          // 🛰️ Real-time Profile Tracker
+          // Keep reputation, username, and role in sync globally
+          const profileChannel = supabase
+            .channel(`profile-sync-${currentUser.id}`)
+            .on(
+              'postgres_changes',
+              { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${currentUser.id}` },
+              (payload) => {
+                console.log('[Auth] Real-time Profile Update:', payload.new);
+                setProfile(prev => prev ? { ...prev, ...payload.new } : (payload.new as Profile));
+              }
+            )
+            .subscribe();
+
+          return () => {
+             supabase.removeChannel(profileChannel);
+          };
+
         } catch (e) {
           console.error('[Auth] Data sync failure:', e);
         } finally {

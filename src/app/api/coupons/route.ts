@@ -26,8 +26,14 @@ export async function POST(req: NextRequest) {
     const now = new Date().toISOString();
     const oneYearLater = new Date(Date.now() + 1000 * 60 * 60 * 24 * 365).toISOString();
 
-    // First attempt: upsert with all columns
-    const { error: firstErr } = await supabase.from('subscriptions').upsert({
+    // 1. Check for existing subscription to handle lack of UNIQUE constraint
+    const { data: existingSub } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const subData = {
       user_id: user.id,
       plan,
       status: 'active',
@@ -35,29 +41,29 @@ export async function POST(req: NextRequest) {
       razorpay_plan_id: `coupon_${plan}`,
       current_period_start: now,
       current_period_end: oneYearLater,
-    }, { onConflict: 'user_id' });
+      updated_at: now,
+    };
 
-    // Fallback logic for schema mismatches
-    if (firstErr) {
-      console.warn('Coupon primary upsert failed, attempting fallback...', firstErr.message);
-      
-      const fallbackData: any = {
-        user_id: user.id,
-        plan,
-      };
+    let subError;
+    if (existingSub) {
+      const { error } = await supabase.from('subscriptions').update(subData).eq('id', existingSub.id);
+      subError = error;
+    } else {
+      const { error } = await supabase.from('subscriptions').insert(subData);
+      subError = error;
+    }
 
-      // Only add columns if they weren't the cause of the previous failure
-      if (!firstErr.message.includes('status')) {
-        fallbackData.status = 'active';
-      }
-      
-      if (!firstErr.message.includes('razorpay_subscription_id')) {
-        fallbackData.razorpay_subscription_id = `coupon_${cleanCode}_${Date.now()}`;
-      }
+    if (subError) {
+      console.warn('Coupon application failed:', subError.message);
+      throw subError;
+    }
 
-      const { error: fallbackErr } = await supabase.from('subscriptions').upsert(fallbackData, { onConflict: 'user_id' });
-
-      if (fallbackErr) throw fallbackErr;
+    // 2. Send Confirmation Email
+    try {
+      const { sendSubscriptionConfirmationEmail } = await import('@/lib/email');
+      await sendSubscriptionConfirmationEmail(user.email!, user.raw_user_meta_data?.full_name || user.email!, plan.toUpperCase());
+    } catch (e) {
+      console.warn('Email confirmation failed', e);
     }
 
     return NextResponse.json({

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSafeRealtime } from '@/hooks/useSafeRealtime';
 import { useToast } from '@/components/ui/Toast';
 import { createSupabaseBrowser } from '@/lib/supabase/client';
-import { Bell, Award, MessageSquare, Zap } from 'lucide-react';
+import { Bell, Award, MessageSquare, Zap, Clock, CheckCircle2, Globe } from 'lucide-react';
 
 export function NotificationToastProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
@@ -26,6 +26,15 @@ export function NotificationToastProvider({ children }: { children: React.ReactN
     if (notification.type === 'badge_unlock') {
       Icon = Award;
       colorClass = 'text-yellow-500';
+    } else if (notification.type === 'session_reminder') {
+      Icon = Clock;
+      colorClass = 'text-indigo-500';
+    } else if (notification.type === 'accepted') {
+      Icon = CheckCircle2;
+      colorClass = 'text-emerald-500';
+    } else if (notification.type === 'community_pulse') {
+      Icon = Globe;
+      colorClass = 'text-cyan-400';
     } else if (notification.type.includes('answer')) {
       Icon = MessageSquare;
       colorClass = 'text-blue-500';

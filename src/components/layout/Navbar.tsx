@@ -163,7 +163,12 @@ export default function Navbar() {
                         className={styles.dropdown}
                       >
                         <div className={styles.dropdownHeader}>
-                          <p className={styles.dropdownName}>{profile?.full_name || 'Student'}</p>
+                          <div className="flex items-center justify-between gap-3 mb-1">
+                            <p className={styles.dropdownName}>{profile?.full_name || 'Student'}</p>
+                            <div className="px-2 py-0.5 rounded-lg bg-orange-500/10 text-orange-400 text-[9px] font-black uppercase tracking-widest border border-orange-500/20">
+                              {profile?.reputation_points || 0} REP
+                            </div>
+                          </div>
                           <p className={styles.dropdownEmail}>{user?.email}</p>
                         </div>
                         <div className={styles.divider} />

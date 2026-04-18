@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { z } from 'zod';
+import { checkAndAwardBadges } from '@/lib/reputation/badges';
 
 const AnswerSchema = z.object({
   content_markdown: z.string().min(10).max(5000),
@@ -85,6 +86,9 @@ export async function POST(
         link: `/doubts/${id}`
       });
     }
+
+    // ─── Gamification Flow ──────────────────────────────────────────────────────
+    await checkAndAwardBadges(user.id);
 
     return NextResponse.json({ success: true, data: answer }, { status: 201 });
   } catch (error: any) {

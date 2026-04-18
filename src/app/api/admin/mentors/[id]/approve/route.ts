@@ -29,12 +29,14 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
 
-    // 1. Fetch application details to get expertise/bio
+    // 1. Fetch the LATEST application details to handle multiple submissions
     const { data: appData, error: appFetchError } = await supabase
       .from('mentor_applications')
       .select('*')
       .eq('user_id', id)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     if (appFetchError || !appData) {
       return NextResponse.json({ error: 'Application documentation not found' }, { status: 404 });

@@ -59,6 +59,7 @@ interface BookingConfirmationArgs {
   otherPartyName: string;
   startTime: string;
   meetingUrl: string;
+  isReminder?: boolean;
 }
 
 interface MentorStatusArgs {
@@ -75,6 +76,14 @@ interface CertificateEmailArgs {
   certificateUrl: string;
 }
 
+interface WeeklySummaryArgs {
+  to: string;
+  name: string;
+  totalNewDoubts: number;
+  highlightDoubts: { id: string; title: string; subjects: string[] }[];
+  unansweredCount: number;
+}
+
 // ─── Shared HTML shell ────────────────────────────────────────────────────────
 function emailShell(content: string): string {
   return `<!DOCTYPE html>
@@ -88,8 +97,7 @@ function emailShell(content: string): string {
     .wrapper { max-width: 560px; margin: 40px auto; padding: 0 20px; }
     .card { background: #13111e; border: 1px solid #2d2b3d; border-radius: 16px;
             overflow: hidden; }
-    .header { background: linear-gradient(135deg, #4f46e5, #7c3aed);
-              padding: 28px 32px; }
+    .header { padding: 28px 32px; }
     .header h1 { margin: 0; font-size: 22px; font-weight: 700; color: #fff; }
     .header p { margin: 4px 0 0; font-size: 13px; color: rgba(255,255,255,0.7); }
     .body { padding: 28px 32px; }
@@ -129,7 +137,7 @@ export async function sendSubscriptionConfirmationEmail(args: SubscriptionConfir
   });
 
   const html = emailShell(`
-    <div class="header">
+    <div class="header" style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
       <h1>🎉 Welcome to SkillBridge ${args.plan}!</h1>
       <p>Your subscription is now active</p>
     </div>
@@ -259,26 +267,36 @@ export async function sendOrganizationApplicationEmail(args: OrganizationApplica
 
 export async function sendBookingConfirmationEmail(args: BookingConfirmationArgs) {
   const role = args.isMentor ? "Mentor" : "Student";
+  const title = args.isReminder ? "🚀 STARTING SOON!" : "📅 Session Confirmed!";
+  const subtitle = args.isReminder 
+    ? "Your SkillBridge session begins in ~30 minutes" 
+    : "Your SkillBridge mentorship session is booked";
+  const color = args.isReminder ? "#f59e0b" : "#4f46e5";
+
   const html = emailShell(`
-    <div class="header" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);">
-      <h1>📅 Session Confirmed!</h1>
-      <p>Your SkillBridge mentorship session is booked</p>
+    <div class="header" style="background:linear-gradient(135deg, ${color}, #7c3aed);">
+      <h1>${title}</h1>
+      <p>${subtitle}</p>
     </div>
     <div class="body">
       <p>Hi there,</p>
-      <p>The session between you and <strong>${args.otherPartyName}</strong> has been confirmed.</p>
+      <p>${args.isReminder 
+        ? 'This is a neural reminder for your upcoming mentorship sync:' 
+        : `The session between you and <strong>${args.otherPartyName}</strong> has been confirmed.`
+      }</p>
       <div class="row"><span class="label">Time</span><span class="value">${args.startTime}</span></div>
       <div class="row"><span class="label">Your Role</span><span class="value banner">${role}</span></div>
+      ${!args.isReminder ? `<div class="row"><span class="label">Partner</span><span class="value">${args.otherPartyName}</span></div>` : ''}
       <p style="margin-top:20px">You can join the session using the button below at the scheduled time.</p>
       <a href="${args.meetingUrl}" class="cta">Join Session →</a>
     </div>
-    <div class="footer">SkillBridge · Because every doubt deserves an answer.</div>
+    <div class="footer">SkillBridge · Powering Academic Excellence</div>
   `);
 
   return sendEmail({
     from: FROM,
     to: args.to,
-    subject: `📅 SkillBridge Session Confirmed: ${args.startTime}`,
+    subject: args.isReminder ? `🔔 STARTING SOON: Session with ${args.otherPartyName}` : `📅 SkillBridge Session Confirmed: ${args.startTime}`,
     html,
   });
 }
@@ -326,6 +344,53 @@ export async function sendCertificateEmail(args: CertificateEmailArgs) {
     from: FROM,
     to: args.to,
     subject: `🏆 Certificate Earned: ${args.subject}`,
+    html,
+  });
+}
+export async function sendWeeklySummaryEmail(args: WeeklySummaryArgs) {
+  const html = emailShell(`
+    <div class="header" style="background:linear-gradient(135deg,#312e81,#4338ca);">
+      <h1>📖 Your Weekly Neural Digest</h1>
+      <p>Stay updated with the SkillBridge community activity</p>
+    </div>
+    <div class="body">
+      <p>Hi ${args.name},</p>
+      <p>It's been a busy week in the ecosystem. Here's a quick summary of what you might have missed:</p>
+      
+      <div style="background:rgba(255,255,255,0.03); border-radius:12px; padding:20px; border:1px solid #2d2b3d; margin-bottom:24px;">
+        <div style="display:flex; justify-content:space-around; text-align:center;">
+          <div>
+            <div style="font-size:24px; font-weight:900; color:#818cf8;">${args.totalNewDoubts}</div>
+            <div style="font-size:10px; font-weight:900; uppercase; color:#475569;">NEW DOUBTS</div>
+          </div>
+          <div>
+            <div style="font-size:24px; font-weight:900; color:#f87171;">${args.unansweredCount}</div>
+            <div style="font-size:10px; font-weight:900; uppercase; color:#475569;">WAITING FOR YOU</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="font-size:14px; font-weight:900; uppercase; color:#94a3b8; letter-spacing:1px; margin-bottom:12px;">Hot Discussions</h3>
+      ${args.highlightDoubts.map(d => `
+        <div style="padding:12px 0; border-bottom:1px solid #1e1d2b;">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL}/doubts/${d.id}" style="color:#f1f5f9; text-decoration:none; font-weight:600; font-size:14px;">${d.title}</a>
+          <div style="margin-top:4px;">
+            ${d.subjects.map(s => `<span style="font-size:9px; background:rgba(99,102,241,0.1); color:#818cf8; padding:2px 6px; border-radius:4px; margin-right:4px;">${s}</span>`).join('')}
+          </div>
+        </div>
+      `).join('')}
+
+      <div style="margin-top:24px; text-align:center;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL}/doubts" class="cta">Explore All Doubts →</a>
+      </div>
+    </div>
+    <div class="footer">SkillBridge Digest · Tuned to your branch and interests.</div>
+  `);
+
+  return sendEmail({
+    from: FROM,
+    to: args.to,
+    subject: `📖 SkillBridge Weekly: ${args.totalNewDoubts} New Doubts in your network`,
     html,
   });
 }

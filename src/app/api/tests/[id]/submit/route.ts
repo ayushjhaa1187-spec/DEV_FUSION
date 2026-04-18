@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 import { extractConceptScores, updateReviewQueue } from '@/lib/review-queue';
+import { checkAndAwardBadges } from '@/lib/reputation/badges';
 
 export async function POST(
   req: NextRequest,
@@ -125,23 +126,8 @@ export async function POST(
       console.error('AI Insight Error:', e);
     }
 
-    // 6. Award 'Test Ace' badge for a perfect score
-    if (score === 100) {
-      const { data: badge } = await supabase
-        .from('badges')
-        .select('id')
-        .eq('name', 'Test Ace')
-        .single();
-
-      if (badge) {
-        await supabase
-          .from('user_badges')
-          .upsert(
-            { user_id: user.id, badge_id: badge.id },
-            { onConflict: 'user_id,badge_id', ignoreDuplicates: true }
-          );
-      }
-    }
+    // 6. Check for badges (centralized engine)
+    await checkAndAwardBadges(user.id);
 
     return NextResponse.json({
       score,

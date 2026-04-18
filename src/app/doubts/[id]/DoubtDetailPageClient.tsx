@@ -61,25 +61,52 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
     }
   }, [fetchData, user]);
 
-  // Use Centralized Safe Realtime
+  // 🛰️ Real-time Answer Tracker
+  // Injects new answers and updates status (accepted/votes) in real-time
   useSafeRealtime(
-    `doubt_answers_${id}`,
+    `doubt-details-${id}`,
     [
       {
         event: 'INSERT',
-        schema: 'public',
         table: 'answers',
-        filter: `doubt_id=eq.${id}`
+        filter: `doubt_id=eq.${id}`,
+        handler: async (payload) => {
+          console.log('[Realtime] New Answer Detected:', payload.new.id);
+          // Fetch full profile info for the new answer
+          const { data } = await supabase
+            .from('answers')
+            .select('*, profiles(username, avatar_url, reputation_points)')
+            .eq('id', payload.new.id)
+            .single();
+          
+          if (data) {
+            setAnswers(prev => {
+              if (prev.find(a => a.id === data.id)) return prev;
+              return [...prev, data];
+            });
+            toast.success('New solution provided!', { icon: '💡' });
+          }
+        }
       },
       {
         event: 'UPDATE',
-        schema: 'public',
         table: 'answers',
-        filter: `doubt_id=eq.${id}`
+        filter: `doubt_id=eq.${id}`,
+        handler: (payload) => {
+          console.log('[Realtime] Answer Updated:', payload.new.id);
+          setAnswers(prev => prev.map(a => a.id === payload.new.id ? { ...a, ...payload.new } : a));
+        }
+      },
+      {
+        event: 'UPDATE',
+        table: 'doubts',
+        filter: `id=eq.${id}`,
+        handler: (payload) => {
+          console.log('[Realtime] Doubt Status Updated:', payload.new.status);
+          setDoubt(prev => prev ? { ...prev, ...payload.new } : prev);
+        }
       }
-    ],
-    () => fetchData(),
-    [id, fetchData]
+    ]
   );
 
   const handlePostAnswer = async () => {
@@ -116,7 +143,7 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
     try {
       const { totalVotes, userVote } = await answerApi.vote(answerId, type);
       setAnswers(answers.map(a =>
-        a.id === answerId ? { ...a, net_votes: totalVotes, user_vote: userVote } : a
+        a.id === answerId ? { ...a, votes: totalVotes, user_vote: userVote } : a
       ));
     } catch (err) {
       console.error('Vote failed');
@@ -382,7 +409,7 @@ export default function DoubtDetailPageClient({ id }: { id: string }) {
                      <div className="flex items-center bg-white/5 p-1 rounded-2xl border border-white/5">
                         <button onClick={() => handleVote(answer.id, 'up')} className={`px-5 py-2.5 rounded-xl transition flex items-center gap-2 ${answer.user_vote === 'up' ? 'text-emerald-400 bg-emerald-400/5' : 'text-gray-500 hover:text-emerald-400'}`}>
                           <ThumbsUp size={14} />
-                          <span className="text-[10px] font-black">{answer.net_votes || 0}</span>
+                          <span className="text-[10px] font-black">{answer.votes || 0}</span>
                         </button>
                         <div className="w-px h-5 bg-white/5" />
                         <button onClick={() => handleVote(answer.id, 'down')} className={`px-5 py-2.5 rounded-xl transition ${answer.user_vote === 'down' ? 'text-red-400 bg-red-400/5' : 'text-gray-500 hover:text-red-400'}`}>

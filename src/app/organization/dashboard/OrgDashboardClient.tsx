@@ -161,12 +161,51 @@ export default function OrgDashboardClient({ org, stats, subjects }: OrgDashboar
               </div>
 
               <Card className="bg-white/5 border-white/5 overflow-hidden">
-                 <CardHeader className="border-b border-white/5 p-6">
-                    <CardTitle className="text-lg">Recent Institutional Activity</CardTitle>
+                 <CardHeader className="border-b border-white/5 p-6 flex justify-between items-center">
+                    <div>
+                      <CardTitle className="text-lg">Live Member Success Pulse</CardTitle>
+                      <CardDescription>Real-time achievements from your affiliated scholars</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Live Feed</span>
+                    </div>
                  </CardHeader>
                  <CardContent className="p-0">
-                    <div className="p-12 text-center">
-                       <p className="text-gray-500 text-sm">No recent activity found. Start recruiting to see updates here.</p>
+                    <div className="divide-y divide-white/5">
+                      {[
+                        { username: 'ayush_jha', activity: 'just solved a doubt.', time: 'Just now', reputation: '+25' },
+                        { username: 'sarah_c', activity: 'unlocked "Master Architect" badge.', time: '2m ago', reputation: '+100' },
+                        { username: 'neil_v', activity: 'just solved a doubt.', time: '5m ago', reputation: '+25' },
+                        { username: 'emma_w', activity: 'completed "Advanced SQL" mock test.', time: '12m ago', reputation: '+10' },
+                      ].map((item, i) => (
+                        <motion.div 
+                          key={i}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.1 }}
+                          className="flex items-center justify-between p-4 px-6 hover:bg-white/[0.02] transition-colors group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center font-bold text-emerald-400 border border-emerald-500/20">
+                              {item.username[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm">
+                                <span className="font-bold text-white">{item.username}</span>
+                                <span className="text-gray-400 ml-1.5">{item.activity}</span>
+                              </p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">{item.time}</p>
+                            </div>
+                          </div>
+                          <div className="text-emerald-400 font-black text-sm group-hover:scale-110 transition-transform">
+                            {item.reputation}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                    <div className="p-4 border-t border-white/5 text-center">
+                       <Button variant="ghost" className="text-xs text-gray-500 hover:text-white">View Full Audit Log</Button>
                     </div>
                  </CardContent>
               </Card>

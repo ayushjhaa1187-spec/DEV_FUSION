@@ -108,11 +108,31 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
     if (!user) return toast.error('Please log in to book a session');
     
     setBookingLoading(true);
-    try {
-      // 1. Create Razorpay Order
-      const { order_id, amount, currency, key_id } = await mentorApi.createOrder(selectedSlot);
+    const isFree = (profile.mentor_profiles?.hourly_rate || 0) === 0;
 
-      // 2. Open Razorpay Checkout Modal
+    try {
+      if (isFree) {
+        // Direct booking for free sessions
+        await bookingApi.create({ slot_id: selectedSlot });
+        setSuccess(true);
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#6366f1', '#10b981', '#ffffff']
+        });
+        toast.success('Zero-fee session booked successfully!');
+        setTimeout(() => window.location.href = '/dashboard/sessions', 2000);
+        return;
+      }
+
+      // Paid session flow
+      const { order_id, amount, currency, key_id } = await mentorApi.createOrder(
+        selectedSlot, 
+        id as string, 
+        profile.mentor_profiles?.hourly_rate || 250
+      );
+
       const options = {
         key: key_id,
         amount,
@@ -122,7 +142,6 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
         order_id,
         handler: async (response: any) => {
           try {
-            // 3. Verify Payment and Create Booking
             await bookingApi.create({
               slot_id: selectedSlot,
               razorpay_order_id: response.razorpay_order_id,
@@ -443,12 +462,12 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 rounded-full blur-3xl -mr-16 -mt-16" />
               
-              <div className="text-center mb-10">
-                <div className="flex items-center justify-center gap-1 text-3xl font-black text-white mb-2">
-                   <IndianRupee size={24} className="text-indigo-400" />
+              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-[2rem] p-8 text-center mb-10 group hover:bg-indigo-500/20 transition-all">
+                <div className="flex items-center justify-center gap-2 text-5xl font-black text-white mb-2">
+                   <IndianRupee size={32} className="text-indigo-400" />
                    {mentorInfo?.hourly_rate || 250}
                 </div>
-                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Fixed 30-min Strategic Session</p>
+                <p className="text-[10px] text-indigo-400/60 font-black uppercase tracking-[0.2em]">Contribution per 30-min Synapse</p>
               </div>
 
               <div className="space-y-4 mb-10">

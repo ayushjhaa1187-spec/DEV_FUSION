@@ -20,8 +20,20 @@ export async function POST(req: NextRequest) {
   try {
     const { amount, mentor_id, slot_id } = await req.json();
 
-    if (!amount || amount < 0) {
-      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+    if (!amount || amount < 0 || !mentor_id) {
+      return NextResponse.json({ error: 'Invalid operation parameters' }, { status: 400 });
+    }
+
+    // Server-side Price Verification (Harden against tampering)
+    const { data: mentor } = await supabase
+      .from('mentor_profiles')
+      .select('hourly_rate')
+      .eq('id', mentor_id)
+      .single();
+
+    if (!mentor || mentor.hourly_rate !== amount) {
+      console.warn(`[Security] Price mismatch detected for user ${user.id}. Requested: ${amount}, Actual: ${mentor?.hourly_rate}`);
+      return NextResponse.json({ error: 'System integrity violation: price mismatch' }, { status: 400 });
     }
 
     // Orders are created in paise (1 INR = 100 paise)

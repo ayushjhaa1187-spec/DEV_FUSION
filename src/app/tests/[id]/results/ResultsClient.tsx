@@ -115,22 +115,34 @@ export default function ResultsClient({ attempt, test, questions, leaderboard }:
                       if (!isSelected && isCorrectOpt) optClass = styles.optShouldHaveBeen;
 
                       return (
-                        <div key={optIdx} className={`${styles.optReviewItem} ${optClass}`}>
+                        <div key={optIdx} className={`${styles.optReviewItem} ${optClass} relative`}>
                           <span className={styles.optLetter}>{String.fromCharCode(65 + optIdx)}</span>
                           <span className={styles.optText}>{opt}</span>
                           {isSelected && <span className={styles.yourChoice}>Your Choice</span>}
+                          {isCorrectOpt && !isCorrect && (
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase rounded-lg border border-emerald-500/20">
+                              Official Solution
+                            </span>
+                          )}
                         </div>
                       );
                     })}
                   </div>
 
                   {q.explanation && (
-                    <div className={styles.explanationBox}>
-                      <div className={styles.explHead}>
-                        <Sparkles size={16} color="#a78bfa" />
-                        <h3>AI Concept Explanation</h3>
+                    <div className="mt-8 p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/10 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform">
+                        <Sparkles size={40} color="#6366f1" />
                       </div>
-                      <p>{q.explanation}</p>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                          <Sparkles size={16} color="#818cf8" />
+                        </div>
+                        <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest">Neural Insight</h3>
+                      </div>
+                      <p className="text-gray-400 text-sm leading-relaxed font-medium">
+                        {q.explanation}
+                      </p>
                     </div>
                   )}
                 </motion.div>
