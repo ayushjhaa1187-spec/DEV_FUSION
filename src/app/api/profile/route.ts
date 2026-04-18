@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       supabase.from('doubts').select('*', { count: 'exact', head: true })
         .eq('author_id', user.id),
       // Use the canonical reputation_history table
-      supabase.from('reputation_history').select('action, points, entity_id, created_at')
+      supabase.from('reputation_history').select('event_type, points_awarded, reference_id, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20),
@@ -59,9 +59,9 @@ export async function GET(req: NextRequest) {
           doubts: doubts || 0
         },
         history: (history || []).map((h: any) => ({
-          event_type: h.action,
-          points: h.points,
-          entity_id: h.entity_id,
+          event_type: h.event_type,
+          points: h.points_awarded,
+          reference_id: h.reference_id,
           created_at: h.created_at
         })),
         badges: (badges || []).map((ub: any) => ({ ...ub.badges, earned_at: ub.unlocked_at }))

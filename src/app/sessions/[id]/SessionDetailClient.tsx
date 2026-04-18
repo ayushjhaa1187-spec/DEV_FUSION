@@ -9,9 +9,8 @@ interface SessionDetailData {
     id: string;
     status: string;
     jitsi_room_name?: string;
-    session_notes?: string;
-    rating?: number;
-    feedback?: string;
+    feedback_score?: number;
+    feedback_comment?: string;
     mentor_profiles?: {
       profiles?: {
         full_name?: string;
@@ -22,7 +21,7 @@ interface SessionDetailData {
       full_name?: string;
       username?: string;
     };
-    mentor_slots?: {
+    availability_slots?: {
       start_time?: string;
       end_time?: string;
     };
@@ -38,9 +37,8 @@ async function fetchSessionDetail(bookingId: string): Promise<SessionDetailData>
 
 async function updateSession(payload: {
   bookingId: string;
-  session_notes?: string;
-  rating?: number;
-  feedback?: string;
+  feedback_score?: number;
+  feedback_comment?: string;
 }) {
   const res = await fetch('/api/sessions', {
     method: 'PATCH',
@@ -59,7 +57,6 @@ export default function SessionDetailClient({
   userId: string;
 }) {
   const queryClient = useQueryClient();
-  const [notes, setNotes] = useState('');
   const [rating, setRating] = useState<number>(0);
   const [feedback, setFeedback] = useState('');
   const [sessionActive, setSessionActive] = useState(false);
@@ -70,7 +67,7 @@ export default function SessionDetailClient({
   });
 
   useEffect(() => {
-    const startTime = data?.booking?.mentor_slots?.start_time;
+    const startTime = data?.booking?.availability_slots?.start_time;
     if (data?.booking?.status === 'confirmed' && startTime) {
       const start = new Date(startTime).getTime();
       const checkActive = () => {
@@ -115,7 +112,7 @@ export default function SessionDetailClient({
       booking.mentor_profiles?.profiles?.username ||
       'Mentor';
 
-  const startTime = booking.mentor_slots?.start_time;
+  const startTime = booking.availability_slots?.start_time;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -151,30 +148,6 @@ export default function SessionDetailClient({
           </div>
         )}
 
-        {/* Session Notes */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Session Notes
-          </h2>
-          <textarea
-            value={notes || booking.session_notes || ''}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add notes during or after the session..."
-            rows={5}
-            className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
-          />
-          <button
-            onClick={() =>
-              updateMutation.mutate({ bookingId, session_notes: notes })
-            }
-            disabled={updateMutation.isPending}
-            className="mt-3 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
-          >
-            {updateMutation.isPending ? 'Saving...' : 'Save Notes'}
-          </button>
-        </div>
-
         {/* Rating & Feedback */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -192,7 +165,7 @@ export default function SessionDetailClient({
               >
                 <Star
                   className={`w-8 h-8 ${
-                    (rating || booking.rating || 0) >= val
+                    (rating || booking.feedback_score || 0) >= val
                       ? 'fill-yellow-400 text-yellow-400'
                       : 'text-gray-600'
                   }`}
@@ -202,7 +175,7 @@ export default function SessionDetailClient({
           </div>
 
           <textarea
-            value={feedback || booking.feedback || ''}
+            value={feedback || booking.feedback_comment || ''}
             onChange={(e) => setFeedback(e.target.value)}
             placeholder="Share your feedback about this session..."
             rows={4}
@@ -213,8 +186,8 @@ export default function SessionDetailClient({
             onClick={() =>
               updateMutation.mutate({
                 bookingId,
-                rating: rating || booking.rating,
-                feedback: feedback || booking.feedback,
+                feedback_score: rating || booking.feedback_score,
+                feedback_comment: feedback || booking.feedback_comment,
               })
             }
             disabled={updateMutation.isPending || (!rating && !feedback)}

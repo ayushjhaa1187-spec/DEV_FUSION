@@ -29,14 +29,15 @@ export async function POST(req: NextRequest) {
       .single();
 
     const { data: submissions } = await supabase
-      .from('test_submissions')
-      .select('weak_topics, tests(topic)')
+      .from('test_attempts')
+      .select('score, global_tests(topic)')
       .eq('user_id', user.id)
-      .order('submitted_at', { ascending: false })
+      .not('score', 'is', null)
+      .order('started_at', { ascending: false })
       .limit(5);
 
     const weakTopics = Array.from(new Set(
-        submissions?.flatMap(s => s.weak_topics as string[]) || []
+        submissions?.filter(s => (s.score || 0) < 70).map(s => s.global_tests?.topic as string) || []
     )).slice(0, 10);
 
     // 3. Prompt Construction

@@ -22,27 +22,27 @@ export async function GET(
 
     // 2. Fetch test results (practice activity)
     const { data: scores, error: scoresError } = await supabase
-      .from('practice_attempts')
+      .from('test_attempts')
       .select(`
         id,
         score,
-        created_at,
-        practice_tests (
-          title,
+        started_at,
+        global_tests (
           topic
         )
       `)
       .eq('user_id', profile.id)
-      .order('created_at', { ascending: true })
+      .not('score', 'is', null)
+      .order('started_at', { ascending: true })
       .limit(20);
 
     if (scoresError) throw scoresError;
 
     // 3. Format data for Recharts (line chart)
     const chartData = (scores || []).map((s: any) => ({
-      date: new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      date: new Date(s.started_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       score: s.score,
-      test: s.practice_tests?.title || 'Practice Test'
+      test: s.global_tests?.topic || 'Practice Test'
     }));
 
     return NextResponse.json(chartData);

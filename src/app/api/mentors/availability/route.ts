@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const { data, error } = await supabase
-      .from('mentor_availability')
+      .from('availability_rules')
       .select('*')
       .eq('mentor_id', mentorId)
       .order('day_of_week', { ascending: true })
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     // First, delete existing availability for this mentor
     const { error: deleteError } = await supabase
-      .from('mentor_availability')
+      .from('availability_rules')
       .delete()
       .eq('mentor_id', user.id);
 
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Then insert new availability
     if (availability && availability.length > 0) {
       const { error: insertError } = await supabase
-        .from('mentor_availability')
+        .from('availability_rules')
         .insert(availability.map((a: any) => ({
           ...a,
           mentor_id: user.id

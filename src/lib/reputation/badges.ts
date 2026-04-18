@@ -49,16 +49,16 @@ export async function checkAndAwardBadges(userId: string) {
         break;
       case 'subject_mastery':
         const { data: attempts } = await supabase
-          .from('practice_attempts')
-          .select('test_id, score, practice_tests:test_id(subject_id)')
+          .from('test_attempts')
+          .select('test_id, score, global_tests:test_id(subject)')
           .eq('user_id', userId)
           .gte('score', 90);
         
         // Defensive mapping for nested join data
         const masterySubjects = new Set(
           (attempts || []).map(a => {
-            const test = (a as any).practice_tests;
-            return test?.subject_id;
+            const test = (a as any).global_tests;
+            return test?.subject;
           }).filter(Boolean)
         );
         if (masterySubjects.size >= (criteria_value || 0)) shouldAward = true;

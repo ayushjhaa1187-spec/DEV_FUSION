@@ -12,14 +12,14 @@ export async function GET(req: NextRequest) {
 
     // Fetch bookings for this student with slot times
     const { data: bookings } = await supabase
-      .from('mentor_bookings')
-      .select('id, mentor_id, slot_id, mentor_slots(start_time), mentor_profiles(profiles(full_name))')
+      .from('bookings')
+      .select('id, mentor_id, slot_id, availability_slots:slot_id(start_time), mentor_profiles:mentor_id(profiles:user_id(full_name))')
       .eq('student_id', user.id)
       .eq('status', 'confirmed');
 
     // Filter in JS for simplicity in this specific GET route
     const upcoming = bookings?.filter((b: any) => {
-      const startTime = new Date(b.mentor_slots?.start_time);
+      const startTime = new Date(b.availability_slots?.start_time);
       return startTime > now && startTime <= thirtyMinutesFromNow;
     }) || [];
 
@@ -48,12 +48,12 @@ export async function POST(req: NextRequest) {
 
     // 1. Find all confirmed bookings starting in the next 30 minutes
     const { data: upcomingBookings } = await supabase
-      .from('mentor_bookings')
-      .select('*, mentor_slots(start_time)')
+      .from('bookings')
+      .select('*, availability_slots:slot_id(start_time)')
       .eq('status', 'confirmed');
 
     const toRemind = upcomingBookings?.filter((b: any) => {
-      const startTime = new Date(b.mentor_slots?.start_time);
+      const startTime = new Date(b.availability_slots?.start_time);
       // Only remind if it's within the window AND hasn't started yet
       return startTime > now && startTime <= thirtyMinutesFromNow;
     }) || [];
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     // 2. Insert notifications for each participant (Student & Mentor)
     const results = await Promise.all(toRemind.map(async (booking) => {
       const sessionLink = `/sessions/${booking.id}`;
-      const startTimeStr = new Date(booking.mentor_slots.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const startTimeStr = new Date(booking.availability_slots.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       
       const prepareNotification = async (userId: string, targetType: 'student' | 'mentor') => {
          // Check if already reminded for this specific session link

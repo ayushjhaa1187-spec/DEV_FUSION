@@ -23,20 +23,18 @@ export async function POST(req: NextRequest) {
   try {
     // 2. Fetch Recent Performance Data
     const { data: submissions, error: subError } = await supabase
-      .from('test_submissions')
+      .from('test_attempts')
       .select(`
         score,
-        max_score,
-        percentage,
-        weak_topics,
-        submitted_at,
-        tests (
+        started_at,
+        global_tests (
           topic,
-          subjects (name)
+          subject
         )
       `)
       .eq('user_id', user.id)
-      .order('submitted_at', { ascending: false })
+      .not('score', 'is', null)
+      .order('started_at', { ascending: false })
       .limit(10);
 
     if (subError) throw subError;
@@ -50,11 +48,10 @@ export async function POST(req: NextRequest) {
 
     // 3. Prepare AI Prompt
     const performanceSnapshot = submissions.map(s => ({
-      topic: s.tests?.topic,
-      subject: (s.tests as any)?.subjects?.name,
-      score: `${s.score}/${s.max_score}`,
-      percentage: s.percentage,
-      weaknesses: s.weak_topics
+      topic: s.global_tests?.topic,
+      subject: s.global_tests?.subject,
+      score: `${s.score}/100`,
+      percentage: s.score
     }));
 
     const prompt = `You are the SkillBridge Lead AI Coach. 

@@ -47,31 +47,59 @@ export async function POST(req: NextRequest) {
     const questions = result.data;
 
     // 4. Persistence
+    // Check if a global test already exists for this subject + topic pair
+    let test;
+    const { data: existingTest } = await supabase
+      .from('global_tests')
+      .select('id, subject, topic, total_questions')
+      .eq('subject', subject?.name || 'General')
+      .eq('topic', topic)
+      .single();
+
+    if (existingTest) {
+      test = existingTest;
+      // Fetch questions if test exists
+      const { data: existingQs } = await supabase
+        .from('global_test_questions')
+        .select('*')
+        .eq('test_id', test.id)
+        .order('order_index', { ascending: true });
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          ...test,
+          questions: existingQs || [],
+          remaining: limit.remaining
+        }
+      });
+    }
+
     // Create Test Header
-    const { data: test, error: testError } = await supabase
-      .from('practice_tests')
+    const { data: newTest, error: testError } = await supabase
+      .from('global_tests')
       .insert({
-        creator_id: user.id,
-        subject_id,
+        subject: subject?.name || 'General',
         topic,
-        duration_minutes: 10
+        total_questions: questions.length
       })
       .select()
       .single();
 
     if (testError) throw testError;
+    test = newTest;
 
     // Insert Questions
-    const formattedQuestions = questions.map((q: any) => ({
+    const formattedQuestions = questions.map((q: any, idx: number) => ({
       test_id: test.id,
       question_text: q.question_text,
       options: q.options,
-      correct_answer_index: q.correct_answer_index,
-      explanation: q.explanation
+      correct_index: q.correct_answer_index,
+      order_index: idx
     }));
 
     const { data: storedQuestions, error: questionError } = await supabase
-      .from('practice_questions')
+      .from('global_test_questions')
       .insert(formattedQuestions)
       .select();
 

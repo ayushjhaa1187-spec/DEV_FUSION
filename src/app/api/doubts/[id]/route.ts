@@ -48,7 +48,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
           avatar_url,
           reputation_points
         ),
-        votes:answer_votes (
+        raw_votes:answer_votes (
           vote_type,
           user_id
         )
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
   // Compute per-answer vote totals and current user's vote
   const answersWithVotes = (doubt.answers ?? []).map((answer: any) => {
-    const rawVotes: any[] = answer.votes ?? [];
+    const rawVotes: any[] = answer.raw_votes ?? [];
     
     // Robust vote counting: handles both Legacy INT (1/-1) and Modern TEXT ('up'/'down')
     const upvotes   = rawVotes.filter(v => v.vote_type === 'up' || v.vote_type === 1 || v.vote_type === '1').length;
@@ -93,14 +93,14 @@ export async function GET(req: NextRequest, context: RouteContext) {
       ...answer,
       upvotes,
       downvotes,
-      net_votes: upvotes - downvotes,
+      votes: upvotes - downvotes,
       user_vote: userVote,
-      votes: undefined, // strip raw relations from response
+      raw_votes: undefined, // strip raw relations from response
     };
   }).sort((a: any, b: any) => {
     if (a.is_accepted && !b.is_accepted) return -1;
     if (!a.is_accepted && b.is_accepted) return 1;
-    return b.net_votes - a.net_votes;
+    return b.votes - a.votes;
   });
 
   return NextResponse.json({

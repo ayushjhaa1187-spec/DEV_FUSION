@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
-import { GoogleGenerativeAI, Schema, Type } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
 // Exponential backoff helper
-async function generateWithRetry(genAI: GoogleGenerativeAI, prompt: string, schema: Schema, maxRetries = 3) {
+async function generateWithRetry(genAI: GoogleGenerativeAI, prompt: string, schema: any, maxRetries = 3) {
   let retries = 0;
   let delay = 1000;
 
@@ -72,23 +72,23 @@ export async function POST(req: NextRequest) {
       
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
       
-      const schema: Schema = {
-        type: Type.ARRAY,
+      const schema: any = {
+        type: SchemaType.ARRAY,
         description: "A list of multiple choice questions.",
         items: {
-          type: Type.OBJECT,
+          type: SchemaType.OBJECT,
           properties: {
             question: {
-              type: Type.STRING,
+              type: SchemaType.STRING,
               description: "The text of the question."
             },
             options: {
-              type: Type.ARRAY,
+              type: SchemaType.ARRAY,
               description: "Exactly 4 string options for the multiple choice. Only one is correct.",
-              items: { type: Type.STRING }
+              items: { type: SchemaType.STRING }
             },
             correct_index: {
-              type: Type.INTEGER,
+              type: SchemaType.INTEGER,
               description: "The integer index (0, 1, 2, or 3) indicating which option in the 'options' array is the correct answer."
             }
           },

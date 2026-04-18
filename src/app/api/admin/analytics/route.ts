@@ -30,15 +30,15 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('doubts').select('*', { count: 'exact', head: true }),
-      supabase.from('mentor_bookings').select('amount_paid'),
+      supabase.from('bookings').select('amount'),
       supabase.from('doubts').select('subject_id, subjects(name)'),
-      supabase.from('mentor_profiles').select('*, profiles(username, avatar_url)').order('sessions_completed', { ascending: false }).limit(5),
-      supabase.from('test_results').select('score, subjects(name)'),
+      supabase.from('mentor_profiles').select('*, profiles:user_id(username, avatar_url)').order('sessions_completed', { ascending: false }).limit(5),
+      supabase.from('test_attempts').select('score, global_tests(subject)'),
       supabase.from('doubts').select('*, profiles(username)').eq('is_reported', true),
       supabase.from('doubts').select('*', { count: 'exact', head: true }).eq('escalation_status', 'requested')
     ]);
 
-    const totalRevenue = sessionData?.reduce((acc, curr) => acc + (curr.amount_paid || 0), 0) || 0;
+    const totalRevenue = sessionData?.reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
     const totalSessions = sessionData?.length || 0;
 
     // Aggregate in JS for flexibility
@@ -50,9 +50,9 @@ export async function GET(req: NextRequest) {
 
     const testScores: Record<string, { total: number, count: number }> = {};
     testPerformance?.forEach((t: any) => {
-        const name = t.subjects?.name || 'General';
+        const name = (t.global_tests as any)?.subject || 'General';
         if (!testScores[name]) testScores[name] = { total: 0, count: 0 };
-        testScores[name].total += t.score;
+        testScores[name].total += t.score || 0;
         testScores[name].count += 1;
     });
 

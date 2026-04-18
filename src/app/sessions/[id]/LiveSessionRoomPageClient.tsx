@@ -16,8 +16,12 @@ export default function LiveSessionRoomPageClient({ id }: { id: string }) {
   useEffect(() => {
     async function loadBooking() {
       const { data } = await supabase
-        .from('mentor_bookings')
-        .select('*, profiles:student_id(username, full_name, avatar_url), mentors:mentor_id(profiles(username))')
+        .from('bookings')
+        .select(`
+          *,
+          profiles:student_id(username, full_name, avatar_url),
+          mentor_profiles:mentor_id(profiles:user_id(username, full_name, avatar_url))
+        `)
         .eq('id', id)
         .single();
       
@@ -35,7 +39,7 @@ export default function LiveSessionRoomPageClient({ id }: { id: string }) {
         if ((window as any).JitsiMeetExternalAPI) {
             clearInterval(interval);
             const options = {
-              roomName: booking.jitsi_link?.split('/').pop() || `SkillBridge-Session-${id}`,
+              roomName: booking.jitsi_room_name || `SkillBridge-Session-${id}`,
               width: '100%',
               height: '100%',
               parentNode: document.querySelector('#jitsi-container'),

@@ -81,9 +81,9 @@ export const mentorApi = {
 };
 
 export const bookingApi = {
-  initiate: (data: { mentor_id: string, start_timestamp: string }) => apiFetch('/api/bookings/initiate', { method: 'POST', body: JSON.stringify(data) }),
+  initiate: (data: { mentor_id: string, slot_id: string }) => apiFetch('/api/bookings/initiate', { method: 'POST', body: JSON.stringify(data) }),
   verifyPayment: (data: { booking_id: string, razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string }) => apiFetch('/api/bookings/verify-payment', { method: 'POST', body: JSON.stringify(data) }),
-  getMyBookings: () => apiFetch('/api/mentor-bookings'), // assuming this exists or is updated later
+  getMyBookings: () => apiFetch('/api/mentor-bookings'),
 };
 
 export const subjectApi = {

@@ -12,14 +12,14 @@ export default async function TestResultsPage({ params }: Props) {
 
   // Fetch attempt with test and questions
   const { data: attempt, error: attemptError } = await supabase
-    .from('practice_attempts')
+    .from('test_attempts')
     .select(`
       *,
-      practice_tests (
+      global_tests (
         id,
         topic,
-        subjects (name),
-        practice_questions (*)
+        subject,
+        global_test_questions (*)
       )
     `)
     .eq('id', id)
@@ -29,8 +29,8 @@ export default async function TestResultsPage({ params }: Props) {
     notFound();
   }
 
-  const test = attempt.practice_tests;
-  const questions = test.practice_questions || [];
+  const test = attempt.global_tests;
+  const questions = test.global_test_questions || [];
 
   // Fetch Leaderboard for this topic
   const { data: leaderboard } = await supabase

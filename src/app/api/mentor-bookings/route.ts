@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Atomically verify and lock the slot to prevent double-booking race conditions
     const { data: slot, error: lockError } = await supabase
-      .from('mentor_slots')
+      .from('availability_slots')
       .update({ status: 'booked' })
       .eq('id', slot_id)
       .eq('status', 'available')
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     const jitsiRoomName = generateJitsiRoomName(`${slot_id}-${user.id}-${Date.now()}`);
     
     const { data: booking, error: bookingError } = await supabase
-      .from('mentor_bookings')
+      .from('bookings')
       .insert({
         student_id: user.id,
         mentor_id: slot.mentor_id,
@@ -57,11 +57,8 @@ export async function POST(req: NextRequest) {
         status: isFree ? 'confirmed' : 'pending', 
         jitsi_room_name: jitsiRoomName,
         meeting_link: getJitsiMeetUrl(jitsiRoomName),
-        payment_status: isFree ? 'free' : 'pending',
-        amount_paid: isFree ? 0 : (mentor?.hourly_rate || 0),
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature
+        amount: isFree ? 0 : (mentor?.hourly_rate || 0)
+        // Note: transactions should be handled separately and linked via transaction_id
       })
       .select()
       .single();
@@ -98,12 +95,15 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   const { data, error } = await supabase
-    .from('mentor_bookings')
+    .from('bookings')
     .select(`
       *,
-      mentor:profiles!mentor_id (username, full_name, avatar_url),
-      student:profiles!student_id (username, full_name, avatar_url),
-      slot:mentor_slots (start_time, end_time)
+      mentor:mentor_id (
+        id,
+        profiles!inner (username, full_name, avatar_url)
+      ),
+      student:student_id (username, full_name, avatar_url),
+      slot:slot_id (start_time, end_time)
     `)
     .or(`student_id.eq.${user.id},mentor_id.eq.${user.id}`)
     .order('created_at', { ascending: false });

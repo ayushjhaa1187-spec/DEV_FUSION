@@ -34,14 +34,29 @@ export async function POST(req: NextRequest) {
 
     // 2. Simulated payment checks (if missing Razorpay env keys)
     if (!process.env.RAZORPAY_KEY_SECRET && razorpay_order_id?.startsWith('order_simulated_')) {
-        // Simulated Verify
+        // Find existing pending transaction or create one
+        const { data: tx } = await supabase
+            .from('transactions')
+            .select('id')
+            .eq('gateway_order_id', razorpay_order_id)
+            .single();
+
+        await supabase.from('transactions')
+            .update({ status: 'successful' })
+            .eq('gateway_order_id', razorpay_order_id);
+
         await supabase.from('bookings')
             .update({ 
-                payment_status: 'COMPLETED',
-                razorpay_payment_id: razorpay_payment_id || 'simulated_payment_' + Date.now(),
+                status: 'confirmed',
+                transaction_id: tx?.id
             })
             .eq('id', booking.id);
             
+        // Mark slot as booked
+        if (booking.slot_id) {
+            await supabase.from('availability_slots').update({ status: 'booked' }).eq('id', booking.slot_id);
+        }
+
         return NextResponse.json({ success: true, message: 'Simulated Payment Verified' });
     }
 
@@ -59,22 +74,41 @@ export async function POST(req: NextRequest) {
     const isAuthentic = expectedSignature === razorpay_signature;
 
     if (!isAuthentic) {
-        // Payment failed/tampered
+        // Update transaction to failed
+        await supabase.from('transactions')
+            .update({ status: 'failed' })
+            .eq('gateway_order_id', razorpay_order_id);
+
         await supabase.from('bookings')
-            .update({ payment_status: 'FAILED' })
+            .update({ status: 'cancelled' })
             .eq('id', booking.id);
             
         return NextResponse.json({ success: false, error: 'Invalid Payment Signature' }, { status: 400 });
     }
 
-    // 4. Update booking to successful
+    // 4. Update transaction and booking to successful
+    const { data: updatedTx } = await supabase
+        .from('transactions')
+        .update({ 
+            status: 'successful',
+            gateway_payment_id: razorpay_payment_id,
+            gateway_signature: razorpay_signature
+        })
+        .eq('gateway_order_id', razorpay_order_id)
+        .select()
+        .single();
+
     await supabase.from('bookings')
         .update({ 
-            payment_status: 'COMPLETED',
-            razorpay_payment_id,
-            razorpay_signature
+            status: 'confirmed',
+            transaction_id: updatedTx?.id
         })
         .eq('id', booking.id);
+
+    // Mark slot as booked
+    if (booking.slot_id) {
+        await supabase.from('availability_slots').update({ status: 'booked' }).eq('id', booking.slot_id);
+    }
 
     return NextResponse.json({ success: true, message: 'Payment Verified Successfully' });
 

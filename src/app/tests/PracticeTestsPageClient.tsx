@@ -370,16 +370,16 @@ export default function PracticeTestsPageClient() {
                         <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500">Recent Activity</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {filteredHistory.slice(0, 4).map((h) => (
-                              <Link href={`/tests/${h.id}/results`} key={h.id} className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all group relative overflow-hidden">
+                              <Link href={`/tests/${h.attempt_id}/results`} key={h.attempt_id} className="p-6 rounded-3xl bg-white/5 border border-white/10 hover:border-indigo-500/50 transition-all group relative overflow-hidden">
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] font-bold rounded-full uppercase">
-                                      {h.practice_tests?.subjects?.name || 'Test'}
+                                      {h.subject}
                                     </div>
                                     <div className="text-2xl font-black text-white">{h.score}%</div>
                                 </div>
-                                <h5 className="text-lg font-bold text-white mb-2 truncate">{h.practice_tests?.topic}</h5>
+                                <h5 className="text-lg font-bold text-white mb-2 truncate">{h.topic}</h5>
                                 <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium">
-                                    <Clock size={12} /> {new Date(h.started_at).toLocaleDateString()}
+                                    <Clock size={12} /> {new Date(h.completed_at).toLocaleDateString()}
                                 </div>
                                 <ChevronRight className="absolute bottom-6 right-6 text-gray-600 group-hover:text-indigo-400 transition-colors" />
                               </Link>

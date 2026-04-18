@@ -16,9 +16,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // 1. Verify the booking belongs to this user and is completed
+    // 1. Verify the booking belongs to this user
     const { data: booking, error: fetchError } = await supabase
-      .from('mentor_bookings')
+      .from('bookings')
       .select('student_id, status')
       .eq('id', bookingId)
       .single();
@@ -27,26 +27,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid booking' }, { status: 403 });
     }
 
-    // 2. Insert the rating
-    const { error: insertError } = await supabase
-      .from('mentor_ratings')
-      .upsert({
-        mentor_id: mentorId,
-        student_id: user.id,
-        booking_id: bookingId,
-        rating,
-        review
-      }, { onConflict: 'booking_id' });
+    // 2. Update the booking with feedback
+    const { error: updateError } = await supabase
+      .from('bookings')
+      .update({
+        feedback_score: rating,
+        feedback_comment: review,
+        status: 'completed'
+      })
+      .eq('id', bookingId);
 
-    if (insertError) throw insertError;
-
-    // 3. Mark booking as completed if it wasn't already
-    if (booking.status !== 'completed') {
-      await supabase
-        .from('mentor_bookings')
-        .update({ status: 'completed' })
-        .eq('id', bookingId);
-    }
+    if (updateError) throw updateError;
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

@@ -49,14 +49,14 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
   
   const [profile, setProfile] = useState<MentorProfile | null>(null);
   const [targetDate, setTargetDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [slots, setSlots] = useState<string[]>([]);
+  const [slots, setSlots] = useState<{id: string, start_time: string}[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [totalReviews, setTotalReviews] = useState(0);
   const [reviewPage, setReviewPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'reviews' | 'badges'>('about');
@@ -103,7 +103,7 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
       setTargetDate(e.target.value);
       if (profile?.id) {
           fetchSlots(profile.id, e.target.value);
-          setSelectedSlot(null);
+          setSelectedSlotId(null);
       }
   };
 
@@ -121,16 +121,16 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
   };
 
   const handleBooking = async () => {
-    if (!selectedSlot) return toast.error('Please select a time slot');
+    if (!selectedSlotId) return toast.error('Please select a time slot');
     if (!user) return toast.error('Please log in to book a session');
     
     setBookingLoading(true);
 
     try {
       // 1. Initiate Order
-      const initRes = await bookingApi.initiate({ mentor_id: id, start_timestamp: selectedSlot });
+      const initRes = await bookingApi.initiate({ mentor_id: id, slot_id: selectedSlotId });
       
-      if (initRes.status === 'FREE') {
+      if (initRes.status === 'confirmed') {
         setSuccess(true);
         triggerConfetti();
         toast.success('Zero-fee session booked successfully!');
@@ -491,20 +491,20 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
                   {slots.length > 0 ? (
                     slots.map((slot) => (
                       <button
-                        key={slot}
+                        key={slot.id}
                         disabled={bookingLoading}
-                        onClick={() => setSelectedSlot(slot)}
+                        onClick={() => setSelectedSlotId(slot.id)}
                         className={`p-4 rounded-2xl border transition-all text-left flex flex-col relative overflow-hidden ${
-                          selectedSlot === slot 
+                          selectedSlotId === slot.id 
                             ? 'bg-indigo-600 border-indigo-500 shadow-xl shadow-indigo-600/20 text-white' 
                             : 'bg-white/5 border-white/5 hover:border-indigo-500/30 text-gray-400'
                         }`}
                       >
                          <p className="text-[9px] font-black uppercase opacity-60">
-                           {new Date(slot).toLocaleDateString([], { weekday: 'short' })}
+                           {new Date(slot.start_time).toLocaleDateString([], { weekday: 'short' })}
                          </p>
                          <p className="text-sm font-black">
-                           {new Date(slot).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                           {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                          </p>
                       </button>
                     ))
@@ -518,7 +518,7 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
 
               <button
                 onClick={handleBooking}
-                disabled={bookingLoading || !selectedSlot || success}
+                disabled={bookingLoading || !selectedSlotId || success}
                 className={`w-full py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${
                   success 
                     ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 

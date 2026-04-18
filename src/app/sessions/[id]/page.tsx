@@ -129,8 +129,13 @@ export default function SessionPage() {
       if (!user) return router.push('/login');
 
       const { data, error } = await supabase
-        .from('mentor_bookings')
-        .select('*, mentor_profiles(id, profiles(full_name)), profiles:student_id(full_name)')
+        .from('bookings')
+        .select(`
+          *,
+          availability_slots:slot_id(start_time),
+          mentor_profiles:mentor_id(id, user_id, profiles:user_id(full_name)),
+          profiles:student_id(full_name)
+        `)
         .eq('id', id)
         .single();
 
@@ -151,7 +156,7 @@ export default function SessionPage() {
     if (!booking) return;
 
     const timer = setInterval(() => {
-      const startTime = new Date(booking.start_time).getTime();
+      const startTime = new Date(booking.availability_slots?.start_time || booking.created_at).getTime();
       const now = new Date().getTime();
       const diffInSeconds = Math.floor((startTime - now) / 1000);
       

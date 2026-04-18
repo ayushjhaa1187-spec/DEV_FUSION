@@ -15,12 +15,12 @@ export function GamificationListener() {
   const { supabase } = useSafeRealtime(`gamification-${user?.id}`, [
     {
       event: 'INSERT',
-      table: 'reputation_events',
+      table: 'reputation_history',
       filter: `user_id=eq.${user.id}`,
       handler: (payload) => {
-        const { points_delta, event_type } = payload.new;
-        if (points_delta > 0) {
-          showToast(`+${points_delta} XP earned for ${event_type}!`, 'success');
+        const { points_awarded, event_type } = payload.new;
+        if (points_awarded > 0) {
+          showToast(`+${points_awarded} XP earned for ${event_type}!`, 'success');
         }
       }
     },

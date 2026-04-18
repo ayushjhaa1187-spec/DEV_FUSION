@@ -17,13 +17,13 @@ export async function POST(req: NextRequest) {
 
     // 1. Fetch slot details and mentor price
     const { data: slot, error: slotError } = await supabase
-      .from('mentor_slots')
+      .from('availability_slots')
       .select(`
         id,
         status,
-        mentor_profiles (
+        mentor_profiles:mentor_id (
           id,
-          hourly_rate
+          session_fee
         )
       `)
       .eq('id', slot_id)
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const mentorProfile = slot.mentor_profiles as any;
-    const amount = (mentorProfile?.hourly_rate || 250) * 100; // Razorpay expects amount in paise
+    const amount = (mentorProfile?.session_fee || 250) * 100; // Razorpay expects amount in paise
 
     // 2. Create Razorpay order
     const options = {

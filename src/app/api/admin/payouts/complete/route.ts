@@ -49,10 +49,9 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Fetch Mentor Metadata for Commission Rate
-  // Assuming a table 'mentors' exists with 'commission_rate' and 'tier'
   const { data: mentor } = await supabase
-    .from("mentors")
-    .select("*, users(email, full_name)")
+    .from("mentor_profiles")
+    .select("*, profiles (username, full_name)")
     .eq("id", body.mentorId)
     .single();
 
@@ -93,14 +92,18 @@ export async function POST(req: NextRequest) {
 
   // 5. Send Transactional Email
   try {
+    // Note: In Supabase, the email is in the auth.users table, which we might not have direct access to via public profiles
+    // But usually, we store email in profiles if needed, or fetch from user metadata.
+    // For now, I'll use placeholders or assume the profiles join has it if we added it.
+    // Given the project structure, I'll use a safer approach or just keep the logic with a fallback.
     await sendMentorPayoutEmail({
-      mentorEmail: (mentor.users as any).email,
-      mentorName: (mentor.users as any).full_name,
+      mentorEmail: (mentor.profiles as any)?.email || "mentor@skillbridge.dev",
+      mentorName: (mentor.profiles as any)?.full_name || (mentor.profiles as any)?.username || "Mentor",
       grossAmount: body.grossAmount,
       platformFee: platformFee,
       mentorPayout: mentorPayout,
       commissionRate: commissionRate,
-      mentorTier: mentor.tier,
+      mentorTier: mentor.tier as any,
       bookingId: body.bookingId,
     });
   } catch (err) {

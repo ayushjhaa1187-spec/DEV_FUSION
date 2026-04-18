@@ -9,7 +9,6 @@ export async function GET(req: NextRequest) {
   if (!mentorId) return NextResponse.json({ error: 'Mentor ID is required' }, { status: 400 });
 
   // Resolve mentor_profiles.id from profiles.id if necessary
-  // (Assuming frontend might pass the user's UUID)
   const { data: mentorProfile } = await supabase
     .from('mentor_profiles')
     .select('id')
@@ -19,7 +18,7 @@ export async function GET(req: NextRequest) {
   if (!mentorProfile) return NextResponse.json({ data: [] });
 
   const { data, error } = await supabase
-    .from('mentor_slots')
+    .from('availability_slots')
     .select('*')
     .eq('mentor_id', mentorProfile.id)
     .eq('status', 'available')
@@ -36,17 +35,17 @@ export async function POST(req: NextRequest) {
 
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // 1. Verify user is a mentor
+  // 1. Verify user is a mentor and get their mentor_profile.id
   const { data: mentor } = await supabase
     .from('mentor_profiles')
     .select('id')
-    .eq('id', user.id)
+    .eq('user_id', user.id)
     .single();
 
   if (!mentor) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   try {
-    const { start_time, end_time: provided_end_time } = await req.json();
+    const { start_time } = await req.json();
     const start = new Date(start_time);
     
     // Prevent slots in the past
@@ -59,7 +58,7 @@ export async function POST(req: NextRequest) {
     const end_time = end.toISOString();
 
     const { data, error } = await supabase
-      .from('mentor_slots')
+      .from('availability_slots')
       .insert({
         mentor_id: mentor.id,
         start_time: start.toISOString(),

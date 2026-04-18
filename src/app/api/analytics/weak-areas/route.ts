@@ -9,26 +9,25 @@ export async function GET(req: NextRequest) {
 
   try {
     const { data: attempts } = await supabase
-      .from('practice_attempts')
-      .select('score, practice_tests(subjects(name, id))')
+      .from('test_attempts')
+      .select('score, global_tests(subject)')
       .eq('user_id', user.id);
 
     if (!attempts || attempts.length === 0) return NextResponse.json([]);
 
-    const subjectMap: Record<string, { total: number, count: number, id: string }> = {};
+    const subjectMap: Record<string, { total: number, count: number }> = {};
     attempts.forEach((a: any) => {
-      const s = a.practice_tests?.subjects;
-      if (!s) return;
-      if (!subjectMap[s.name]) subjectMap[s.name] = { total: 0, count: 0, id: s.id };
-      subjectMap[s.name].total += (a.score || 0);
-      subjectMap[s.name].count += 1;
+      const sName = a.global_tests?.subject;
+      if (!sName) return;
+      if (!subjectMap[sName]) subjectMap[sName] = { total: 0, count: 0 };
+      subjectMap[sName].total += (a.score || 0);
+      subjectMap[sName].count += 1;
     });
 
     const analysis = Object.entries(subjectMap)
       .map(([name, stats]) => ({
         name,
-        avg: Math.round(stats.total / stats.count),
-        id: stats.id
+        avg: Math.round(stats.total / stats.count)
       }))
       .filter(s => s.avg < 80) // Below 80% is the threshold for "needs improvement" in high-performing contexts
       .sort((a, b) => a.avg - b.avg)

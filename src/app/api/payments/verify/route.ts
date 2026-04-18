@@ -31,12 +31,11 @@ export async function POST(req: NextRequest) {
     const { error: txError } = await supabase
       .from('transactions')
       .update({
-        status: 'completed',
-        razorpay_payment_id,
-        razorpay_signature,
-        updated_at: new Date().toISOString()
+        status: 'successful',
+        gateway_payment_id: razorpay_payment_id,
+        gateway_signature: razorpay_signature
       })
-      .eq('razorpay_order_id', razorpay_order_id);
+      .eq('gateway_order_id', razorpay_order_id);
 
     if (txError) throw txError;
 
@@ -74,10 +73,8 @@ export async function POST(req: NextRequest) {
     } else if (type === 'session') {
       // Update booking status
       const { error: bookingError } = await supabase
-        .from('mentor_bookings')
+        .from('bookings')
         .update({
-          payment_status: 'completed',
-          payment_id: razorpay_payment_id,
           status: 'confirmed'
         })
         .eq('slot_id', entity_id);

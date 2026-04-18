@@ -31,32 +31,48 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
     }
 
-    // Success: Insert enrollment/booking
-    // Check if slot is still available
-    const { data: slot } = await supabase
-      .from('mentor_slots')
+    // 1. Create a transaction record
+    const { data: transaction, error: txError } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: user.id,
+        amount,
+        gateway: 'razorpay',
+        gateway_order_id: razorpay_order_id,
+        gateway_payment_id: razorpay_payment_id,
+        gateway_signature: razorpay_signature,
+        status: 'successful'
+      })
+      .select()
+      .single();
+
+    if (txError) throw txError;
+
+    // 2. Fetch slot to confirm availability and get mentor_id
+    const { data: slot, error: slotErr } = await supabase
+      .from('availability_slots')
       .select('*')
       .eq('id', slot_id)
       .single();
 
-    if (!slot || slot.is_booked) {
+    if (slotErr || !slot || slot.status === 'booked') {
       return NextResponse.json({ error: 'Slot is no longer available' }, { status: 409 });
     }
 
-    // Atomic transaction: update slot AND create booking
-    const { error: bookingError } = await supabase.from('mentor_bookings').insert({
+    // 3. Create booking linked to the transaction
+    const { error: bookingError } = await supabase.from('bookings').insert({
       slot_id,
       student_id: user.id,
       mentor_id: slot.mentor_id,
       status: 'confirmed',
-      payment_id: razorpay_payment_id,
-      amount_paid: amount
+      transaction_id: transaction.id,
+      amount: amount
     });
 
     if (bookingError) throw bookingError;
 
-    // Mark slot as booked
-    await supabase.from('mentor_slots').update({ is_booked: true }).eq('id', slot_id);
+    // 4. Mark slot as booked
+    await supabase.from('availability_slots').update({ status: 'booked' }).eq('id', slot_id);
 
     // Audit log
     await logAuditEvent(user.id, 'payment_verified', 'mentor_booking', slot_id, {

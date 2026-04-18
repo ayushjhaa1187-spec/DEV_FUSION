@@ -241,8 +241,8 @@ export async function extractConceptScores(
 
   // Get test subject
   const { data: test } = await supabase
-    .from('practice_tests')
-    .select('subject')
+    .from('global_tests')
+    .select('subject, topic')
     .eq('id', testId)
     .single();
 
@@ -253,7 +253,7 @@ export async function extractConceptScores(
 
   // Get answers for this attempt, with question topics
   const { data: answers } = await supabase
-    .from('practice_answers')
+    .from('test_attempt_answers')
     .select('question_id, is_correct')
     .eq('attempt_id', attemptId);
 
@@ -264,8 +264,8 @@ export async function extractConceptScores(
   // Fetch question details to get topics
   const questionIds = answers.map((a) => a.question_id);
   const { data: questions } = await supabase
-    .from('practice_questions')
-    .select('id, topic')
+    .from('global_test_questions')
+    .select('id, question_text') // In global_tests, question is the concept for now
     .in('id', questionIds);
 
   if (!questions) {
@@ -277,7 +277,7 @@ export async function extractConceptScores(
 
   answers.forEach((answer) => {
     const question = questions.find((q) => q.id === answer.question_id);
-    const concept = question?.topic || 'general';
+    const concept = test.topic; // We'll use the test topic as the concept for unified scoring
 
     if (!conceptScores[concept]) {
       conceptScores[concept] = { correct: 0, total: 0 };

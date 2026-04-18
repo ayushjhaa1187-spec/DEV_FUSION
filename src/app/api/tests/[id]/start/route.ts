@@ -14,19 +14,19 @@ export async function POST(
   try {
     // 1. Fetch test details
     const { data: test, error: testErr } = await supabase
-      .from('practice_tests')
-      .select('id, duration_minutes, subject_id, topic')
+      .from('global_tests')
+      .select('id, subject, topic')
       .eq('id', id)
       .single();
 
     if (testErr || !test) return NextResponse.json({ error: 'Test not found' }, { status: 404 });
 
-    const durationMinutes = test.duration_minutes || 30;
+    const durationMinutes = 10;
     const endsAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
 
     // 2. Create the attempt (only columns that exist in schema: id, user_id, test_id, score, started_at, completed_at)
     const { data: attempt, error: attemptErr } = await supabase
-      .from('practice_attempts')
+      .from('test_attempts')
       .insert({
         user_id: user.id,
         test_id: id,
@@ -39,9 +39,10 @@ export async function POST(
 
     // 3. Fetch questions (omit correct answers for security)
     const { data: questions, error: qErr } = await supabase
-      .from('practice_questions')
-      .select('id, question_text, options')
-      .eq('test_id', id);
+      .from('global_test_questions')
+      .select('id, question_text, options, order_index')
+      .eq('test_id', id)
+      .order('order_index', { ascending: true });
 
     if (qErr) throw qErr;
 

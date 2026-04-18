@@ -33,7 +33,7 @@ export default function MentorDashboardClient() {
       const { data: profileData } = await supabase
         .from('mentor_profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (profileData) {
@@ -43,16 +43,16 @@ export default function MentorDashboardClient() {
         const { data: ledgerData } = await supabase
           .from('commission_ledger')
           .select('*')
-          .eq('mentor_id', user.id)
+          .eq('mentor_id', profileData.id)
           .order('created_at', { ascending: false })
           .limit(5);
         setLedger(ledgerData || []);
 
         // 3. Fetch upcoming bookings
         const { data: bookingData } = await supabase
-          .from('mentor_bookings')
-          .select('*, profiles!student_id(full_name, avatar_url, username)')
-          .eq('mentor_id', user.id)
+          .from('bookings')
+          .select('*, profiles!student_id(full_name, avatar_url, username), availability_slots:slot_id(start_time)')
+          .eq('mentor_id', profileData.id)
           .eq('status', 'confirmed')
           .order('created_at', { ascending: false })
           .limit(3);

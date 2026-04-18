@@ -10,10 +10,10 @@ export async function GET(req: NextRequest) {
   const limit  = parseInt(searchParams.get('limit')  || '20');
   const offset = parseInt(searchParams.get('offset') || '0');
 
-  // reputation_history is the canonical table (reputation_events was dropped in migration 014)
+  // reputation_history is the canonical table (reputation_events was dropped in migration 014/041)
   const { data, error, count } = await supabase
     .from('reputation_history')
-    .select('id, action, points, entity_id, metadata, created_at', { count: 'exact' })
+    .select('id, event_type, points_awarded, reference_id, metadata, created_at', { count: 'exact' })
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -30,12 +30,12 @@ export async function PATCH(req: NextRequest) {
   // Recalculate total from the source-of-truth table and sync to profile
   const { data: history, error: historyError } = await supabase
     .from('reputation_history')
-    .select('points')
+    .select('points_awarded')
     .eq('user_id', user.id);
 
   if (historyError) return NextResponse.json({ error: historyError.message }, { status: 500 });
 
-  const totalPoints = (history || []).reduce((sum, row) => sum + (row.points || 0), 0);
+  const totalPoints = (history || []).reduce((sum, row) => sum + (row.points_awarded || 0), 0);
 
   const { error: updateError } = await supabase
     .from('profiles')

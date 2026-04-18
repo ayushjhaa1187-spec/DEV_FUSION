@@ -11,36 +11,28 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { mentor_id, start_timestamp } = await req.json();
+    const { mentor_id, slot_id } = await req.json();
 
-    if (!mentor_id || !start_timestamp) {
-        return NextResponse.json({ success: false, error: 'Missing mentor_id or start_timestamp' }, { status: 400 });
+    if (!mentor_id || !slot_id) {
+        return NextResponse.json({ success: false, error: 'Missing mentor_id or slot_id' }, { status: 400 });
     }
 
-    // 1. Fetch Mentor Profile for Fee and Link
-    const { data: mentor, error: mentorError } = await supabase
-        .from('mentor_profiles')
-        .select('session_fee, default_meeting_link')
-        .eq('id', mentor_id)
+    // 1. Fetch Slot and Mentor Profile
+    const { data: slot, error: slotError } = await supabase
+        .from('availability_slots')
+        .select('*, mentor_profiles(session_fee, default_meeting_link)')
+        .eq('id', slot_id)
         .single();
 
-    if (mentorError || !mentor) {
-        throw new Error('Mentor not found');
+    if (slotError || !slot) {
+        throw new Error('Slot not found');
     }
 
+    const mentor = slot.mentor_profiles as any;
     const fee = mentor.session_fee || 0;
-    const end_timestamp = new Date(new Date(start_timestamp).getTime() + 30 * 60000).toISOString();
 
-    // 2. Check overlap to prevent race conditions
-    const { data: conflicts } = await supabase
-        .from('bookings')
-        .select('id')
-        .eq('mentor_id', mentor_id)
-        .in('payment_status', ['COMPLETED', 'FREE', 'PENDING'])
-        .lt('start_timestamp', end_timestamp)
-        .gt('end_timestamp', start_timestamp);
-
-    if (conflicts && conflicts.length > 0) {
+    // 2. Check if slot is available
+    if (slot.status !== 'available') {
         return NextResponse.json({ success: false, error: 'Slot already booked' }, { status: 409 });
     }
 
@@ -50,35 +42,35 @@ export async function POST(req: NextRequest) {
         .insert({
             student_id: user.id,
             mentor_id: mentor_id,
-            start_timestamp,
-            end_timestamp,
+            slot_id: slot_id,
             meeting_link: mentor.default_meeting_link || 'https://meet.google.com/new',
-            amount_paid: fee,
-            payment_status: fee === 0 ? 'FREE' : 'PENDING'
+            amount: fee,
+            status: fee === 0 ? 'confirmed' : 'pending'
         })
         .select('id')
         .single();
 
     if (bookingError) throw bookingError;
 
-    // 4. Handle Pricing
+    // 4. If free, mark slot as booked immediately
     if (fee === 0) {
+        await supabase.from('availability_slots').update({ status: 'booked' }).eq('id', slot_id);
         return NextResponse.json({ 
             success: true, 
             booking_id: booking.id, 
             order_id: null,
-            status: 'FREE' 
+            status: 'confirmed' 
         });
     }
 
     // 5. Razorpay Integration
+    // (Existing Razorpay logic remains but update the update call later)
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-        // Fallback for simulation if keys are missing in env
         return NextResponse.json({ 
             success: true, 
             booking_id: booking.id, 
             order_id: 'order_simulated_' + booking.id.substring(0, 8),
-            status: 'PENDING',
+            status: 'pending',
             amount: fee * 100
         });
     }
@@ -94,16 +86,22 @@ export async function POST(req: NextRequest) {
         receipt: `receipt_${booking.id}`,
     });
 
-    // Update with razorpay_order_id
-    await supabase.from('bookings')
-        .update({ razorpay_order_id: order.id })
-        .eq('id', booking.id);
+    // We'll store the order ID in the transaction record later or in metadata
+    // For now, I'll just return it. 
+    // In many implementations, we create a transaction record now in 'pending' status.
+    const { error: txErr } = await supabase.from('transactions').insert({
+        user_id: user.id,
+        amount: fee,
+        gateway: 'razorpay',
+        gateway_order_id: order.id,
+        status: 'pending'
+    });
 
     return NextResponse.json({ 
         success: true, 
         booking_id: booking.id, 
         order_id: order.id,
-        status: 'PENDING',
+        status: 'pending',
         amount: fee * 100
     });
 

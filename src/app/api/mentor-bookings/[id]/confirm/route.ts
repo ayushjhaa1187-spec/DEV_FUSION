@@ -19,8 +19,8 @@ export async function PATCH(
 
   // Fetch the booking
   const { data: booking, error: fetchError } = await supabase
-    .from('mentor_bookings')
-    .select('*, mentor_slots(start_time, mentor_id)')
+    .from('bookings')
+    .select('*, availability_slots(start_time, mentor_id)')
     .eq('id', bookingId)
     .single();
 
@@ -57,7 +57,7 @@ export async function PATCH(
 
   // Update booking to confirmed with jitsi_room_name
   const { data: updatedBooking, error: updateError } = await supabase
-    .from('mentor_bookings')
+    .from('bookings')
     .update({
       status: 'confirmed',
       jitsi_room_name: roomName,
@@ -103,11 +103,11 @@ export async function GET(
   }
 
   const { data: booking, error } = await supabase
-    .from('mentor_bookings')
+    .from('bookings')
     .select(
       `*,
-      mentor_slots(start_time, end_time),
-      mentor_profiles:mentor_id(id, user_id, subjects, hourly_rate,
+      availability_slots:slot_id(start_time, end_time),
+      mentor_profiles:mentor_id(id, user_id,
         profiles:user_id(full_name, avatar_url, username))
       `
     )
@@ -130,6 +130,6 @@ export async function GET(
   return NextResponse.json({
     booking,
     roomName,
-    jitsiUrl: getJitsiMeetUrl(roomName),
+    jitsiUrl: getJitsiMeetUrl(roomName)
   });
 }

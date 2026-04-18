@@ -26,14 +26,14 @@ export async function GET(req: NextRequest) {
 
     // Fallback manual query
     const { data, error } = await supabase
-      .from('practice_attempts')
+      .from('test_attempts')
       .select(`
         user_id,
         score,
-        practice_tests!inner(topic),
-        profiles:user_id(username, avatar_url)
+        global_tests!inner(topic),
+        profiles!inner(username, avatar_url)
       `)
-      .eq('practice_tests.topic', topic)
+      .eq('global_tests.topic', topic)
       .order('score', { ascending: false });
 
     if (error) throw error;

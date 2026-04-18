@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import { Bell, Check, Trash2, Calendar, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/components/auth/auth-provider';
 import { notificationApi } from '@/lib/api';
-import { supabase } from '@/lib/supabase/client';
+import { createSupabaseBrowser } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function NotificationDropdown() {
   const { user } = useAuth();
+  const supabase = createSupabaseBrowser();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
