@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { doubtApi, aiApi, subjectApi } from '@/lib/api';
 import RichTextEditor from '@/components/ui/RichTextEditor';
+import RichTextRenderer from '@/components/ui/RichTextRenderer';
 import LimitReachedModal from '@/components/modals/LimitReachedModal';
 import './doubts-ask.css';
 
@@ -229,20 +230,7 @@ export default function AskDoubtPageClient() {
           {aiAnalysis ? (
             <div className="ai-analysis-content space-y-10">
               <section className="analysis-intuition p-8 bg-indigo-500/5 rounded-3xl border border-indigo-500/10">
-                <h3 className="text-xs font-black uppercase tracking-widest text-indigo-400 mb-4">The Intuition</h3>
-                <p className="text-gray-300 leading-relaxed font-medium">{aiAnalysis.explanation}</p>
-              </section>
-
-              <section className="analysis-steps">
-                <h3 className="text-xs font-black uppercase tracking-widest text-indigo-400 mb-6 px-4">Logical Breakdown</h3>
-                <div className="step-list space-y-4">
-                  {aiAnalysis.steps?.map((step: string, i: number) => (
-                    <div key={i} className="step-item flex items-start gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
-                      <span className="step-num w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-black flex-shrink-0">{i + 1}</span>
-                      <p className="text-sm text-gray-400 font-medium pt-0.5">{step}</p>
-                    </div>
-                  ))}
-                </div>
+                <RichTextRenderer content={aiAnalysis.analysis || aiAnalysis.explanation || JSON.stringify(aiAnalysis)} />
               </section>
 
               <div className="ai-footer-msg text-center py-8 border-t border-white/5">
