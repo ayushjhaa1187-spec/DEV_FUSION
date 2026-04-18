@@ -50,8 +50,6 @@ CREATE OR REPLACE FUNCTION award_reputation(
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
-DECLARE
-  v_current_points INTEGER;
 BEGIN
   INSERT INTO reputation_ledger (
     user_id, event_type, points_delta, entity_type, entity_id, metadata
@@ -59,19 +57,15 @@ BEGIN
     p_user_id, p_event_type, p_points_delta, p_entity_type, p_entity_id, p_metadata
   );
 
-  INSERT INTO user_profiles (id, reputation_points)
+  INSERT INTO profiles (id, reputation_points)
   VALUES (p_user_id, GREATEST(0, p_points_delta))
   ON CONFLICT (id) DO UPDATE
-    SET reputation_points = GREATEST(0, user_profiles.reputation_points + p_points_delta),
+    SET reputation_points = GREATEST(0, profiles.reputation_points + p_points_delta),
         updated_at = NOW();
 END;
 $$;
 
--- 4. Ensure badges table has required columns
-ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS requirement_type TEXT;
-ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS requirement_value INTEGER;
-
--- 5. Function: Check and award badges
+-- 4. Function: Check and award badges
 DROP FUNCTION IF EXISTS check_and_award_badges(UUID);
 
 CREATE OR REPLACE FUNCTION check_and_award_badges(p_user_id UUID)
@@ -84,7 +78,7 @@ DECLARE
   v_badge RECORD;
 BEGIN
   SELECT COALESCE(reputation_points, 0) INTO v_user_points
-  FROM user_profiles
+  FROM profiles
   WHERE id = p_user_id;
 
   FOR v_badge IN
@@ -104,7 +98,7 @@ BEGIN
 END;
 $$;
 
--- 6. Trigger function: on reputation change, check badges
+-- 5. Trigger function: on reputation change, check badges
 CREATE OR REPLACE FUNCTION trigger_check_badges()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -116,20 +110,30 @@ BEGIN
 END;
 $$;
 
--- 7. Attach trigger to reputation_ledger
+-- 6. Attach trigger to reputation_ledger
 DROP TRIGGER IF EXISTS on_reputation_change ON reputation_ledger;
 CREATE TRIGGER on_reputation_change
   AFTER INSERT ON reputation_ledger
   FOR EACH ROW
   EXECUTE FUNCTION trigger_check_badges();
 
--- 8. Leaderboard view
-CREATE OR REPLACE VIEW leaderboard AS
+-- 7. Leaderboard view
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = 'leaderboard' AND n.nspname = 'public'
+  ) THEN
+    DROP VIEW public.leaderboard CASCADE;
+  END IF;
+END $$;
+
+CREATE VIEW leaderboard AS
   SELECT
-    up.id AS user_id,
-    up.full_name,
-    up.avatar_url,
-    up.reputation_points AS points,
-    RANK() OVER (ORDER BY up.reputation_points DESC) AS rank
-  FROM user_profiles up
-  WHERE up.reputation_points > 0;
+    p.id AS user_id,
+    p.full_name,
+    p.avatar_url,
+    p.reputation_points AS points,
+    RANK() OVER (ORDER BY p.reputation_points DESC) AS rank
+  FROM profiles p
+  WHERE p.reputation_points > 0;
