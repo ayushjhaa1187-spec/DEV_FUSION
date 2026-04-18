@@ -18,12 +18,19 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- Ensure badges table has required columns
-ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS name TEXT;
-ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS description TEXT;
-ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS icon TEXT;
+-- Ensure badges table has all required columns
+-- Production may have requirement_points (NOT NULL) instead of requirement_type/requirement_value
 ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS requirement_type TEXT;
 ALTER TABLE IF EXISTS badges ADD COLUMN IF NOT EXISTS requirement_value INTEGER;
+-- Make requirement_points nullable or add default to avoid NOT NULL violation
+ALTER TABLE IF EXISTS badges ALTER COLUMN requirement_points SET DEFAULT 0;
+DO $$ BEGIN
+  BEGIN
+    ALTER TABLE badges ALTER COLUMN requirement_points DROP NOT NULL;
+  EXCEPTION WHEN OTHERS THEN
+    NULL; -- ignore if column doesn't exist
+  END;
+END $$;
 
 -- Add unique constraint on badges name if not exists
 DO $$ BEGIN
@@ -49,8 +56,10 @@ INSERT INTO subjects (id, name, slug, description) VALUES
   (uuid_generate_v4(), 'Software Engineering', 'se', 'SDLC, design patterns, agile methodology')
 ON CONFLICT DO NOTHING;
 
--- Seed Badges
-INSERT INTO badges (name, description, icon, requirement_type, requirement_value) VALUES
+-- Seed Badges (compatible with both requirement_points and requirement_type/requirement_value schemas)
+INSERT INTO badges (name, description, icon, requirement_type, requirement_value)
+SELECT name, description, icon, requirement_type, requirement_value
+FROM (VALUES
   ('First Answer', 'Submitted your first answer', '🎯', 'answers_count', 1),
   ('Helpful', 'Had 5 answers accepted', '⭐', 'accepted_answers', 5),
   ('Expert', 'Had 25 answers accepted', '🏆', 'accepted_answers', 25),
@@ -59,4 +68,19 @@ INSERT INTO badges (name, description, icon, requirement_type, requirement_value
   ('Scholar', 'Earned 500 reputation points', '📚', 'reputation_points', 500),
   ('Legend', 'Earned 1000 reputation points', '🔥', 'reputation_points', 1000),
   ('Consistent', 'Maintained a 7-day login streak', '📅', 'login_streak', 7)
-ON CONFLICT (name) DO NOTHING;
+) AS v(name, description, icon, requirement_type, requirement_value)
+WHERE NOT EXISTS (SELECT 1 FROM badges b WHERE b.name = v.name);
+
+-- Sync requirement_points from requirement_value if both exist
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'badges' AND column_name = 'requirement_points'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'badges' AND column_name = 'requirement_value'
+  ) THEN
+    UPDATE badges SET requirement_points = requirement_value
+    WHERE requirement_points IS NULL AND requirement_value IS NOT NULL;
+  END IF;
+END $$;
