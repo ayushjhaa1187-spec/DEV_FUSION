@@ -1,108 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin'; // Use admin for cron to bypass typical RLS filters
-import { sendBookingConfirmationEmail } from '@/lib/email';
+import { createClient } from '@supabase/supabase-js';
 
-/**
- * GET /api/cron/reminders
- * Trigger this via an external cron service every 15 minutes.
- * Finds upcoming sessions (within 30-45 mins) and alerts participants.
- */
+// We use the admin service role because cron hits this anonymously
 export async function GET(req: NextRequest) {
-  // Simple auth check via secret header
-  const authHeader = req.headers.get('authorization');
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const supabase = createAdminClient();
-  
-  const now = new Date();
-  const thirtyMinsLater = new Date(now.getTime() + 30 * 60 * 1000);
-  const fortyFiveMinsLater = new Date(now.getTime() + 45 * 60 * 1000);
-
-  try {
-    // 1. Find upcoming bookings starting between 30 and 45 mins from now
-    const { data: bookings, error } = await supabase
-      .from('mentor_bookings')
-      .select(`
-        *,
-        mentor_slots!inner(start_time),
-        mentor:profiles!mentor_id(id, full_name, email),
-        student:profiles!student_id(id, full_name, email)
-      `)
-      .eq('status', 'confirmed')
-      .gte('mentor_slots.start_time', thirtyMinsLater.toISOString())
-      .lte('mentor_slots.start_time', fortyFiveMinsLater.toISOString());
-
-    if (error) throw error;
-    if (!bookings || bookings.length === 0) {
-        return NextResponse.json({ success: true, message: 'No upcoming sessions found for reminder window' });
+    // 1. Verify Authorization (Vercel Cron Secret or custom secret)
+    const authHeader = req.headers.get('authorization');
+    const secret = process.env.CRON_SECRET;
+    
+    // In dev environment or if secret matches
+    if (secret && authHeader !== `Bearer ${secret}`) {
+        return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const results = [];
+    try {
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
 
-    for (const booking of bookings) {
-      // 2. Check if reminder already sent to prevent spam
-      const reminderKey = `reminder:${booking.id}`;
-      const { data: existing } = await supabase
-        .from('notifications')
-        .select('id')
-        .eq('user_id', booking.student_id)
-        .eq('type', 'session_reminder')
-        .eq('link', `/mentorship/session/${booking.id}`)
-        .maybeSingle();
+        // Calculate time bounds: between now+29m and now+30m
+        const now = new Date();
+        const minTime = new Date(now.getTime() + 29 * 60000).toISOString();
+        const maxTime = new Date(now.getTime() + 30 * 60000).toISOString();
 
-      if (!existing) {
-        // 3. Create notifications for Student and Mentor
-        const notifyTasks = [
-          // To Student
-          supabase.from('notifications').insert({
-            user_id: booking.student_id,
-            type: 'session_reminder',
-            title: 'Session Starting Soon!',
-            message: `Your session with ${booking.mentor.full_name} starts in ~30 minutes.`,
-            link: `/mentorship/session/${booking.id}`
-          }),
-          // To Mentor
-          supabase.from('notifications').insert({
-            user_id: booking.mentor_id,
-            type: 'session_reminder',
-            title: 'Session Reminder',
-            message: `Your mentorship session with ${booking.student.full_name} starts in ~30 minutes.`,
-            link: `/mentorship/session/${booking.id}`
-          })
-        ];
+        // Query bookings that are about to start
+        const { data: bookings, error: bookingsError } = await supabase
+            .from('bookings')
+            .select(`
+                id,
+                start_timestamp,
+                student_id,
+                slots (
+                    mentor_id
+                )
+            `)
+            .in('status', ['COMPLETED', 'FREE'])
+            .gte('start_timestamp', minTime)
+            .lte('start_timestamp', maxTime);
 
-        // 4. Send Emails
-        const emailTasks = [
-          sendBookingConfirmationEmail({
-            to: booking.student.email,
-            subject: '🔔 STARTING SOON: Your Mentorship Session',
-            userName: booking.student.full_name,
-            mentorName: booking.mentor.full_name,
-            sessionTime: new Date(booking.mentor_slots.start_time).toLocaleString(),
-            meetingLink: booking.meeting_link || '',
-            isReminder: true // We'll add this flag to the template logic
-          }),
-          sendBookingConfirmationEmail({
-            to: booking.mentor.email,
-            subject: '🔔 SESSION ALERT: 30 Minutes to Sync',
-            userName: booking.mentor.full_name,
-            studentName: booking.student.full_name,
-            sessionTime: new Date(booking.mentor_slots.start_time).toLocaleString(),
-            meetingLink: booking.meeting_link || '',
-            isReminder: true
-          })
-        ];
-        
-        await Promise.all([...notifyTasks, ...emailTasks]);
-        results.push(booking.id);
-      }
+        if (bookingsError) {
+            console.error('Failed to fetch bookings:', bookingsError);
+            throw bookingsError;
+        }
+
+        if (!bookings || bookings.length === 0) {
+            return NextResponse.json({ success: true, message: 'No upcoming sessions found.' });
+        }
+
+        const notificationsToInsert: any[] = [];
+
+        bookings.forEach((b: any) => {
+            const studentId = b.student_id;
+            const mentorId = b.slots?.mentor_id;
+            const timeStr = new Date(b.start_timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // Notify Student
+            if (studentId) {
+                notificationsToInsert.push({
+                    user_id: studentId,
+                    type: 'SESSION_REMINDER',
+                    message: `Reminder: Your mentorship session starts at ${timeStr}. Check your dashboard for the exact link.`,
+                    reference_id: b.id
+                });
+            }
+
+            // Notify Mentor
+            if (mentorId) {
+                notificationsToInsert.push({
+                    user_id: mentorId,
+                    type: 'SESSION_REMINDER',
+                    message: `Alert: You have a mentorship session starting at ${timeStr}. Ensure your environment is ready.`,
+                    reference_id: b.id
+                });
+            }
+        });
+
+        // Bulk insert notifications
+        if (notificationsToInsert.length > 0) {
+            const { error: insertError } = await supabase
+                .from('notifications')
+                .insert(notificationsToInsert);
+
+            if (insertError) throw insertError;
+        }
+
+        return NextResponse.json({ 
+            success: true, 
+            message: `Processed ${bookings.length} upcoming booking(s). Dispatched ${notificationsToInsert.length} notifications.` 
+        });
+
+    } catch (err: any) {
+        console.error('CRON processing failed:', err);
+        return NextResponse.json({ success: false, error: 'Failed to process reminders' }, { status: 500 });
     }
-
-    return NextResponse.json({ success: true, reminded_bookings: results });
-  } catch (err: any) {
-    console.error('[CRON Reminders] Error:', err.message);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
-  }
 }

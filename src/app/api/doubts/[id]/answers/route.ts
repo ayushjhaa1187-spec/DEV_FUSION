@@ -80,10 +80,9 @@ export async function POST(
     if (doubt && doubt.author_id !== user.id) {
        await supabase.from('notifications').insert({
         user_id: doubt.author_id,
-        type: 'answer_posted',
-        title: 'New Answer Received',
+        type: 'DOUBT_ANSWERED',
         message: `Someone answered your doubt: "${doubt.title.slice(0, 30)}..."`,
-        link: `/doubts/${id}`
+        reference_id: id
       });
     }
 

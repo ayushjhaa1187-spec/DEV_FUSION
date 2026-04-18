@@ -10,7 +10,7 @@ import {
   Bell, Menu, X, MessageSquare, Trophy, FileText, 
   ChevronRight, User, Search, Command, ShieldAlert, Award, Star
 } from 'lucide-react';
-import { NotificationBell } from './NotificationBell';
+import NotificationDropdown from './NotificationDropdown';
 import SearchModal from './SearchModal';
 import styles from './Navbar.module.css';
 import SkillBridgeIcon from '@/components/ui/SkillBridgeIcon';
@@ -136,7 +136,7 @@ export default function Navbar() {
  
             {user ? (
               <div className="flex items-center gap-5">
-                <NotificationBell userId={user?.id} />
+                <NotificationDropdown />
  
                 <div className={styles.profileWrapper} ref={profileDropdownRef}>
                   <motion.button
