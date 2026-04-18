@@ -5,6 +5,8 @@
 
 -- 1. Compatibility view: reputation_events -> reputation_ledger
 -- Exposes 'points' column alias for leaderboard API compatibility
+DROP VIEW IF EXISTS reputation_events CASCADE;
+DROP TABLE IF EXISTS reputation_events CASCADE;
 CREATE OR REPLACE VIEW reputation_events AS
   SELECT
     id,

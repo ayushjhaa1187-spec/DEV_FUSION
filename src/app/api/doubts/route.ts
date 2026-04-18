@@ -97,6 +97,9 @@ export async function GET(req: NextRequest) {
   } else if (filter === 'trending') {
     query = query.order('views_count', { ascending: false });
   } else if (filter === 'my_subjects') {
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Please sign in to view your subjects' }, { status: 401 });
+    }
     // 1. Get user subjects
     const { data: userSubjects } = await supabase
       .from('user_subjects')

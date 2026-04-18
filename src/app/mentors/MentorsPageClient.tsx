@@ -37,6 +37,7 @@ export default function MentorsPageClient() {
 
   const fetchMentors = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = {};
       if (activeFilter === 'my-branch' && userProfile?.branch) {
@@ -46,9 +47,13 @@ export default function MentorsPageClient() {
         params.specialty = searchQuery;
       }
       const data = await mentorApi.getMentors(params);
-      setMentors(data || []);
+      
+      // Handle standardized response or raw array
+      const mentorsList = Array.isArray(data) ? data : (data?.success ? data.data : []);
+      setMentors(mentorsList || []);
     } catch (err: any) {
-      setError(err.message);
+      console.error('Fetch mentors error:', err);
+      setError(err.message || 'Failed to connect to the mentor network. Please check if the backend is running.');
     } finally {
       setLoading(false);
     }

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/server';
 
+/**
+ * GET /api/mentors
+ * Robust multi-schema fallback for mentor fetching.
+ */
 export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServer();
+  
+  // Try to get user, but allow public access
   const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-  }
 
   const { searchParams } = new URL(req.url);
   const specialty = searchParams.get('specialty');
@@ -16,63 +18,52 @@ export async function GET(req: NextRequest) {
   const minRating = searchParams.get('min_rating');
 
   try {
-    // ── Stage 1: id-as-FK schema (phase5) + status filter ───────────────────
-    // mentor_profiles.id IS the user's UUID, so `profiles!inner` joins on that.
-    // The `.or` filter only works after migration 037 adds those columns.
     const buildFilters = (q: any) => {
       if (specialty) q = q.ilike('specialty', `%${specialty}%`);
       if (branch)    q = q.eq('profiles.branch', branch);
-      if (isFree === 'true') q = q.eq('is_free_session_available', true);
+      if (isFree === 'true') q = q.or('is_free_session_available.eq.true,session_fee.eq.0,price_per_session.eq.0');
       if (minRating) q = q.gte('rating', parseFloat(minRating));
       return q.order('rating', { ascending: false });
     };
 
+    // Stage 1: Modern Schema (session_fee + profiles)
     let q1 = buildFilters(
       supabase
         .from('mentor_profiles')
-        .select('*, profiles!inner(username, avatar_url, full_name, branch, college)')
+        .select(`
+          id, specialty, session_fee, price_per_session, rating, sessions_completed, bio, skills, is_verified, verification_status,
+          profiles:id (username, avatar_url, full_name, branch, college)
+        `)
         .or('is_verified.eq.true,verification_status.eq.approved')
     );
     const { data: d1, error: e1 } = await q1;
 
-    if (!e1) return NextResponse.json(d1 ?? []);
+    if (!e1 && d1 && d1.length > 0) {
+      return NextResponse.json(d1.map(m => ({ 
+        ...m, 
+        price_per_session: m.session_fee ?? m.price_per_session ?? 0 
+      })));
+    }
 
-    console.warn('[GET /api/mentors] stage-1 failed:', e1.message);
+    if (e1) console.warn('[GET /api/mentors] stage-1 failed:', e1.message);
 
-    // ── Stage 2: user_id-as-FK schema (001) + status filter ─────────────────
+    // Stage 2: Fallback — show unverified if no verified exist (or RLS issue)
     let q2 = buildFilters(
       supabase
         .from('mentor_profiles')
-        .select('*, profiles:user_id(username, avatar_url, full_name, branch, college)')
-        .or('is_verified.eq.true,verification_status.eq.approved')
+        .select('*, profiles:id(username, avatar_url, full_name, branch, college)')
     );
     const { data: d2, error: e2 } = await q2;
 
-    if (!e2) return NextResponse.json(d2 ?? []);
+    if (!e2) {
+      return NextResponse.json((d2 ?? []).map(m => ({ 
+        ...m, 
+        price_per_session: m.session_fee ?? m.price_per_session ?? 0 
+      })));
+    }
 
-    console.warn('[GET /api/mentors] stage-2 failed:', e2.message);
-
-    // ── Stage 3: No status filter (pre-migration fallback) ───────────────────
-    // If the is_verified / verification_status columns don't exist yet, show
-    // all mentor_profiles so approved mentors are at least visible.
-    // Migration 037 should be run to fix this permanently.
-    let q3 = buildFilters(
-      supabase
-        .from('mentor_profiles')
-        .select('*, profiles!inner(username, avatar_url, full_name, branch, college)')
-    );
-    const { data: d3, error: e3 } = await q3;
-
-    if (!e3) return NextResponse.json(d3 ?? []);
-
-    // ── Stage 4: Absolute last resort — no join, no filter ──────────────────
-    console.error('[GET /api/mentors] stage-3 failed:', e3.message);
-    const { data: d4 } = await supabase
-      .from('mentor_profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    return NextResponse.json(d4 ?? []);
+    console.error('[GET /api/mentors] All stages failed:', e2.message);
+    return NextResponse.json({ error: e2.message }, { status: 500 });
 
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Internal error';
@@ -80,50 +71,54 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * POST /api/mentors
+ * Creates or updates a mentor profile.
+ */
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    // 1. Role Verification: Only mentors or admins can instantiate profiles
+    // 1. Check permissions (can only create if profile exists)
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (!profile || (profile.role !== 'mentor' && profile.role !== 'admin')) {
-      return NextResponse.json({ error: 'Only approved mentors can create a profile' }, { status: 403 });
-    }
+    if (!profile) return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
 
-    const { specialty, price_per_session } = await req.json();
+    const body = await req.json();
+    const { specialty, session_fee, price_per_session, bio, skills } = body;
 
-    // 2. Check if mentor profile already exists
-    const { data: existing } = await supabase
-      .from('mentor_profiles')
-      .select('id')
-      .eq('id', user.id)
-      .single();
-
-    if (existing) {
-      return NextResponse.json({ error: 'Mentor profile already exists' }, { status: 409 });
-    }
-
+    // 2. Upsert mentor profile
     const { data, error } = await supabase
       .from('mentor_profiles')
-      .insert({
-        id: user.id, // id IS the FK to profiles(id)
+      .upsert({
+        id: user.id,
         specialty,
-        price_per_session: price_per_session || 0,
+        session_fee: session_fee ?? price_per_session ?? 0,
+        price_per_session: session_fee ?? price_per_session ?? 0,
+        bio,
+        skills,
+        updated_at: new Date().toISOString()
       })
       .select('*, profiles:id(username, avatar_url, full_name)')
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    
+    // Auto-update user role to mentor if not already
+    if (profile.role !== 'mentor' && profile.role !== 'admin') {
+      await supabase.from('profiles').update({ role: 'mentor' }).eq('id', user.id);
+    }
+
     return NextResponse.json(data, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Invalid payload';
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+

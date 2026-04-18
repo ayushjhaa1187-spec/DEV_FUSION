@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // We use the admin service role because cron hits this anonymously
 export async function GET(req: NextRequest) {
@@ -13,10 +13,7 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = createAdminClient();
 
         // Calculate time bounds: between now+29m and now+30m
         const now = new Date();
