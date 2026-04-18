@@ -35,7 +35,8 @@ export async function updateSession(request: NextRequest) {
   // Define protected routes
   const protectedRoutes = [
     '/dashboard', '/profile', '/settings', 
-    '/doubts', '/mentors/dashboard', '/mentors/apply', '/tests', 
+    '/doubts/new', '/doubts/ask',
+    '/mentors/dashboard', '/mentors/apply', '/tests', 
     '/billing', '/admin',
     '/organization', '/onboarding'
   ]
