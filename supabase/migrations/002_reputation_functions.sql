@@ -33,6 +33,15 @@ CREATE OR REPLACE VIEW reputation_events AS
     created_at
   FROM reputation_ledger;
 -- 2. Core function: Award reputation points
+-- Drop any existing version (handles parameter name changes)
+DO $$ DECLARE r RECORD;
+BEGIN
+  FOR r IN SELECT oid::regprocedure FROM pg_proc
+    WHERE proname = 'award_reputation' AND pronamespace = 'public'::regnamespace
+  LOOP
+    EXECUTE 'DROP FUNCTION ' || r.oid::regprocedure || ' CASCADE';
+  END LOOP;
+END $$;
 CREATE OR REPLACE FUNCTION award_reputation(
   p_user_id UUID,
   p_event_type TEXT,
@@ -121,6 +130,15 @@ DROP TRIGGER IF EXISTS on_test_submitted ON test_submissions;
 CREATE TRIGGER on_test_submitted AFTER INSERT ON test_submissions
   FOR EACH ROW EXECUTE PROCEDURE handle_test_submission();
 -- 7. Function: Check and award badges
+-- Drop any existing version (handles parameter name changes)
+DO $$ DECLARE r RECORD;
+BEGIN
+  FOR r IN SELECT oid::regprocedure FROM pg_proc
+    WHERE proname = 'check_and_award_badges' AND pronamespace = 'public'::regnamespace
+  LOOP
+    EXECUTE 'DROP FUNCTION ' || r.oid::regprocedure || ' CASCADE';
+  END LOOP;
+END $$;
 CREATE OR REPLACE FUNCTION check_and_award_badges(p_user_id UUID)
 RETURNS VOID AS $$
 DECLARE v_score INT; v_badge RECORD;
