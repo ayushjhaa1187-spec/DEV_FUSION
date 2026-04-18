@@ -1306,3 +1306,20 @@ h1, h2, h3, h4, h5 {
     right: 20px;
   }
 }
+
+/* Constellation Zone Indicators */
+.hero, 
+.navbar, 
+.feature-card-small, 
+.bento-card,
+.mentor-card,
+.step-card,
+.cta, 
+.trust-bar,
+.btn-primary {
+    cursor: crosshair !important;
+}
+
+#constellation-canvas {
+    mix-blend-mode: screen;
+}
