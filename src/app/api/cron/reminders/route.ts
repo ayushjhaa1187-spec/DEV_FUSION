@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '@/lib/supabase/admin'; // Use admin for cron to bypass typical RLS filters
+import { createAdminClient } from '@/lib/supabase/admin'; // Use admin for cron to bypass typical RLS filters
 import { sendBookingConfirmationEmail } from '@/lib/email';
 
 /**
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = createSupabaseAdmin();
+  const supabase = createAdminClient();
   
   const now = new Date();
   const thirtyMinsLater = new Date(now.getTime() + 30 * 60 * 1000);
