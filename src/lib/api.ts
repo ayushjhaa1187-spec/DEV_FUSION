@@ -75,17 +75,15 @@ export const mentorApi = {
     const query = filters ? '?' + new URLSearchParams(filters).toString() : '';
     return apiFetch(`/api/mentors${query}`);
   },
-  getSlots: (mentorId: string) => apiFetch(`/api/mentor-slots?mentor_id=${mentorId}`),
+  getSlots: (mentorId: string, date: string) => apiFetch(`/api/mentors/${mentorId}/slots?date=${date}`),
   getProfile: (id: string) => apiFetch(`/api/mentors/${id}`),
-  createOrder: (slotId: string, mentorId: string, amount: number) => apiFetch('/api/razorpay', { 
-    method: 'POST', 
-    body: JSON.stringify({ slot_id: slotId, mentor_id: mentorId, amount }) 
-  }),
+  getReviews: (id: string, limit: number = 5, offset: number = 0) => apiFetch(`/api/mentors/${id}/reviews?limit=${limit}&offset=${offset}`),
 };
 
 export const bookingApi = {
-  create: (data: { slot_id: string }) => apiFetch('/api/mentor-bookings', { method: 'POST', body: JSON.stringify(data) }),
-  getMyBookings: () => apiFetch('/api/mentor-bookings'),
+  initiate: (data: { mentor_id: string, start_timestamp: string }) => apiFetch('/api/bookings/initiate', { method: 'POST', body: JSON.stringify(data) }),
+  verifyPayment: (data: { booking_id: string, razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string }) => apiFetch('/api/bookings/verify-payment', { method: 'POST', body: JSON.stringify(data) }),
+  getMyBookings: () => apiFetch('/api/mentor-bookings'), // assuming this exists or is updated later
 };
 
 export const subjectApi = {

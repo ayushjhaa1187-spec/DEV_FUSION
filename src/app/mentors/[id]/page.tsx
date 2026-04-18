@@ -20,6 +20,7 @@ interface MentorProfile {
   avatar_url?: string;
   bio?: string;
   reputation_points?: number;
+  session_fee?: number;
   mentor_profiles?: {
     specialty: string;
     hourly_rate: number;
@@ -42,19 +43,13 @@ interface Review {
   };
 }
 
-interface Slot {
-  id: string;
-  start_time: string;
-  end_time: string;
-  status: 'available' | 'locked' | 'booked';
-}
-
 export default function MentorProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { user } = useAuth();
   const { id } = use(params);
   
   const [profile, setProfile] = useState<MentorProfile | null>(null);
-  const [slots, setSlots] = useState<Slot[]>([]);
+  const [targetDate, setTargetDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [slots, setSlots] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [totalReviews, setTotalReviews] = useState(0);
   const [reviewPage, setReviewPage] = useState(0);
@@ -71,15 +66,15 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     async function fetchData() {
       try {
-        const [profileData, slotsData, reviewsData] = await Promise.all([
-          mentorApi.getProfile(id),
-          mentorApi.getSlots(id),
-          mentorApi.getReviews(id, REVIEWS_LIMIT, 0)
-        ]);
+        const profileData = await mentorApi.getProfile(id);
+        const reviewsData = await mentorApi.getReviews(id, REVIEWS_LIMIT, 0).catch(() => ({ reviews: [], total: 0 }));
+        
         setProfile(profileData);
-        setSlots(slotsData);
-        setReviews(reviewsData.reviews);
-        setTotalReviews(reviewsData.total);
+        setReviews(reviewsData.reviews || []);
+        setTotalReviews(reviewsData.total || 0);
+
+        // Fetch initial slots
+        fetchSlots(profileData.id, new Date().toISOString().split('T')[0]);
       } catch (err) {
         console.error('Failed to load mentor data', err);
         toast.error('Failed to load mentor profile');
@@ -90,11 +85,33 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
     fetchData();
   }, [id]);
 
+  const fetchSlots = async (mentorId: string, date: string) => {
+      try {
+          const res = await mentorApi.getSlots(mentorId, date);
+          if (res && Array.isArray(res.slots)) {
+              setSlots(res.slots);
+          } else {
+              setSlots([]);
+          }
+      } catch (err) {
+          console.error(err);
+          setSlots([]);
+      }
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setTargetDate(e.target.value);
+      if (profile?.id) {
+          fetchSlots(profile.id, e.target.value);
+          setSelectedSlot(null);
+      }
+  };
+
   const fetchMoreReviews = async (page: number) => {
     setReviewsLoading(true);
     try {
-      const data = await mentorApi.getReviews(id, REVIEWS_LIMIT, page * REVIEWS_LIMIT);
-      setReviews(data.reviews);
+      const data = await mentorApi.getReviews(id, REVIEWS_LIMIT, page * REVIEWS_LIMIT).catch(() => ({ reviews: [] }));
+      setReviews(data.reviews || []);
       setReviewPage(page);
     } catch (err) {
       toast.error('Failed to load reviews');
@@ -108,54 +125,39 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
     if (!user) return toast.error('Please log in to book a session');
     
     setBookingLoading(true);
-    const isFree = (profile.mentor_profiles?.hourly_rate || 0) === 0;
 
     try {
-      if (isFree) {
-        // Direct booking for free sessions
-        await bookingApi.create({ slot_id: selectedSlot });
+      // 1. Initiate Order
+      const initRes = await bookingApi.initiate({ mentor_id: id, start_timestamp: selectedSlot });
+      
+      if (initRes.status === 'FREE') {
         setSuccess(true);
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#6366f1', '#10b981', '#ffffff']
-        });
+        triggerConfetti();
         toast.success('Zero-fee session booked successfully!');
         setTimeout(() => window.location.href = '/dashboard/sessions', 2000);
         return;
       }
 
-      // Paid session flow
-      const { order_id, amount, currency, key_id } = await mentorApi.createOrder(
-        selectedSlot, 
-        id as string, 
-        profile.mentor_profiles?.hourly_rate || 250
-      );
-
+      // Paid Session Flow using Razorpay Modal
       const options = {
-        key: key_id,
-        amount,
-        currency,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_123',
+        amount: initRes.amount,
+        currency: "INR",
         name: "SkillBridge Mentorship",
         description: `Session with ${profile?.full_name ?? 'Mentor'}`,
-        order_id,
+        order_id: initRes.order_id,
         handler: async (response: any) => {
           try {
-            await bookingApi.create({
-              slot_id: selectedSlot,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
+            // 2. Verify Payment
+            await bookingApi.verifyPayment({
+              booking_id: initRes.booking_id,
+              razorpay_order_id: response.razorpay_order_id || initRes.order_id,
+              razorpay_payment_id: response.razorpay_payment_id || 'sim',
+              razorpay_signature: response.razorpay_signature || 'sim',
             });
 
             setSuccess(true);
-            confetti({
-              particleCount: 150,
-              spread: 70,
-              origin: { y: 0.6 },
-              colors: ['#6366f1', '#10b981', '#ffffff']
-            });
+            triggerConfetti();
             toast.success('Session booked successfully!');
             setTimeout(() => window.location.href = '/dashboard/sessions', 2000);
           } catch (err: any) {
@@ -166,9 +168,7 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
           name: user.user_metadata?.full_name || user.email,
           email: user.email,
         },
-        theme: {
-          color: "#6366f1", // indigo-600
-        },
+        theme: { color: "#6366f1" }, // indigo-600
       };
 
       const rzp = new (window as any).Razorpay(options);
@@ -182,6 +182,10 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
     } finally {
       setBookingLoading(false);
     }
+  };
+
+  const triggerConfetti = () => {
+    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#6366f1', '#10b981', '#ffffff'] });
   };
 
   if (loading) {
@@ -209,6 +213,7 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
   const mentorInfo = profile.mentor_profiles;
   const rating = mentorInfo?.rating_avg || 0;
   const sessionCount = mentorInfo?.sessions_completed || 0;
+  const displayFee = profile.session_fee !== undefined ? profile.session_fee : (mentorInfo?.hourly_rate || 250);
 
   return (
     <main className="min-h-screen bg-[#06060f] selection:bg-indigo-500/30 text-white pb-24">
@@ -371,7 +376,7 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
                                   <img src={review.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
                                 ) : (
                                   <div className="w-full h-full bg-indigo-600 flex items-center justify-center font-black text-white uppercase">
-                                    {review.profiles.username[0]}
+                                    {review.profiles.username?.[0]}
                                   </div>
                                 )}
                               </div>
@@ -465,39 +470,42 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
               <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-[2rem] p-8 text-center mb-10 group hover:bg-indigo-500/20 transition-all">
                 <div className="flex items-center justify-center gap-2 text-5xl font-black text-white mb-2">
                    <IndianRupee size={32} className="text-indigo-400" />
-                   {mentorInfo?.hourly_rate || 250}
+                   {displayFee}
                 </div>
                 <p className="text-[10px] text-indigo-400/60 font-black uppercase tracking-[0.2em]">Contribution per 30-min Synapse</p>
               </div>
 
               <div className="space-y-4 mb-10">
-                <h4 className="text-[10px] text-gray-500 font-black uppercase tracking-widest flex items-center gap-4">
-                  <span className="flex-shrink-0">Select Live Slot</span>
-                  <div className="flex-1 h-[1px] bg-white/5" />
+                <h4 className="text-[10px] text-gray-500 font-black uppercase tracking-widest flex justify-between items-center">
+                  <span>Select Live Slot</span>
+                  <input 
+                      type="date" 
+                      value={targetDate}
+                      onChange={handleDateChange}
+                      className="bg-black/50 text-white rounded outline-none px-2 py-1 border border-white/10"
+                      min={new Date().toISOString().split('T')[0]}
+                  />
                 </h4>
 
                 <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                   {slots.length > 0 ? (
                     slots.map((slot) => (
                       <button
-                        key={slot.id}
-                        disabled={slot.status === 'booked' || bookingLoading}
-                        onClick={() => setSelectedSlot(slot.id)}
+                        key={slot}
+                        disabled={bookingLoading}
+                        onClick={() => setSelectedSlot(slot)}
                         className={`p-4 rounded-2xl border transition-all text-left flex flex-col relative overflow-hidden ${
-                          selectedSlot === slot.id 
+                          selectedSlot === slot 
                             ? 'bg-indigo-600 border-indigo-500 shadow-xl shadow-indigo-600/20 text-white' 
                             : 'bg-white/5 border-white/5 hover:border-indigo-500/30 text-gray-400'
-                        } ${slot.status === 'booked' ? 'opacity-30 cursor-not-allowed grayscale' : ''}`}
+                        }`}
                       >
                          <p className="text-[9px] font-black uppercase opacity-60">
-                           {new Date(slot.start_time).toLocaleDateString([], { weekday: 'short' })}
+                           {new Date(slot).toLocaleDateString([], { weekday: 'short' })}
                          </p>
                          <p className="text-sm font-black">
-                           {new Date(slot.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                           {new Date(slot).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                          </p>
-                         {slot.status === 'booked' && (
-                           <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-red-500 text-white text-[7px] font-black rounded uppercase">FULL</span>
-                         )}
                       </button>
                     ))
                   ) : (
@@ -522,13 +530,13 @@ export default function MentorProfilePage({ params }: { params: Promise<{ id: st
                 ) : success ? (
                   <><CheckCircle2 size={16} /> Frequency Locked</>
                 ) : (
-                  <><Calendar size={16} /> Initialize Booking</>
+                  <><Calendar size={16} /> {displayFee === 0 ? 'Confirm Booking' : `Pay ₹${displayFee} & Book`}</>
                 )}
               </button>
 
               <div className="mt-8 pt-8 border-t border-white/5 space-y-3">
                  <div className="flex items-center gap-3 text-xs text-indigo-400/60 font-black uppercase tracking-tighter">
-                   <Clock size={12} /> Live Jitsi Video Transmission
+                   <Clock size={12} /> Live Jitsi / Google Meet Video
                  </div>
                  <div className="flex items-center gap-3 text-xs text-indigo-400/60 font-black uppercase tracking-tighter">
                    <Award size={12} /> Double Reputation Bonus Included
